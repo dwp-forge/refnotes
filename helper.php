@@ -52,7 +52,7 @@ class helper_plugin_footrefs extends DokuWiki_Plugin {
      */
     function getReferenceCount($id) {
         if (array_key_exists($id, $this->note)) {
-            return $this->note[$id]['count'];
+            return $this->note[$id]->count;
         }
         else {
             return 0;
@@ -64,7 +64,7 @@ class helper_plugin_footrefs extends DokuWiki_Plugin {
      */
     function setNoteText($id, $text) {
         if (array_key_exists($id, $this->note)) {
-            $this->note[$id]['text'] = $text;
+            $this->note[$id]->text = $text;
         }
     }
 
@@ -76,18 +76,31 @@ class helper_plugin_footrefs extends DokuWiki_Plugin {
             $name = $match[1];
             $id = $this->_findNote($name);
             if ($id != 0) {
-                ++$this->note[$id]['count'];
+                ++$this->note[$id]->count;
             }
             else {
-                $id = ++$this->note;
-                $this->note[$id] = array('name' => $name, 'count' => 1, 'text' => '');
+                $id = ++$this->notes;
+                $this->note[$id] = new footrefs_note($name);
             }
         }
         else {
             $id = ++$this->notes;
-            $this->note[$id] = array('name' => '', 'count' => 1, 'text' => '');
+            $this->note[$id] = new footrefs_note();
         }
         return $id;
+    }
+
+    /**
+     * Renders notes
+     */
+    function render() {
+        $html = '';
+        foreach ($this->note as $id => &$note) {
+            if ($note->isReadyForRendering()) {
+                $html .= $note->render($id);
+            }
+        }
+        return $html;
     }
 
     /**
@@ -95,10 +108,58 @@ class helper_plugin_footrefs extends DokuWiki_Plugin {
      */
     function _findNote($name) {
         for ($id = $this->notes; $id > 0; $id--) {
-            if ($this->note[$id]['name'] == $name) {
+            if ($this->note[$id]->name == $name) {
                 break;
             }
         }
         return $id;
+    }
+}
+
+class footrefs_note {
+
+    var $name;
+    var $count;
+    var $text;
+    var $rendered;
+
+    /**
+     * Constructor
+     */
+    function footrefs_note($name = '') {
+        $this->name = $name;
+        $this->count = 1;
+        $this->text = '';
+        $this->rendered = false;
+    }
+
+    /**
+     * Checks if the note should be rendered
+     */
+    function isReadyForRendering() {
+        return !$this->rendered && ($this->text != '');
+    }
+
+    function render($id) {
+        $noteId = 'footref-' . $id;
+        $html = '<div class="fn"><sup>' . DOKU_LF;
+
+        for ($c = 1; $c <= $this->count; $c++) {
+            $refId = $noteId . '-' . $c;
+            $html .= '<a href="#' . $refId . '" name="' . $noteId .'" class="fn_bot">';
+            $html .= $id . ')';
+            $html .= '</a>';
+            if ($c < $this->count) {
+                $html .= ',';
+            }
+            $html .= DOKU_LF;
+        }
+
+        $html .= '</sup> ' . $this->text . DOKU_LF;
+        $html .= '</div>' . DOKU_LF;
+
+        $this->rendered = true;
+
+        return $html;
     }
 }

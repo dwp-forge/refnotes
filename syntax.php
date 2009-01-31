@@ -154,7 +154,7 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
     function _handleExit() {
         if ($this->currentNote != 0) {
             $id = $this->currentNote;
-            $this->currentNote = $id;
+            $this->currentNote = 0;
 
             return array(DOKU_LEXER_EXIT, $id);
         }
@@ -170,7 +170,9 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
         $noteId = 'footref-' . $id;
         $refId = $noteId . '-' . $count;
 
-        $renderer->doc .= '<sup><a href="#' . $noteId . '" name="' . $refId . '" class="fn_top">' . $id . ')</a></sup>';
+        $renderer->doc .= '<sup><a href="#' . $noteId . '" name="' . $refId . '" class="fn_top">';
+        $renderer->doc .= $id . ')';
+        $renderer->doc .= '</a></sup>';
 
         $this->_startCapture($renderer);
     }
@@ -183,7 +185,7 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
     }
 
     /**
-     * Starts renderer output capture
+     *
      */
     function _getCore() {
         if ($this->core == NULL) {
