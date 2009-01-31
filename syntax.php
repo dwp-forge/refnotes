@@ -1,7 +1,7 @@
 <?php
 
 /**
- * FootRefs Plugin
+ * Plugin FootRefs: Reference collector/renderer
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
@@ -16,8 +16,7 @@ require_once(DOKU_PLUGIN . 'syntax.php');
 class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
 
     var $mode;
-    var $note;
-    var $notes;
+    var $core;
     var $currentNote;
     var $docBackup;
 
@@ -26,8 +25,7 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
      */
     function syntax_plugin_footrefs() {
         $this->mode = substr(get_class($this), 7);
-        $this->note = array();
-        $this->notes = 0;
+        $this->core = NULL;
         $this->currentNote = 0;
         $this->docBackup = '';
     }
@@ -42,7 +40,7 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
             'date'   => '2009-01-31',
             'name'   => 'FootRefs Plugin',
             'desc'   => 'Extended syntax for footnotes and references.',
-            'url'    => 'FIXME!!!',
+            'url'    => 'http://code.google.com/p/dwp-forge/',
         );
     }
 
@@ -86,15 +84,20 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
      * Handle the match
      */
     function handle($match, $state, $pos, &$handler) {
-        switch ($state) {
-            case DOKU_LEXER_ENTER:
-                return $this->_handleEnter($match);
-
-            case DOKU_LEXER_UNMATCHED:
-                return array($state, $match);
-
-            case DOKU_LEXER_EXIT:
-                return $this->_handleExit();
+        try {
+            switch ($state) {
+                case DOKU_LEXER_ENTER:
+                    return $this->_handleEnter($match);
+    
+                case DOKU_LEXER_UNMATCHED:
+                    return array($state, $match);
+    
+                case DOKU_LEXER_EXIT:
+                    return $this->_handleExit();
+            }
+        }
+        catch (Exception $error) {
+            msg($error->getMessage(), -1);
         }
         return false;
     }
@@ -103,21 +106,26 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
      * Create output
      */
     function render($mode, &$renderer, $data) {
-        if($mode == 'xhtml') {
-            switch ($data[0]) {
-                case DOKU_LEXER_ENTER:
-                    $this->_renderEnter($renderer, $data[1], $data[2]);
-                    break;
-
-                case DOKU_LEXER_UNMATCHED:
-                    $renderer->doc .= $renderer->_xmlEntities($data[1]);
-                    break;
-
-                case DOKU_LEXER_EXIT:
-                    $this->_renderExit($renderer, $data[1]);
-                    break;
+        try {
+            if($mode == 'xhtml') {
+                switch ($data[0]) {
+                    case DOKU_LEXER_ENTER:
+                        $this->_renderEnter($renderer, $data[1], $data[2]);
+                        break;
+    
+                    case DOKU_LEXER_UNMATCHED:
+                        $renderer->doc .= $renderer->_xmlEntities($data[1]);
+                        break;
+    
+                    case DOKU_LEXER_EXIT:
+                        $this->_renderExit($renderer, $data[1]);
+                        break;
+                }
+                return true;
             }
-            return true;
+        }
+        catch (Exception $error) {
+            msg($error->getMessage(), -1);
         }
         return false;
     }
@@ -127,11 +135,17 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
      */
     function _handleEnter($match) {
         if ($this->currentNote == 0) {
-            $id = $this->_addReference($match);
-            $count = $this->note[$id]['count'];
+            $core = $this->_getCore();
+            $id = $core->addReference($match);
+            $count = $core->getReferenceCount($id);
             $this->currentNote = $id;
+
+            return array(DOKU_LEXER_ENTER, $id, $count);
         }
-        return array(DOKU_LEXER_ENTER, $id, $count);
+        else {
+            //TODO: Check if it's possible to prevent nesting on accepts() level
+            return false; //TODO: return the match as unmatched?
+        }
     }
 
     /**
@@ -141,42 +155,12 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
         if ($this->currentNote != 0) {
             $id = $this->currentNote;
             $this->currentNote = $id;
-        }
-        return array(DOKU_LEXER_EXIT);
-    }
 
-    /**
-     * Adds a reference to the notes array. Returns a note identifier
-     */
-    function _addReference($match) {
-        if (preg_match('/\[\((\w+)>/', $match, $match) == 1) {
-            $name = $match[1];
-            $id = $this->_findNote($name);
-            if ($id != 0) {
-                ++$this->note[$id]['count'];
-            }
-            else {
-                $id = ++$this->note;
-                $this->note[$id] = array('name' => $name, 'count' => 1, 'text' => '');
-            }
+            return array(DOKU_LEXER_EXIT, $id);
         }
         else {
-            $id = ++$this->notes;
-            $this->note[$id] = array('name' => '', 'count' => 1, 'text' => '');
+            return false; //TODO: return the match as unmatched?
         }
-        return $id;
-    }
-
-    /**
-     * Finds a note identifier given it's name
-     */
-    function _findNote($name) {
-        for ($id = $this->notes; $id > 0; $id--) {
-            if ($this->note[$id]['name'] == $name) {
-                break;
-            }
-        }
-        return $id;
     }
 
     /**
@@ -201,6 +185,19 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
     /**
      * Starts renderer output capture
      */
+    function _getCore() {
+        if ($this->core == NULL) {
+            $this->core =& plugin_load('helper', 'footrefs');
+            if ($this->core == NULL) {
+                throw new Exception('Helper plugin "footrefs" is not available or invalid.');
+            }
+        }
+        return $this->core;
+    }
+
+    /**
+     * Starts renderer output capture
+     */
     function _startCapture(&$renderer) {
         $this->docBackup = $renderer->doc;
         $renderer->doc = '';
@@ -210,7 +207,7 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
      * Stops renderer output capture
      */
     function _stopCapture(&$renderer, $id) {
-        $this->note[$id]['text'] = $renderer->doc;
+        $this->_getCore()->setNoteText($id, $renderer->doc);
         $renderer->doc = $this->docBackup;
         $this->docBackup = '';
     }
