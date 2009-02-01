@@ -14,15 +14,6 @@ if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'action.php');
 
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
-    
-    var $core;
-
-    /**
-     * Constructor
-     */
-    function action_plugin_refnotes() {
-        $this->core = NULL;
-    }
 
     /**
      * Return some info
@@ -31,7 +22,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         return array(
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-01-31',
+            'date'   => '2009-02-01',
             'name'   => 'RefNotes',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
@@ -42,38 +33,18 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Register callbacks
      */
     function register(&$controller) {
-        $controller->register_hook('PARSER_HANDLER_DONE', 'BEFORE', $this, 'render');
-    }
-    
-    /**
-     * Renders notes that were not rendered yet at the very bottom of the page
-     */
-    function render(&$event, $param) {
-        try {
-            if ($event->data[0] == 'xhtml') {
-                $html = $this->_getCore()->render();
-                if ($html != '') {
-                    $event->data[1] .= '<div class="footnotes">' . DOKU_LF;
-                    $event->data[1] .= $html;
-                    $event->data[1] .= '</div>' . DOKU_LF;
-                }
-            }
-        }
-        catch (Exception $error) {
-            msg($error->getMessage(), -1);
-        }
+        $controller->register_hook('PARSER_HANDLER_DONE', 'AFTER', $this, 'renderLeftovers');
     }
 
     /**
-     *
+     * Inserts render call at the very bottom of the page
      */
-    function _getCore() {
-        if ($this->core == NULL) {
-            $this->core =& plugin_load('helper', 'refnotes');
-            if ($this->core == NULL) {
-                throw new Exception('Helper plugin "refnotes" is not available or invalid.');
-            }
-        }
-        return $this->core;
+    function renderLeftovers(&$event, $param) {
+        $config['ns'] = '*';
+        $parameters = array('refnotes_notes', $config, 5, '~~REFNOTES~~');
+        $lastCall = end($event->data->calls);
+        $pluginCall = array('plugin', $parameters, $last_call[2]);
+
+        array_push($event->data->calls, $pluginCall);
     }
 }

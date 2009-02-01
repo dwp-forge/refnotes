@@ -13,20 +13,47 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'syntax.php');
 
-class syntax_plugin_refnotes extends DokuWiki_Syntax_Plugin {
+class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
     var $mode;
+    var $syntaxEntry;
+    var $syntaxExit;
+    var $syntaxParse;
     var $core;
-    var $currentNote;
+    var $handling;
+    var $lastHiddenExit;
+    var $capturedNote;
     var $docBackup;
 
     /**
      * Constructor
      */
-    function syntax_plugin_refnotes() {
+    function syntax_plugin_refnotes_references() {
         $this->mode = substr(get_class($this), 7);
+
+        $entry = '\[\(';
+        $exit = '\)\]';
+        $name ='(?:#\d+|[[:alpha:]]\w+)';
+        $text = '.*?';
+
+        $nameMatch = '\s*' . $name .'\s*';
+        $lookaheadExit = '(?=' . $exit . ')';
+        $nameEntry = $nameMatch . $lookaheadExit;
+
+        $optionalName = $name .'?';
+        $define = '\s*' . $optionalName .'\s*>';
+        $optionalDefine = '(?:' . $define . ')?';
+        $lookaheadExit = '(?=' . $text . $exit . ')';
+        $defineEntry = $optionalDefine . $lookaheadExit;
+
+        $this->syntaxEntry = '\n?[ \t]*\n?' . $entry . '(?:' . $nameEntry . '|' . $defineEntry . ')';
+        $this->syntaxExit = $exit;
+        $this->syntaxParse = '/(\s*)' . $entry . '\s*(' . $optionalName . ').*/';
+
         $this->core = NULL;
-        $this->currentNote = 0;
+        $this->handling = false;
+        $this->lastHiddenExit = 0;
+        $this->capturedNote = 0;
         $this->docBackup = '';
     }
 
@@ -37,7 +64,7 @@ class syntax_plugin_refnotes extends DokuWiki_Syntax_Plugin {
         return array(
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-01-31',
+            'date'   => '2009-02-01',
             'name'   => 'RefNotes Plugin',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
@@ -71,33 +98,26 @@ class syntax_plugin_refnotes extends DokuWiki_Syntax_Plugin {
     }
 
     function connectTo($mode) {
-        /*TODO: $this->Lexer->addEntryPattern('<refnotes.*?>(?=.*?</refnotes>)', $mode, $this->mode);*/
-        $this->Lexer->addEntryPattern('\[\((?:\w+>)?(?=.*?\)\])', $mode, $this->mode);
+        $this->Lexer->addEntryPattern($this->syntaxEntry, $mode, $this->mode);
     }
 
     function postConnect() {
-        //TODO: $this->Lexer->addExitPattern('</refnotes>', $this->mode);
-        $this->Lexer->addExitPattern('\)\]', $this->mode);
+        $this->Lexer->addExitPattern($this->syntaxExit, $this->mode);
     }
 
     /**
      * Handle the match
      */
     function handle($match, $state, $pos, &$handler) {
-        try {
-            switch ($state) {
-                case DOKU_LEXER_ENTER:
-                    return $this->_handleEnter($match);
-    
-                case DOKU_LEXER_UNMATCHED:
-                    return array($state, $match);
-    
-                case DOKU_LEXER_EXIT:
-                    return $this->_handleExit();
-            }
-        }
-        catch (Exception $error) {
-            msg($error->getMessage(), -1);
+        switch ($state) {
+            case DOKU_LEXER_ENTER:
+                return $this->_handleEnter($match, $pos);
+
+            case DOKU_LEXER_UNMATCHED:
+                return array($state, $match);
+
+            case DOKU_LEXER_EXIT:
+                return $this->_handleExit($pos);
         }
         return false;
     }
@@ -110,15 +130,15 @@ class syntax_plugin_refnotes extends DokuWiki_Syntax_Plugin {
             if($mode == 'xhtml') {
                 switch ($data[0]) {
                     case DOKU_LEXER_ENTER:
-                        $this->_renderEnter($renderer, $data[1], $data[2]);
+                        $this->_renderEnter($renderer, $data[1]);
                         break;
-    
+
                     case DOKU_LEXER_UNMATCHED:
                         $renderer->doc .= $renderer->_xmlEntities($data[1]);
                         break;
-    
+
                     case DOKU_LEXER_EXIT:
-                        $this->_renderExit($renderer, $data[1]);
+                        $this->_renderExit($renderer);
                         break;
                 }
                 return true;
@@ -133,14 +153,16 @@ class syntax_plugin_refnotes extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    function _handleEnter($match) {
-        if ($this->currentNote == 0) {
-            $core = $this->_getCore();
-            $id = $core->addReference($match);
-            $count = $core->getReferenceCount($id);
-            $this->currentNote = $id;
+    function _handleEnter($syntax, $pos) {
+        if (!$this->handling) {
+            if (preg_match($this->syntaxParse, $syntax, $match) == 0) {
+                return false;
+            }
+            $this->handling = true;
+            $info['name'] = $match[2];
+            $info['hidden'] = $this->_isHiddenReference($match[1], $pos);
 
-            return array(DOKU_LEXER_ENTER, $id, $count);
+            return array(DOKU_LEXER_ENTER, $info);
         }
         else {
             //TODO: Check if it's possible to prevent nesting on accepts() level
@@ -151,12 +173,14 @@ class syntax_plugin_refnotes extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    function _handleExit() {
-        if ($this->currentNote != 0) {
-            $id = $this->currentNote;
-            $this->currentNote = 0;
+    function _handleExit($pos) {
+        if ($this->handling) {
+            $this->handling = false;
 
-            return array(DOKU_LEXER_EXIT, $id);
+            if ($this->lastHiddenExit > 0) {
+                $this->lastHiddenExit = $pos;
+            }
+            return array(DOKU_LEXER_EXIT);
         }
         else {
             return false; //TODO: return the match as unmatched?
@@ -164,24 +188,43 @@ class syntax_plugin_refnotes extends DokuWiki_Syntax_Plugin {
     }
 
     /**
+     *
+     */
+    function _isHiddenReference($space, $pos) {
+        $newLines = substr_count($space, "\n");
+        switch ($newLines) {
+            case 0:
+            case 1:
+                $entry = $this->lastHiddenExit + strlen($this->syntaxExit);
+                if ($entry < $pos) {
+                    $this->lastHiddenExit = 0;
+                }
+                break;
+
+            case 2:
+                $this->lastHiddenExit = $pos;
+                break;
+        }
+        return $this->lastHiddenExit > 0;
+    }
+
+    /**
      * Renders reference link and starts renderer output capture
      */
-    function _renderEnter(&$renderer, $id, $count) {
-        $noteId = 'refnote-' . $id;
-        $refId = $noteId . '-' . $count;
-
-        $renderer->doc .= '<sup><a href="#' . $noteId . '" name="' . $refId . '" class="fn_top">';
-        $renderer->doc .= $id . ')';
-        $renderer->doc .= '</a></sup>';
-
-        $this->_startCapture($renderer);
+    function _renderEnter(&$renderer, $info) {
+        $core = $this->_getCore();
+        $id = $core->addReference($info['name'], $info['hidden']);
+        if (!$info['hidden']) {
+            $renderer->doc .= $core->renderReference($id);
+        }
+        $this->_startCapture($renderer, $id);
     }
 
     /**
      * Stops renderer output capture
      */
-    function _renderExit(&$renderer, $id) {
-        $this->_stopCapture($renderer, $id);
+    function _renderExit(&$renderer) {
+        $this->_stopCapture($renderer);
     }
 
     /**
@@ -200,7 +243,8 @@ class syntax_plugin_refnotes extends DokuWiki_Syntax_Plugin {
     /**
      * Starts renderer output capture
      */
-    function _startCapture(&$renderer) {
+    function _startCapture(&$renderer, $id) {
+        $this->capturedNote = $id;
         $this->docBackup = $renderer->doc;
         $renderer->doc = '';
     }
@@ -208,9 +252,12 @@ class syntax_plugin_refnotes extends DokuWiki_Syntax_Plugin {
     /**
      * Stops renderer output capture
      */
-    function _stopCapture(&$renderer, $id) {
-        $this->_getCore()->setNoteText($id, $renderer->doc);
+    function _stopCapture(&$renderer) {
+        if (trim($renderer->doc) != '') {
+            $this->_getCore()->setNoteText($this->capturedNote, $renderer->doc);
+        }
         $renderer->doc = $this->docBackup;
+        $this->capturedNote = 0;
         $this->docBackup = '';
     }
 }

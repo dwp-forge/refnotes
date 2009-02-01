@@ -33,7 +33,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
         return array(
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-01-31',
+            'date'   => '2009-02-01',
             'name'   => 'RefNotes Plugin',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
@@ -48,18 +48,6 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     }
 
     /**
-     * Returns number of references to a given note
-     */
-    function getReferenceCount($id) {
-        if (array_key_exists($id, $this->note)) {
-            return $this->note[$id]->count;
-        }
-        else {
-            return 0;
-        }
-    }
-
-    /**
      * Sets text of a given note
      */
     function setNoteText($id, $text) {
@@ -71,33 +59,44 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      * Adds a reference to the notes array. Returns a note identifier
      */
-    function addReference($match) {
-        if (preg_match('/\[\((\w+)>/', $match, $match) == 1) {
-            $name = $match[1];
+    function addReference($name, $hidden) {
+        $id = 0;
+        if ($name != '') {
             $id = $this->_findNote($name);
-            if ($id != 0) {
-                ++$this->note[$id]->count;
-            }
-            else {
-                $id = ++$this->notes;
-                $this->note[$id] = new refnotes_note($name);
-            }
         }
-        else {
+        if ($id == 0) {
             $id = ++$this->notes;
-            $this->note[$id] = new refnotes_note();
+            $this->note[$id] = new refnotes_note($id, $name);
+        }
+        if (!$hidden) {
+            $this->note[$id]->addReference();
         }
         return $id;
     }
 
     /**
-     * Renders notes
+     *
      */
-    function render() {
+    function renderReference($id) {
+        if (array_key_exists($id, $this->note)) {
+            $noteId = $this->note[$id]->getAnchorId();
+            $refId = $this->note[$id]->getAnchorId($this->note[$id]->count);
+
+            $html = '<sup><a href="#' . $noteId . '" name="' . $refId . '" class="fn_top">';
+            $html .= $id . ')';
+            $html .= '</a></sup>';
+        }
+        return $html;
+    }
+
+    /**
+     *
+     */
+    function renderNotes() {
         $html = '';
-        foreach ($this->note as $id => &$note) {
+        foreach ($this->note as &$note) {
             if ($note->isReadyForRendering()) {
-                $html .= $note->render($id);
+                $html .= $note->render();
             }
         }
         return $html;
@@ -118,6 +117,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
 
 class refnotes_note {
 
+    var $id;
     var $name;
     var $count;
     var $text;
@@ -126,28 +126,50 @@ class refnotes_note {
     /**
      * Constructor
      */
-    function refnotes_note($name = '') {
+    function refnotes_note($id, $name) {
+        $this->id = $id;
         $this->name = $name;
-        $this->count = 1;
+        $this->count = 0;
         $this->text = '';
         $this->rendered = false;
+    }
+
+    /**
+     *
+     */
+    function addReference() {
+        ++$this->count;
+    }
+
+    /**
+     *
+     */
+    function getAnchorId($count = 0) {
+        $result = 'refnote-' . $this->id;
+        if ($count > 0) {
+            $result .= '-' . $count;
+        }
+        return $result;
     }
 
     /**
      * Checks if the note should be rendered
      */
     function isReadyForRendering() {
-        return !$this->rendered && ($this->text != '');
+        return !$this->rendered && ($this->count > 0) && ($this->text != '');
     }
 
-    function render($id) {
-        $noteId = 'refnote-' . $id;
+    /**
+     *
+     */
+    function render() {
+        $noteId = $this->getAnchorId();
         $html = '<div class="fn"><sup>' . DOKU_LF;
 
         for ($c = 1; $c <= $this->count; $c++) {
-            $refId = $noteId . '-' . $c;
+            $refId = $this->getAnchorId($c);
             $html .= '<a href="#' . $refId . '" name="' . $noteId .'" class="fn_bot">';
-            $html .= $id . ')';
+            $html .= $this->id . ')';
             $html .= '</a>';
             if ($c < $this->count) {
                 $html .= ',';
