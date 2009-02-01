@@ -80,7 +80,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     function renderReference($id) {
         if (array_key_exists($id, $this->note)) {
             $noteId = $this->note[$id]->getAnchorId();
-            $refId = $this->note[$id]->getAnchorId($this->note[$id]->count);
+            $refId = $this->note[$id]->getAnchorId($this->note[$id]->references);
 
             $html = '<sup><a href="#' . $noteId . '" name="' . $refId . '" class="fn_top">';
             $html .= $id . ')';
@@ -119,7 +119,7 @@ class refnotes_note {
 
     var $id;
     var $name;
-    var $count;
+    var $references;
     var $text;
     var $rendered;
 
@@ -128,8 +128,13 @@ class refnotes_note {
      */
     function refnotes_note($id, $name) {
         $this->id = $id;
-        $this->name = $name;
-        $this->count = 0;
+        if ($name != '') {
+            $this->name = $name;
+        }
+        else {
+            $this->name = '#' . $id;
+        }
+        $this->references = 0;
         $this->text = '';
         $this->rendered = false;
     }
@@ -138,16 +143,16 @@ class refnotes_note {
      *
      */
     function addReference() {
-        ++$this->count;
+        ++$this->references;
     }
 
     /**
      *
      */
-    function getAnchorId($count = 0) {
-        $result = 'refnote-' . $this->id;
-        if ($count > 0) {
-            $result .= '-' . $count;
+    function getAnchorId($reference = 0) {
+        $result = 'refnote-n' . $this->id;
+        if ($reference > 0) {
+            $result .= '-r' . $reference;
         }
         return $result;
     }
@@ -156,7 +161,7 @@ class refnotes_note {
      * Checks if the note should be rendered
      */
     function isReadyForRendering() {
-        return !$this->rendered && ($this->count > 0) && ($this->text != '');
+        return !$this->rendered && ($this->references > 0) && ($this->text != '');
     }
 
     /**
@@ -166,12 +171,14 @@ class refnotes_note {
         $noteId = $this->getAnchorId();
         $html = '<div class="fn"><sup>' . DOKU_LF;
 
-        for ($c = 1; $c <= $this->count; $c++) {
+        for ($c = 1; $c <= $this->references; $c++) {
             $refId = $this->getAnchorId($c);
+
             $html .= '<a href="#' . $refId . '" name="' . $noteId .'" class="fn_bot">';
             $html .= $this->id . ')';
             $html .= '</a>';
-            if ($c < $this->count) {
+
+            if ($c < $this->references) {
                 $html .= ',';
             }
             $html .= DOKU_LF;
