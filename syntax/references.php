@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin FootRefs: Reference collector/renderer
+ * Plugin RefNotes: Reference collector/renderer
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
@@ -13,7 +13,7 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'syntax.php');
 
-class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
+class syntax_plugin_refnotes extends DokuWiki_Syntax_Plugin {
 
     var $mode;
     var $core;
@@ -23,7 +23,7 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
     /**
      * Constructor
      */
-    function syntax_plugin_footrefs() {
+    function syntax_plugin_refnotes() {
         $this->mode = substr(get_class($this), 7);
         $this->core = NULL;
         $this->currentNote = 0;
@@ -38,7 +38,7 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
             'date'   => '2009-01-31',
-            'name'   => 'FootRefs Plugin',
+            'name'   => 'RefNotes Plugin',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
         );
@@ -71,12 +71,12 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
     }
 
     function connectTo($mode) {
-        /*TODO: $this->Lexer->addEntryPattern('<footrefs.*?>(?=.*?</footrefs>)', $mode, $this->mode);*/
+        /*TODO: $this->Lexer->addEntryPattern('<refnotes.*?>(?=.*?</refnotes>)', $mode, $this->mode);*/
         $this->Lexer->addEntryPattern('\[\((?:\w+>)?(?=.*?\)\])', $mode, $this->mode);
     }
 
     function postConnect() {
-        //TODO: $this->Lexer->addExitPattern('</footrefs>', $this->mode);
+        //TODO: $this->Lexer->addExitPattern('</refnotes>', $this->mode);
         $this->Lexer->addExitPattern('\)\]', $this->mode);
     }
 
@@ -167,7 +167,7 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
      * Renders reference link and starts renderer output capture
      */
     function _renderEnter(&$renderer, $id, $count) {
-        $noteId = 'footref-' . $id;
+        $noteId = 'refnote-' . $id;
         $refId = $noteId . '-' . $count;
 
         $renderer->doc .= '<sup><a href="#' . $noteId . '" name="' . $refId . '" class="fn_top">';
@@ -189,9 +189,9 @@ class syntax_plugin_footrefs extends DokuWiki_Syntax_Plugin {
      */
     function _getCore() {
         if ($this->core == NULL) {
-            $this->core =& plugin_load('helper', 'footrefs');
+            $this->core =& plugin_load('helper', 'refnotes');
             if ($this->core == NULL) {
-                throw new Exception('Helper plugin "footrefs" is not available or invalid.');
+                throw new Exception('Helper plugin "refnotes" is not available or invalid.');
             }
         }
         return $this->core;

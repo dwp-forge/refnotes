@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin FootRefs: Notes list
+ * Plugin RefNotes: Notes list
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
@@ -13,7 +13,7 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_INC . 'inc/plugin.php');
 
-class helper_plugin_footrefs extends DokuWiki_Plugin {
+class helper_plugin_refnotes extends DokuWiki_Plugin {
 
     var $note;
     var $notes;
@@ -21,7 +21,7 @@ class helper_plugin_footrefs extends DokuWiki_Plugin {
     /**
      * Constructor
      */
-    function helper_plugin_footrefs() {
+    function helper_plugin_refnotes() {
         $this->note = array();
         $this->notes = 0;
     }
@@ -34,7 +34,7 @@ class helper_plugin_footrefs extends DokuWiki_Plugin {
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
             'date'   => '2009-01-31',
-            'name'   => 'FootRefs Plugin',
+            'name'   => 'RefNotes Plugin',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
         );
@@ -80,12 +80,12 @@ class helper_plugin_footrefs extends DokuWiki_Plugin {
             }
             else {
                 $id = ++$this->notes;
-                $this->note[$id] = new footrefs_note($name);
+                $this->note[$id] = new refnotes_note($name);
             }
         }
         else {
             $id = ++$this->notes;
-            $this->note[$id] = new footrefs_note();
+            $this->note[$id] = new refnotes_note();
         }
         return $id;
     }
@@ -116,7 +116,7 @@ class helper_plugin_footrefs extends DokuWiki_Plugin {
     }
 }
 
-class footrefs_note {
+class refnotes_note {
 
     var $name;
     var $count;
@@ -126,7 +126,7 @@ class footrefs_note {
     /**
      * Constructor
      */
-    function footrefs_note($name = '') {
+    function refnotes_note($name = '') {
         $this->name = $name;
         $this->count = 1;
         $this->text = '';
@@ -141,7 +141,7 @@ class footrefs_note {
     }
 
     function render($id) {
-        $noteId = 'footref-' . $id;
+        $noteId = 'refnote-' . $id;
         $html = '<div class="fn"><sup>' . DOKU_LF;
 
         for ($c = 1; $c <= $this->count; $c++) {

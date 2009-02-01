@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin FootRefs: Default renderer
+ * Plugin RefNotes: Default renderer
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
@@ -13,14 +13,14 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'action.php');
 
-class action_plugin_footrefs extends DokuWiki_Action_Plugin {
+class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     
     var $core;
 
     /**
      * Constructor
      */
-    function action_plugin_footrefs() {
+    function action_plugin_refnotes() {
         $this->core = NULL;
     }
 
@@ -32,7 +32,7 @@ class action_plugin_footrefs extends DokuWiki_Action_Plugin {
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
             'date'   => '2009-01-31',
-            'name'   => 'FootRefs',
+            'name'   => 'RefNotes',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
         );
@@ -42,7 +42,7 @@ class action_plugin_footrefs extends DokuWiki_Action_Plugin {
      * Register callbacks
      */
     function register(&$controller) {
-        $controller->register_hook('RENDERER_CONTENT_POSTPROCESS', 'AFTER', $this, 'render');
+        $controller->register_hook('PARSER_HANDLER_DONE', 'BEFORE', $this, 'render');
     }
     
     /**
@@ -69,9 +69,9 @@ class action_plugin_footrefs extends DokuWiki_Action_Plugin {
      */
     function _getCore() {
         if ($this->core == NULL) {
-            $this->core =& plugin_load('helper', 'footrefs');
+            $this->core =& plugin_load('helper', 'refnotes');
             if ($this->core == NULL) {
-                throw new Exception('Helper plugin "footrefs" is not available or invalid.');
+                throw new Exception('Helper plugin "refnotes" is not available or invalid.');
             }
         }
         return $this->core;
