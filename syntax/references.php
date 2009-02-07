@@ -31,29 +31,31 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     function syntax_plugin_refnotes_references() {
         $this->mode = substr(get_class($this), 7);
 
+        $newLine = '(?:\n?[ \t]*\n)?';
         $entry = '\[\(';
         $exit = '\)\]';
-        $name ='(?:#\d+|[[:alpha:]]\w+)';
+        $namespace ='(?:(?:[[:alpha:]]\w*)?:)*';
+        $name ='(?:#\d+|[[:alpha:]]\w*)';
         $text = '.*?';
 
-        $nameMatch = '\s*' . $name .'\s*';
+        $nameMatch = '\s*' . $namespace . $name .'\s*';
         $lookaheadExit = '(?=' . $exit . ')';
         $nameEntry = $nameMatch . $lookaheadExit;
 
         $optionalName = $name .'?';
-        $define = '\s*' . $optionalName .'\s*>';
+        $define = '\s*' . $namespace . $optionalName .'\s*>';
         $optionalDefine = '(?:' . $define . ')?';
         $lookaheadExit = '(?=' . $text . $exit . ')';
         $defineEntry = $optionalDefine . $lookaheadExit;
 
-        $this->syntaxEntry = '\n?[ \t]*\n?' . $entry . '(?:' . $nameEntry . '|' . $defineEntry . ')';
+        $this->syntaxEntry = $newLine . $entry . '(?:' . $nameEntry . '|' . $defineEntry . ')';
         $this->syntaxExit = $exit;
-        $this->syntaxParse = '/(\s*)' . $entry . '\s*(' . $optionalName . ').*/';
+        $this->syntaxParse = '/(\s*)' . $entry . '\s*(' . $namespace . $optionalName . ').*/';
 
         $this->core = NULL;
         $this->handling = false;
         $this->lastHiddenExit = 0;
-        $this->capturedNote = 0;
+        $this->capturedNote = NULL;
         $this->docBackup = '';
     }
 
@@ -64,7 +66,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         return array(
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-02-01',
+            'date'   => '2009-02-07',
             'name'   => 'RefNotes Plugin',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
@@ -213,11 +215,11 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     function _renderEnter(&$renderer, $info) {
         $core = $this->_getCore();
-        $id = $core->addReference($info['name'], $info['hidden']);
-        if (!$info['hidden']) {
-            $renderer->doc .= $core->renderReference($id);
+        $note = $core->addReference($info['name'], $info['hidden']);
+        if (($note != NULL) && !$info['hidden']) {
+            $renderer->doc .= $note->renderReference();
         }
-        $this->_startCapture($renderer, $id);
+        $this->_startCapture($renderer, $note);
     }
 
     /**
@@ -243,8 +245,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      * Starts renderer output capture
      */
-    function _startCapture(&$renderer, $id) {
-        $this->capturedNote = $id;
+    function _startCapture(&$renderer, $note) {
+        $this->capturedNote = $note;
         $this->docBackup = $renderer->doc;
         $renderer->doc = '';
     }
@@ -253,11 +255,12 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Stops renderer output capture
      */
     function _stopCapture(&$renderer) {
-        if (trim($renderer->doc) != '') {
-            $this->_getCore()->setNoteText($this->capturedNote, $renderer->doc);
+        $text = trim($renderer->doc);
+        if ($text != '') {
+            $this->capturedNote->setText($text);
         }
         $renderer->doc = $this->docBackup;
-        $this->capturedNote = 0;
+        $this->capturedNote = NULL;
         $this->docBackup = '';
     }
 }

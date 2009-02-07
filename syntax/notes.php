@@ -33,7 +33,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
         return array(
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-02-01',
+            'date'   => '2009-02-07',
             'name'   => 'RefNotes Plugin',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
@@ -123,7 +123,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      * Stops renderer output capture
      */
     function _render(&$renderer, $config) {
-        $html = $this->_getCore()->renderNotes();
+        $html = $this->_getCore()->renderNotes($config['ns']);
         if ($html != '') {
             $renderer->doc .= '<div class="footnotes">' . DOKU_LF;
             $renderer->doc .= $html;

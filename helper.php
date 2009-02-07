@@ -15,15 +15,13 @@ require_once(DOKU_INC . 'inc/plugin.php');
 
 class helper_plugin_refnotes extends DokuWiki_Plugin {
 
-    var $note;
-    var $notes;
+    var $namespace;
 
     /**
      * Constructor
      */
     function helper_plugin_refnotes() {
-        $this->note = array();
-        $this->notes = 0;
+        $this->namespace = array();
     }
 
     /**
@@ -33,7 +31,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
         return array(
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-02-01',
+            'date'   => '2009-02-07',
             'name'   => 'RefNotes Plugin',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
@@ -48,45 +46,156 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     }
 
     /**
-     * Sets text of a given note
-     */
-    function setNoteText($id, $text) {
-        if (array_key_exists($id, $this->note)) {
-            $this->note[$id]->text = $text;
-        }
-    }
-
-    /**
-     * Adds a reference to the notes array. Returns a note identifier
+     * Adds a reference to the notes array. Returns a note
      */
     function addReference($name, $hidden) {
-        $id = 0;
-        if ($name != '') {
-            $id = $this->_findNote($name);
+        list($namespaceName, $noteName) = $this->_parseName($name);
+        $namespace = $this->_findNamespace($namespaceName);
+        if ($namespace == NULL) {
+            $this->namespace[] = new refnotes_namespace($namespaceName);
+            $namespace = end($this->namespace);
         }
-        if ($id == 0) {
-            $id = ++$this->notes;
-            $this->note[$id] = new refnotes_note($id, $name);
-        }
-        if (!$hidden) {
-            $this->note[$id]->addReference();
-        }
-        return $id;
+        return $namespace->addReference($noteName, $hidden);
     }
 
     /**
      *
      */
-    function renderReference($id) {
-        if (array_key_exists($id, $this->note)) {
-            $noteId = $this->note[$id]->getAnchorId();
-            $refId = $this->note[$id]->getAnchorId($this->note[$id]->references);
-
-            $html = '<sup><a href="#' . $noteId . '" name="' . $refId . '" class="fn_top">';
-            $html .= $id . ')';
-            $html .= '</a></sup>';
+    function renderNotes($name) {
+        $namespaceName = $this->_canonizeNamespace($name);
+        $namespace = $this->_findNamespace($namespaceName);
+        $html = '';
+        if ($namespace != NULL) {
+            $html = $namespace->renderNotes();
         }
         return $html;
+    }
+
+    /**
+     * Splits full note name into namespace and name components
+     */
+    function _parseName($name) {
+        $pos = strrpos($name, ':');
+        if ($pos !== false) {
+            $namespace = $this->_canonizeNamespace(substr($name, 0, $pos));
+            $name = substr($name, $pos + 1);
+        }
+        else {
+            $namespace = ':';
+        }
+        return array($namespace, $name);
+    }
+
+    /**
+     * Returns canonic name for a namespace
+     */
+    function _canonizeNamespace($name) {
+        return preg_replace('/:{2,}/', ':', ':' . $name . ':');
+    }
+
+    /**
+     * Finds a namespace given it's name
+     */
+    function _findNamespace($name) {
+        $result = NULL;
+        foreach ($this->namespace as $namespace) {
+            if ($namespace->name == $name) {
+                $result = $namespace;
+                break;
+            }
+        }
+        return $result;
+    }
+}
+
+class refnotes_namespace {
+
+    var $name;
+    var $scope;
+
+    /**
+     * Constructor
+     */
+    function refnotes_namespace($name) {
+        $this->name = $name;
+        $this->scope[] = new refnotes_scope($this, 1);
+    }
+
+    /**
+     *
+     */
+    function getName() {
+        return $this->name;
+    }
+
+    /**
+     * Adds a reference to the current scope. Returns a note
+     */
+    function addReference($name, $hidden) {
+        $scope = end($this->scope);
+        return $scope->addReference($name, $hidden);
+    }
+
+    /**
+     *
+     */
+    function renderNotes() {
+        $scope = end($this->scope);
+        return $scope->renderNotes();
+    }
+}
+
+class refnotes_scope {
+
+    var $namespace;
+    var $id;
+    var $note;
+    var $notes;
+    var $rendered;
+
+    /**
+     * Constructor
+     */
+    function refnotes_scope($namespace, $id) {
+        $this->namespace = $namespace;
+        $this->id = $id;
+        $this->note = array();
+        $this->notes = 0;
+        $this->rendered = false;
+    }
+
+    /**
+     *
+     */
+    function getName() {
+        return $this->namespace->getName() . $this->id;
+    }
+
+    /**
+     * Adds a reference to the notes array. Returns a note
+     */
+    function addReference($name, $hidden) {
+        $note = NULL;
+        if (preg_match('/#(\d+)/', $name, $match) == 1) {
+            $id = intval($match[1]);
+            if (array_key_exists($id, $this->note)) {
+                $note = $this->note[$id];
+            }
+        }
+        else {
+            if ($name != '') {
+                $note = $this->_findNote($name);
+            }
+            if ($note == NULL) {
+                $id = ++$this->notes;
+                $this->note[$id] = new refnotes_note($this, $id, $name);
+                $note = $this->note[$id];
+            }
+        }
+        if (($note != NULL) && !$hidden) {
+            $note->addReference();
+        }
+        return $note;
     }
 
     /**
@@ -94,7 +203,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      */
     function renderNotes() {
         $html = '';
-        foreach ($this->note as &$note) {
+        foreach ($this->note as $note) {
             if ($note->isReadyForRendering()) {
                 $html .= $note->render();
             }
@@ -103,20 +212,23 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     }
 
     /**
-     * Finds a note identifier given it's name
+     * Finds a note given it's name
      */
     function _findNote($name) {
-        for ($id = $this->notes; $id > 0; $id--) {
-            if ($this->note[$id]->name == $name) {
+        $result = NULL;
+        foreach ($this->note as $note) {
+            if ($note->name == $name) {
+                $result = $note;
                 break;
             }
         }
-        return $id;
+        return $result;
     }
 }
 
 class refnotes_note {
 
+    var $scope;
     var $id;
     var $name;
     var $references;
@@ -126,7 +238,8 @@ class refnotes_note {
     /**
      * Constructor
      */
-    function refnotes_note($id, $name) {
+    function refnotes_note($scope, $id, $name) {
+        $this->scope = $scope;
         $this->id = $id;
         if ($name != '') {
             $this->name = $name;
@@ -149,10 +262,19 @@ class refnotes_note {
     /**
      *
      */
-    function getAnchorId($reference = 0) {
-        $result = 'refnote-n' . $this->id;
+    function setText($text) {
+        $this->text = $text;
+    }
+
+    /**
+     *
+     */
+    function getAnchorName($reference = 0) {
+        $result = 'refnotes';
+        $result .= $this->scope->getName();
+        $result .= ':note' . $this->id;
         if ($reference > 0) {
-            $result .= '-r' . $reference;
+            $result .= ':ref' . $reference;
         }
         return $result;
     }
@@ -167,14 +289,28 @@ class refnotes_note {
     /**
      *
      */
+    function renderReference() {
+        $noteName = $this->getAnchorName();
+        $refName = $this->getAnchorName($this->references);
+
+        $html = '<sup><a href="#' . $noteName . '" name="' . $refName . '" class="fn_top">';
+        $html .= $this->id . ')';
+        $html .= '</a></sup>';
+
+        return $html;
+    }
+
+    /**
+     *
+     */
     function render() {
-        $noteId = $this->getAnchorId();
+        $noteName = $this->getAnchorName();
         $html = '<div class="fn"><sup>' . DOKU_LF;
 
         for ($c = 1; $c <= $this->references; $c++) {
-            $refId = $this->getAnchorId($c);
+            $refName = $this->getAnchorName($c);
 
-            $html .= '<a href="#' . $refId . '" name="' . $noteId .'" class="fn_bot">';
+            $html .= '<a href="#' . $refName . '" name="' . $noteName .'" class="fn_bot">';
             $html .= $this->id . ')';
             $html .= '</a>';
 
