@@ -139,9 +139,21 @@ class refnotes_namespace {
     /**
      *
      */
-    function renderNotes() {
+    function renderNotes($limit = '') {
         $scope = end($this->scope);
-        return $scope->renderNotes();
+        if (preg_match('/(\/?)(\d+)/', $limit, $match) == 1) {
+            if ($match[1] != '') {
+                $devider = intval($match[2]);
+                $limit = ceil($scope->getRenderableCount() / $devider);
+            }
+            else {
+                $limit = intval($match[2]);
+            }
+        }
+        else {
+            $limit = 0;
+        }
+        return $scope->renderNotes($limit);
     }
 }
 
@@ -151,7 +163,6 @@ class refnotes_scope {
     var $id;
     var $note;
     var $notes;
-    var $rendered;
 
     /**
      * Constructor
@@ -161,7 +172,6 @@ class refnotes_scope {
         $this->id = $id;
         $this->note = array();
         $this->notes = 0;
-        $this->rendered = false;
     }
 
     /**
@@ -169,6 +179,19 @@ class refnotes_scope {
      */
     function getName() {
         return $this->namespace->getName() . $this->id;
+    }
+
+    /**
+     * Returns the number of renderable notes in the scope
+     */
+    function getRenderableCount() {
+        $result = 0;
+        foreach ($this->note as $note) {
+            if ($note->isRenderable()) {
+                ++$result;
+            }
+        }
+        return $result;
     }
 
     /**
@@ -201,11 +224,15 @@ class refnotes_scope {
     /**
      *
      */
-    function renderNotes() {
+    function renderNotes($limit) {
         $html = '';
+        $count = 0;
         foreach ($this->note as $note) {
-            if ($note->isReadyForRendering()) {
+            if ($note->isRenderable()) {
                 $html .= $note->render();
+                if (($limit != 0) && (++$count == $limit)) {
+                    break;
+                }
             }
         }
         return $html;
@@ -267,6 +294,13 @@ class refnotes_note {
     }
 
     /**
+     * Checks if the note should be rendered
+     */
+    function isRenderable() {
+        return !$this->rendered && ($this->references > 0) && ($this->text != '');
+    }
+
+    /**
      *
      */
     function getAnchorName($reference = 0) {
@@ -277,13 +311,6 @@ class refnotes_note {
             $result .= ':ref' . $reference;
         }
         return $result;
-    }
-
-    /**
-     * Checks if the note should be rendered
-     */
-    function isReadyForRendering() {
-        return !$this->rendered && ($this->references > 0) && ($this->text != '');
     }
 
     /**
