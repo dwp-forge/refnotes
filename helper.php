@@ -111,14 +111,18 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
 class refnotes_namespace {
 
     var $name;
+    var $style;
     var $scope;
+    var $newScope;
 
     /**
      * Constructor
      */
     function refnotes_namespace($name) {
         $this->name = $name;
-        $this->scope[] = new refnotes_scope($this, 1);
+        $this->style = array();
+        $this->scope = array();
+        $this->newScope = true;
     }
 
     /**
@@ -129,9 +133,25 @@ class refnotes_namespace {
     }
 
     /**
+     *
+     */
+    function getStyle($property) {
+        $result = '';
+        if (array_key_exists($property, $this->style)) {
+            $result = $this->style[$property];
+        }
+        return $result;
+    }
+
+    /**
      * Adds a reference to the current scope. Returns a note
      */
     function addReference($name, $hidden) {
+        if ($this->newScope) {
+            $id = count($this->scope) + 1;
+            $this->scope[] = new refnotes_scope($this, $id);
+            $this->newScope = false;
+        }
         $scope = end($this->scope);
         return $scope->addReference($name, $hidden);
     }
@@ -163,6 +183,7 @@ class refnotes_scope {
     var $id;
     var $note;
     var $notes;
+    var $references;
 
     /**
      * Constructor
@@ -172,6 +193,7 @@ class refnotes_scope {
         $this->id = $id;
         $this->note = array();
         $this->notes = 0;
+        $this->references = 0;
     }
 
     /**
@@ -211,12 +233,12 @@ class refnotes_scope {
             }
             if ($note == NULL) {
                 $id = ++$this->notes;
-                $this->note[$id] = new refnotes_note($this, $id, $name);
-                $note = $this->note[$id];
+                $note = new refnotes_note($this, $id, $name);
+                $this->note[$id] = $note;
             }
         }
         if (($note != NULL) && !$hidden) {
-            $note->addReference();
+            $note->addReference(++$this->references);
         }
         return $note;
     }
@@ -282,7 +304,7 @@ class refnotes_note {
     /**
      *
      */
-    function addReference() {
+    function addReference($referenceId) {
         ++$this->references;
     }
 
