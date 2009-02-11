@@ -280,6 +280,7 @@ class refnotes_note {
     var $scope;
     var $id;
     var $name;
+    var $reference;
     var $references;
     var $text;
     var $rendered;
@@ -296,6 +297,7 @@ class refnotes_note {
         else {
             $this->name = '#' . $id;
         }
+        $this->reference = array();
         $this->references = 0;
         $this->text = '';
         $this->rendered = false;
@@ -305,7 +307,7 @@ class refnotes_note {
      *
      */
     function addReference($referenceId) {
-        ++$this->references;
+        $this->reference[++$this->references] = $referenceId;
     }
 
     /**
@@ -343,7 +345,8 @@ class refnotes_note {
         $refName = $this->getAnchorName($this->references);
 
         $html = '<sup><a href="#' . $noteName . '" name="' . $refName . '" class="fn_top">';
-        $html .= $this->id . ')';
+        //$html .= $this->id . ')';
+        $html .= end($this->reference) . ')';
         $html .= '</a></sup>';
 
         return $html;
@@ -356,14 +359,15 @@ class refnotes_note {
         $noteName = $this->getAnchorName();
         $html = '<div class="fn"><sup>' . DOKU_LF;
 
-        for ($c = 1; $c <= $this->references; $c++) {
-            $refName = $this->getAnchorName($c);
+        for ($r = 1; $r <= $this->references; $r++) {
+            $refName = $this->getAnchorName($r);
 
             $html .= '<a href="#' . $refName . '" name="' . $noteName .'" class="fn_bot">';
-            $html .= $this->id . ')';
+            //$html .= $this->id . ')';
+            $html .= $this->reference[$r] . ')';
             $html .= '</a>';
 
-            if ($c < $this->references) {
+            if ($r < $this->references) {
                 $html .= ',';
             }
             $html .= DOKU_LF;
