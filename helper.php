@@ -31,7 +31,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
         return array(
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-02-07',
+            'date'   => '2009-02-15',
             'name'   => 'RefNotes Plugin',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
@@ -327,7 +327,72 @@ class refnotes_note {
     /**
      *
      */
-    function getAnchorName($reference = 0) {
+    function renderReference() {
+        $noteName = $this->_renderAnchorName();
+        $referenceName = $this->_renderAnchorName($this->references);
+        list($baseOpen, $baseClose) = $this->_renderReferenceBase();
+        list($formatOpen, $formatClose) = $this->_renderReferenceFormat();
+
+        $html = $baseOpen . '<a href="#' . $noteName . '" name="' . $referenceName . '" class="fn_top">';
+        $html .= $formatOpen . $this->_renderReferenceId() . $formatClose;
+        $html .= '</a>' . $baseClose;
+
+        return $html;
+    }
+
+    /**
+     *
+     */
+    function render() {
+        $noteName = $this->_renderAnchorName();
+        $backRefFormat = $this->_getStyle('back-ref-format');
+        list($formatOpen, $formatClose) = $this->_renderNoteIdFormat();
+
+        $html = '<div class="' . $this->_renderNoteClass() . '">' . DOKU_LF;
+
+        if (($backRefFormat != 'note') && ($backRefFormat != '')) {
+            list($baseOpen, $baseClose) = $this->_renderNoteIdBase();
+
+            $html .= $baseOpen . '<a name="' . $noteName .'" class="fn_bot">';
+            $html .= $formatOpen . $this->_renderNoteId() . $formatClose;
+            $html .= '</a>' . $baseClose . DOKU_LF;
+
+            $formatOpen = '';
+            $formatClose = '';
+        }
+
+        if ($backRefFormat != 'none') {
+            $separator = $this->_renderBackRefSeparator();
+            list($baseOpen, $baseClose) = $this->_renderBackRefBase();
+
+            $html .= $baseOpen;
+
+            for ($r = 1; $r <= $this->references; $r++) {
+                $referenceName = $this->_renderAnchorName($r);
+
+                $html .= '<a href="#' . $referenceName . '" name="' . $noteName .'" class="fn_bot">';
+                $html .= $formatOpen . $this->_renderBackRefId($r, $backRefFormat) . $formatClose;
+                $html .= '</a>';
+
+                if ($r < $this->references) {
+                    $html .= $separator . DOKU_LF;
+                }
+            }
+            $html .= $baseClose . DOKU_LF;
+        }
+
+        $html .=  $this->text . DOKU_LF;
+        $html .= '</div>' . DOKU_LF;
+
+        $this->rendered = true;
+
+        return $html;
+    }
+
+    /**
+     *
+     */
+    function _renderAnchorName($reference = 0) {
         $result = 'refnotes';
         $result .= $this->scope->getName();
         $result .= ':note' . $this->id;
@@ -340,44 +405,251 @@ class refnotes_note {
     /**
      *
      */
-    function renderReference() {
-        $noteName = $this->getAnchorName();
-        $refName = $this->getAnchorName($this->references);
+    function _renderReferenceBase() {
+        return $this->_renderBase($this->_getStyle('reference-base'));
+    }
 
-        $html = '<sup><a href="#' . $noteName . '" name="' . $refName . '" class="fn_top">';
-        //$html .= $this->id . ')';
-        $html .= end($this->reference) . ')';
-        $html .= '</a></sup>';
+    /**
+     *
+     */
+    function _renderReferenceFormat() {
+        return $this->_renderFormat($this->_getStyle('reference-format'));
+    }
 
+    /**
+     *
+     */
+    function _renderReferenceId() {
+        $idStyle = $this->_getStyle('refnote-id');
+        if ($idStyle == 'name') {
+            $html = $this->name;
+        }
+        else {
+            switch ($this->_getStyle('multi-ref-id')) {
+                case 'note':
+                    $id = $this->id;
+                    break;
+                
+                default:
+                    $id = end($this->reference);
+                    break;
+            }
+            $html = $this->_convertToStyle($id, $idStyle);
+        }
         return $html;
     }
 
     /**
      *
      */
-    function render() {
-        $noteName = $this->getAnchorName();
-        $html = '<div class="fn"><sup>' . DOKU_LF;
+    function _renderNoteClass() {
+        switch ($this->_getStyle('note-font-size')) {
+            case 'small':
+                $result = 'rn_small';
+                break;
 
-        for ($r = 1; $r <= $this->references; $r++) {
-            $refName = $this->getAnchorName($r);
-
-            $html .= '<a href="#' . $refName . '" name="' . $noteName .'" class="fn_bot">';
-            //$html .= $this->id . ')';
-            $html .= $this->reference[$r] . ')';
-            $html .= '</a>';
-
-            if ($r < $this->references) {
-                $html .= ',';
-            }
-            $html .= DOKU_LF;
+            default:
+                $result = 'fn';
+                break;
         }
+        return $result;
+    }
 
-        $html .= '</sup> ' . $this->text . DOKU_LF;
-        $html .= '</div>' . DOKU_LF;
+    /**
+     *
+     */
+    function _renderNoteIdBase() {
+        return $this->_renderBase($this->_getStyle('note-id-base'));
+    }
 
-        $this->rendered = true;
+    /**
+     *
+     */
+    function _renderNoteIdFormat() {
+        $style = $this->_getStyle('note-id-format');
+        switch ($style) {
+            case '.':
+                $result = array('', '.');
+                break;
 
+            default:
+                $result = $this->_renderFormat($style);
+                break;
+        }
+        return $result;
+    }
+
+    /**
+     *
+     */
+    function _renderNoteId($reference = 0) {
+        $idStyle = $this->_getStyle('refnote-id');
+        if ($idStyle == 'name') {
+            $html = $this->name;
+        }
+        else {
+            if ($reference > 0) {
+                $id = $this->reference[$reference];
+            }
+            else {
+                $id = $this->id;
+            }
+            $html = $this->_convertToStyle($id, $idStyle);
+        }
         return $html;
+    }
+
+    /**
+     *
+     */
+    function _renderBackRefBase() {
+        return $this->_renderBase($this->_getStyle('back-ref-base'));
+    }
+
+    /**
+     *
+     */
+    function _renderBackRefSeparator() {
+        static $html = array('' => ',', 'none' => '');
+        if (!array_key_exists($style, $html)) {
+            $style = '';
+        }
+        return $html[$style];
+    }
+
+    /**
+     *
+     */
+    function _renderBackRefId($reference, $style) {
+        switch ($style) {
+            case 'a':
+                $result = $this->_convertToLatin($reference, $style);
+                break;
+
+            case '1':
+                $result = $reference;
+                break;
+
+            case 'caret':
+                $result = '^';
+                break;
+
+            case 'arrow':
+                $result = '&uarr;';
+                break;
+
+            default:
+                $result = $this->_renderNoteId($reference);
+                break;
+        }
+        return $result;
+    }
+
+    /**
+     *
+     */
+    function _renderBase($style) {
+        static $html = array(
+            '' => array('<sup>', '</sup>'),
+            'text' => array('', '')
+        );
+        if (!array_key_exists($style, $html)) {
+            $style = '';
+        }
+        return $html[$style];
+    }
+
+    /**
+     *
+     */
+    function _renderFormat($style) {
+        static $html = array(
+            '' => array('', ')'),
+            '()' => array('(', ')'),
+            ']' => array('', ']'),
+            '[]' => array('[', ']'),
+            'none' => array('', '')
+        );
+        if (!array_key_exists($style, $html)) {
+            $style = '';
+        }
+        return $html[$style];
+    }
+
+    /**
+     *
+     */
+    function _getStyle($property) {
+        return $this->scope->namespace->getStyle($property);
+    }
+
+    /**
+     *
+     */
+    function _convertToStyle($id, $style) {
+        switch ($style) {
+            case 'a':
+            case 'A':
+                $result = $this->_convertToLatin($id, $style);
+                break;
+            
+            case 'i':
+            case 'I':
+                $result = $this->_convertToRoman($id, $style);
+                break;
+
+            case '*':
+                $result = str_repeat('*', $id);
+                break;
+
+            default:
+                $result = $id;
+                break;
+        }
+        return $result;
+    }
+
+    /**
+     *
+     */
+    function _convertToLatin($number, $case)
+    {
+        static $alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+        $result = '';
+        while ($number > 0) {
+            --$number;
+            $digit = $number % 26;
+            $result = $alpha{$digit} . $result;
+            $number = intval($number / 26);
+        }
+        if ($case == 'a') {
+            $result = strtolower($result);
+        }
+        return $result;
+    }
+
+    /**
+     *
+     */
+    function _convertToRoman($number, $case)
+    {
+        static $lookup = array(
+            'M' => 1000, 'CM' => 900, 'D' => 500, 'CD' => 400,
+            'C' => 100, 'XC' => 90, 'L' => 50, 'XL' => 40,
+            'X' => 10, 'IX' => 9, 'V' => 5, 'IV' => 4, 'I' => 1);
+
+        $result = '';
+        foreach ($lookup as $roman => $value) {
+            $matches = intval($number / $value);
+            if ($matches > 0) {
+                $result .= str_repeat($roman, $matches);
+                $number = $number % $value;
+            }
+        }
+        if ($case == 'i') {
+            $result = strtolower($result);
+        }
+        return $result;
     }
 }
