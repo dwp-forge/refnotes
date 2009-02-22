@@ -60,7 +60,8 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
 
     function connectTo($mode) {
         $this->Lexer->addSpecialPattern('~~REFNOTES.*?~~', $mode, $this->mode);
-        /*TODO: $this->Lexer->addSpecialPattern('<refnotes.*?>.*?</refnotes>', $mode, $this->mode);*/
+        $this->Lexer->addSpecialPattern('<refnotes.*?\/>', $mode, $this->mode);
+        $this->Lexer->addSpecialPattern('<refnotes.*?[^/]>.*?<\/refnotes>', $mode, $this->mode);
     }
 
     /**
@@ -90,7 +91,11 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     function render($mode, &$renderer, $data) {
         try {
             if($mode == 'xhtml') {
-                $this->_render($renderer, $data);
+                switch ($data[0]) {
+                    case 'render':
+                        $this->_render($renderer, $data[1]);
+                        break;
+                }
                 return true;
             }
         }
@@ -104,26 +109,67 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      *
      */
     function _handleBasic($syntax) {
-        if (preg_match('/~~REFNOTES\s*(.+?)\s*~~/', $syntax, $match) == 1) {
-            return false;
+        preg_match('/~~REFNOTES(.*?)~~/', $syntax, $match);
+        return array('render', $this->_parseAttributes($match[1]));
+    }
+
+    /**
+     *
+     */
+    function _handleExtended($syntax) {
+        preg_match('/<refnotes(.*?)(?:\/>|>(.*?)<\/refnotes>)/s', $syntax, $match);
+        $attribute = $this->_parseAttributes($match[1]);
+        $style = array();
+        if ($match[2] != '') {
+            $style = $this->_parseStyles($match[2]);
+        }
+        if (count($style) > 0) {
+            return array('split', $attribute, $style);
         }
         else {
-            return array('ns' => ':');
+            return array('render', $attribute);
         }
     }
 
     /**
      *
      */
-    function _handleExtended() {
-        return false;
+    function _parseAttributes($syntax) {
+        static $propertyMatch = array(
+            'ns' => '/^(:|:*([[:alpha:]]\w*:+)*?[[:alpha:]]\w*:*)$/',
+            'limit' => '/^\/?\d+$/'
+        );
+        $attribute = array('ns' => ':');
+        $token = preg_split('/\s+/', $syntax);
+        foreach ($token as $t) {
+            foreach ($propertyMatch as $name => $pattern) {
+                if (preg_match($pattern, $t) == 1) {
+                    $attribute[$name] = $t;
+                    break;
+                }
+            }
+        }
+        return $attribute;
     }
 
     /**
-     * Stops renderer output capture
+     *
      */
-    function _render(&$renderer, $config) {
-        $html = $this->_getCore()->renderNotes($config['ns']);
+    function _parseStyles($syntax) {
+        $style = array();
+        preg_match_all('/([-\w]+)\s*:\s*(.+?)\s*?[\n;]/', $syntax, $match, PREG_SET_ORDER);
+        foreach ($match as $m) {
+            $style[$m[1]] = $m[2];
+        }
+        return $style;
+    }
+
+    /**
+     *
+     */
+    function _render(&$renderer, $attribute) {
+        $limit = array_key_exists('limit', $attribute) ? $attribute['limit'] : '';
+        $html = $this->_getCore()->renderNotes($attribute['ns'], $limit);
         if ($html != '') {
             $renderer->doc .= '<div class="footnotes">' . DOKU_LF;
             $renderer->doc .= $html;
