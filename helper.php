@@ -390,6 +390,7 @@ class refnotes_note {
     function render() {
         $noteName = $this->_renderAnchorName();
         $backRefFormat = $this->_getStyle('back-ref-format');
+        $backRefCaret = '';
         list($formatOpen, $formatClose) = $this->_renderNoteIdFormat();
 
         $html = '<div class="' . $this->_renderNoteClass() . '">' . DOKU_LF;
@@ -406,6 +407,7 @@ class refnotes_note {
 
             $formatOpen = '';
             $formatClose = '';
+            $backRefCaret = $this->_renderBackRefCaret();
         }
 
         if ($backRefFormat != 'none') {
@@ -413,7 +415,7 @@ class refnotes_note {
             list($baseOpen, $baseClose) = $this->_renderBackRefBase();
             list($fontOpen, $fontClose) = $this->_renderBackRefFont();
 
-            $html .= $baseOpen;
+            $html .= $baseOpen . $backRefCaret;
 
             for ($r = 1; $r <= $this->references; $r++) {
                 $referenceName = $this->_renderAnchorName($r);
@@ -566,6 +568,26 @@ class refnotes_note {
     /**
      *
      */
+    function _renderBackRefCaret() {
+        switch ($this->_getStyle('back-ref-caret')) {
+            case 'prefix':
+                $result = '^ ';
+                break;
+
+            case 'merge':
+                $result = ($this->references > 1) ? '^ ' : '';
+                break;
+
+            default:
+                $result = '';
+                break;
+        }
+        return $result;
+    }
+
+    /**
+     *
+     */
     function _renderBackRefBase() {
         return $this->_renderBase($this->_getStyle('back-ref-base'));
     }
@@ -613,6 +635,9 @@ class refnotes_note {
             default:
                 $result = $this->_renderNoteId($reference);
                 break;
+        }
+        if (($this->references == 1) && ($this->_getStyle('back-ref-caret') == 'merge')) {
+            $result = '^';
         }
         return $result;
     }
