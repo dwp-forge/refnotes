@@ -57,12 +57,17 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      */
     function addReference($name, $hidden) {
         list($namespaceName, $noteName) = $this->_parseName($name);
-        $namespace = $this->_findNamespace($namespaceName);
-        if ($namespace == NULL) {
-            $this->namespace[] = new refnotes_namespace($namespaceName);
-            $namespace = end($this->namespace);
-        }
+        $namespace = $this->_findNamespace($namespaceName, true);
         return $namespace->addReference($noteName, $hidden);
+    }
+
+    /**
+     *
+     */
+    function styleNotes($name, $style) {
+        $namespaceName = $this->canonizeNamespace($name);
+        $namespace = $this->_findNamespace($namespaceName, true);
+        $namespace->style($style);
     }
 
     /**
@@ -96,13 +101,17 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      * Finds a namespace given it's name
      */
-    function _findNamespace($name) {
+    function _findNamespace($name, $create = false) {
         $result = NULL;
         foreach ($this->namespace as $namespace) {
             if ($namespace->name == $name) {
                 $result = $namespace;
                 break;
             }
+        }
+        if (($result == NULL) && $create) {
+            $this->namespace[] = new refnotes_namespace($name);
+            $result = end($this->namespace);
         }
         return $result;
     }
@@ -130,6 +139,15 @@ class refnotes_namespace {
      */
     function getName() {
         return $this->name;
+    }
+
+    /**
+     *
+     */
+    function style($style) {
+        foreach ($style as $property => $value) {
+            $this->style[$property] = $value;
+        }
     }
 
     /**
@@ -534,6 +552,7 @@ class refnotes_note {
      */
     function _renderBackRefSeparator() {
         static $html = array('' => ',', 'none' => '');
+        $style = $this->_getStyle('back-ref-separator');
         if (!array_key_exists($style, $html)) {
             $style = '';
         }

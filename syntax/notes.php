@@ -92,6 +92,10 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
         try {
             if($mode == 'xhtml') {
                 switch ($data[0]) {
+                    case 'style':
+                        $this->_style($renderer, $data[1], $data[2]);
+                        break;
+
                     case 'render':
                         $this->_render($renderer, $data[1]);
                         break;
@@ -162,6 +166,13 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
             $style[$m[1]] = $m[2];
         }
         return $style;
+    }
+
+    /**
+     *
+     */
+    function _style(&$renderer, $attribute, $style) {
+        $this->_getCore()->styleNotes($attribute['ns'], $style);
     }
 
     /**
