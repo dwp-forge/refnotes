@@ -46,6 +46,13 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     }
 
     /**
+     * Returns canonic name for a namespace
+     */
+    function canonizeNamespace($name) {
+        return preg_replace('/:{2,}/', ':', ':' . $name . ':');
+    }
+
+    /**
      * Adds a reference to the notes array. Returns a note
      */
     function addReference($name, $hidden) {
@@ -61,12 +68,12 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      *
      */
-    function renderNotes($name) {
-        $namespaceName = $this->_canonizeNamespace($name);
+    function renderNotes($name, $limit = '') {
+        $namespaceName = $this->canonizeNamespace($name);
         $namespace = $this->_findNamespace($namespaceName);
         $html = '';
         if ($namespace != NULL) {
-            $html = $namespace->renderNotes();
+            $html = $namespace->renderNotes($limit);
         }
         return $html;
     }
@@ -77,20 +84,13 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     function _parseName($name) {
         $pos = strrpos($name, ':');
         if ($pos !== false) {
-            $namespace = $this->_canonizeNamespace(substr($name, 0, $pos));
+            $namespace = $this->canonizeNamespace(substr($name, 0, $pos));
             $name = substr($name, $pos + 1);
         }
         else {
             $namespace = ':';
         }
         return array($namespace, $name);
-    }
-
-    /**
-     * Returns canonic name for a namespace
-     */
-    function _canonizeNamespace($name) {
-        return preg_replace('/:{2,}/', ':', ':' . $name . ':');
     }
 
     /**
@@ -159,21 +159,44 @@ class refnotes_namespace {
     /**
      *
      */
-    function renderNotes($limit = '') {
+    function renderNotes($limit) {
+        $this->_resetScope();
         $scope = end($this->scope);
+        $limit = $this->_getRenderLimit($limit);
+        return $scope->renderNotes($limit);
+    }
+
+    /**
+     *
+     */
+    function _resetScope() {
+        switch ($this->getStyle('scoping')) {
+            case 'single':
+                break;
+
+            default:
+                $this->newScope = true;
+                break;
+        }
+    }
+
+    /**
+     *
+     */
+    function _getRenderLimit($limit) {
         if (preg_match('/(\/?)(\d+)/', $limit, $match) == 1) {
             if ($match[1] != '') {
                 $devider = intval($match[2]);
-                $limit = ceil($scope->getRenderableCount() / $devider);
+                $result = ceil($scope->getRenderableCount() / $devider);
             }
             else {
-                $limit = intval($match[2]);
+                $result = intval($match[2]);
             }
         }
         else {
-            $limit = 0;
+            $result = 0;
         }
-        return $scope->renderNotes($limit);
+        return $result;
     }
 }
 
