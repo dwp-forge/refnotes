@@ -31,7 +31,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         return array(
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-02-01',
+            'date'   => '2009-02-22',
             'name'   => 'RefNotes',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',

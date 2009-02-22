@@ -31,7 +31,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
         return array(
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-02-15',
+            'date'   => '2009-02-22',
             'name'   => 'RefNotes Plugin',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
@@ -372,11 +372,14 @@ class refnotes_note {
         $noteName = $this->_renderAnchorName();
         $referenceName = $this->_renderAnchorName($this->references);
         list($baseOpen, $baseClose) = $this->_renderReferenceBase();
+        list($fontOpen, $fontClose) = $this->_renderReferenceFont();
         list($formatOpen, $formatClose) = $this->_renderReferenceFormat();
 
-        $html = $baseOpen . '<a href="#' . $noteName . '" name="' . $referenceName . '" class="fn_top">';
+        $html = $baseOpen . $fontOpen;
+        $html .= '<a href="#' . $noteName . '" name="' . $referenceName . '" class="refnotes-ref">';
         $html .= $formatOpen . $this->_renderReferenceId() . $formatClose;
-        $html .= '</a>' . $baseClose;
+        $html .= '</a>';
+        $html .= $fontClose . $baseClose;
 
         return $html;
     }
@@ -393,10 +396,13 @@ class refnotes_note {
 
         if (($backRefFormat != 'note') && ($backRefFormat != '')) {
             list($baseOpen, $baseClose) = $this->_renderNoteIdBase();
+            list($fontOpen, $fontClose) = $this->_renderNoteIdFont();
 
-            $html .= $baseOpen . '<a name="' . $noteName .'" class="fn_bot">';
+            $html .= $baseOpen . $fontOpen;
+            $html .= '<a name="' . $noteName .'" class="nolink">';
             $html .= $formatOpen . $this->_renderNoteId() . $formatClose;
-            $html .= '</a>' . $baseClose . DOKU_LF;
+            $html .= '</a>';
+            $html .= $fontClose . $baseClose . DOKU_LF;
 
             $formatOpen = '';
             $formatClose = '';
@@ -405,15 +411,18 @@ class refnotes_note {
         if ($backRefFormat != 'none') {
             $separator = $this->_renderBackRefSeparator();
             list($baseOpen, $baseClose) = $this->_renderBackRefBase();
+            list($fontOpen, $fontClose) = $this->_renderBackRefFont();
 
             $html .= $baseOpen;
 
             for ($r = 1; $r <= $this->references; $r++) {
                 $referenceName = $this->_renderAnchorName($r);
 
-                $html .= '<a href="#' . $referenceName . '" name="' . $noteName .'" class="fn_bot">';
+                $html .= $fontOpen;
+                $html .= '<a href="#' . $referenceName . '" name="' . $noteName .'" class="backref">';
                 $html .= $formatOpen . $this->_renderBackRefId($r, $backRefFormat) . $formatClose;
                 $html .= '</a>';
+                $html .= $fontClose;
 
                 if ($r < $this->references) {
                     $html .= $separator . DOKU_LF;
@@ -453,6 +462,13 @@ class refnotes_note {
     /**
      *
      */
+    function _renderReferenceFont() {
+        return $this->_renderFont('reference-font-weight', 'normal', 'reference-font-style');
+    }
+
+    /**
+     *
+     */
     function _renderReferenceFormat() {
         return $this->_renderFormat($this->_getStyle('reference-format'));
     }
@@ -486,11 +502,11 @@ class refnotes_note {
     function _renderNoteClass() {
         switch ($this->_getStyle('note-font-size')) {
             case 'small':
-                $result = 'rn_small';
+                $result = 'smallnote';
                 break;
 
             default:
-                $result = 'fn';
+                $result = 'note';
                 break;
         }
         return $result;
@@ -501,6 +517,13 @@ class refnotes_note {
      */
     function _renderNoteIdBase() {
         return $this->_renderBase($this->_getStyle('note-id-base'));
+    }
+
+    /**
+     *
+     */
+    function _renderNoteIdFont() {
+        return $this->_renderFont('note-id-font-weight', 'normal', 'note-id-font-style');
     }
 
     /**
@@ -550,6 +573,13 @@ class refnotes_note {
     /**
      *
      */
+    function _renderBackRefFont() {
+        return $this->_renderFont('back-ref-font-weight', 'bold', 'back-ref-font-style');
+    }
+
+    /**
+     *
+     */
     function _renderBackRefSeparator() {
         static $html = array('' => ',', 'none' => '');
         $style = $this->_getStyle('back-ref-separator');
@@ -594,6 +624,43 @@ class refnotes_note {
         static $html = array(
             '' => array('<sup>', '</sup>'),
             'text' => array('', '')
+        );
+        if (!array_key_exists($style, $html)) {
+            $style = '';
+        }
+        return $html[$style];
+    }
+
+    /**
+     *
+     */
+    function _renderFont($weight, $defaultWeight, $style) {
+        list($weightOpen, $weightClose) = $this->_renderFontWeight($this->_getStyle($weight), $defaultWeight);
+        list($styleOpen, $styleClose) = $this->_renderFontStyle($this->_getStyle($style));
+        return array($weightOpen . $styleOpen, $styleClose . $weightClose);
+    }
+
+    /**
+     *
+     */
+    function _renderFontWeight($style, $default) {
+        static $html = array(
+            'normal' => array('', ''),
+            'bold' => array('<b>', '</b>')
+        );
+        if (!array_key_exists($style, $html)) {
+            $style = $default;
+        }
+        return $html[$style];
+    }
+
+    /**
+     *
+     */
+    function _renderFontStyle($style) {
+        static $html = array(
+            '' => array('', ''),
+            'italic' => array('<i>', '</i>')
         );
         if (!array_key_exists($style, $html)) {
             $style = '';

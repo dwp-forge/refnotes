@@ -66,7 +66,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         return array(
             'author' => 'Mykola Ostrovskyy',
             'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-02-07',
+            'date'   => '2009-02-22',
             'name'   => 'RefNotes Plugin',
             'desc'   => 'Extended syntax for footnotes and references.',
             'url'    => 'http://code.google.com/p/dwp-forge/',
