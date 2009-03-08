@@ -3,12 +3,16 @@ div.dokuwiki a.refnotes-ref {
 
 div.dokuwiki div.refnotes {
     clear: both;
-    padding-left: 1em;
     margin: 1em 0 1em 0;
 }
 
 div.dokuwiki div.refnotes hr {
     margin-bottom: 0.2em;
+}
+
+div.dokuwiki div.refnotes div.notes {
+    padding-left: 1em;
+    margin-bottom: 1em;
 }
 
 div.dokuwiki div.refnotes div.note {

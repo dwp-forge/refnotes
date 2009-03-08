@@ -164,7 +164,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
                 $style['notes-separator'] = $match[0];
             }
             else {
-                $style['notes-separator'] = 'none';
+                $style['notes-separator'] = '';
             }
         }
         return $style;

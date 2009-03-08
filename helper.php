@@ -310,7 +310,9 @@ class refnotes_scope {
             }
         }
         if ($html != '') {
-            $html = $this->_renderSeparator() . $html;
+            $open = $this->_renderSeparator() . '<div class="notes">' . DOKU_LF;
+            $close = '</div>' . DOKU_LF;
+            $html = $open . $html . $close;
         }
         return $html;
     }
@@ -335,8 +337,11 @@ class refnotes_scope {
     function _renderSeparator() {
         $html = '';
         $style = $this->namespace->getStyle('notes-separator');
-        if (($style != '') && ($style != 'none')) {
-            $html = '<hr style="width: ' . $style . '">' . DOKU_LF;
+        if ($style != 'none') {
+            if ($style != '') {
+                $style = ' style="width: '. $style . '"';
+            }
+            $html = '<hr' . $style . '>' . DOKU_LF;
         }
         return $html;
     }
