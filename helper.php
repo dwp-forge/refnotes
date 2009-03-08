@@ -74,11 +74,18 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      *
      */
     function renderNotes($name, $limit = '') {
-        $namespaceName = $this->canonizeNamespace($name);
-        $namespace = $this->_findNamespace($namespaceName);
         $html = '';
-        if ($namespace != NULL) {
-            $html = $namespace->renderNotes($limit);
+        if ($name == '*') {
+            foreach ($this->namespace as $namespace) {
+                $html .= $namespace->renderNotes();
+            }
+        }
+        else {
+            $namespaceName = $this->canonizeNamespace($name);
+            $namespace = $this->_findNamespace($namespaceName);
+            if ($namespace != NULL) {
+                $html = $namespace->renderNotes($limit);
+            }
         }
         return $html;
     }
@@ -177,11 +184,15 @@ class refnotes_namespace {
     /**
      *
      */
-    function renderNotes($limit) {
+    function renderNotes($limit = '') {
         $this->_resetScope();
-        $scope = end($this->scope);
-        $limit = $this->_getRenderLimit($limit);
-        return $scope->renderNotes($limit);
+        $html = '';
+        if (count($this->scope) > 0) {
+            $scope = end($this->scope);
+            $limit = $this->_getRenderLimit($limit);
+            $html = $scope->renderNotes($limit);
+        }
+        return $html;
     }
 
     /**
