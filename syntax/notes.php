@@ -68,19 +68,12 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      * Handle the match
      */
     function handle($match, $state, $pos, &$handler) {
-        try {
-            switch ($match{0}) {
-                case '~':
-                    return $this->_handleBasic($match);
-                    break;
+        switch ($match{0}) {
+            case '~':
+                return $this->_handleBasic($match);
 
-                case '<':
-                    return $this->_handleExtended($match);
-                    break;
-            }
-        }
-        catch (Exception $error) {
-            msg($error->getMessage(), -1);
+            case '<':
+                return $this->_handleExtended($match);
         }
         return false;
     }

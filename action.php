@@ -89,7 +89,6 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Insert style instructions
      */
     function _insertStyles(&$event, $style) {
-        $next = $style[0]['pos'];
         $calls = count($event->data->calls);
         $styles = count($style);
         $call = array();
