@@ -298,6 +298,9 @@ class refnotes_scope {
                 }
             }
         }
+        if ($html != '') {
+            $html = $this->_renderSeparator() . $html;
+        }
         return $html;
     }
 
@@ -313,6 +316,18 @@ class refnotes_scope {
             }
         }
         return $result;
+    }
+
+    /**
+     *
+     */
+    function _renderSeparator() {
+        $html = '';
+        $style = $this->namespace->getStyle('notes-separator');
+        if (($style != '') && ($style != 'none')) {
+            $html = '<hr style="width: ' . $style . '">' . DOKU_LF;
+        }
+        return $html;
     }
 }
 
