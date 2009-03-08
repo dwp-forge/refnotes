@@ -160,7 +160,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
         }
         /* Validate direct-to-html styles */
         if (array_key_exists('notes-separator', $style)) {
-            if (preg_match('/(?:\d+\.?|\d*\.\d+)(?:%|em|px)/', $style['notes-separator'], $match) == 1) {
+            if (preg_match('/(?:\d+\.?|\d*\.\d+)(?:%|em|px)|none/', $style['notes-separator'], $match) == 1) {
                 $style['notes-separator'] = $match[0];
             }
             else {
