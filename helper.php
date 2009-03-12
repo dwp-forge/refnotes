@@ -419,7 +419,7 @@ class refnotes_note {
      *
      */
     function render() {
-        $noteName = $this->_renderAnchorName();
+        $nameAttribute = ' name="' . $this->_renderAnchorName() .'"';
         $backRefFormat = $this->_getStyle('back-ref-format');
         $backRefCaret = '';
         list($formatOpen, $formatClose) = $this->_renderNoteIdFormat();
@@ -431,11 +431,12 @@ class refnotes_note {
             list($fontOpen, $fontClose) = $this->_renderNoteIdFont();
 
             $html .= $baseOpen . $fontOpen;
-            $html .= '<a name="' . $noteName .'" class="nolink">';
+            $html .= '<a' . $nameAttribute .' class="nolink">';
             $html .= $formatOpen . $this->_renderNoteId() . $formatClose;
             $html .= '</a>';
             $html .= $fontClose . $baseClose . DOKU_LF;
 
+            $nameAttribute = '';
             $formatOpen = '';
             $formatClose = '';
             $backRefCaret = $this->_renderBackRefCaret();
@@ -452,7 +453,7 @@ class refnotes_note {
                 $referenceName = $this->_renderAnchorName($r);
 
                 $html .= $fontOpen;
-                $html .= '<a href="#' . $referenceName . '" name="' . $noteName .'" class="backref">';
+                $html .= '<a href="#' . $referenceName . '"' . $nameAttribute .' class="backref">';
                 $html .= $formatOpen . $this->_renderBackRefId($r, $backRefFormat) . $formatClose;
                 $html .= '</a>';
                 $html .= $fontClose;
@@ -460,6 +461,7 @@ class refnotes_note {
                 if ($r < $this->references) {
                     $html .= $separator . DOKU_LF;
                 }
+                $nameAttribute = '';
             }
             $html .= $baseClose . DOKU_LF;
         }
