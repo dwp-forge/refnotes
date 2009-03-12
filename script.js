@@ -10,10 +10,10 @@ function plugin_refnotes_popup(e) {
     var id = obj.href.replace(/^.*?#([\w:]+)$/gi, '$1');
 
     // get or create the footnote popup div
-    var popup = $('refnotes-popup');
+    var popup = $('insitu__fn');
     if (!popup) {
         popup = document.createElement('div');
-        popup.id = 'refnotes-popup';
+        popup.id = 'insitu__fn';
         popup.className = 'insitu-footnote JSpopup dokuwiki';
 
         // autoclose on mouseout - ignoring bubbled up events
