@@ -419,12 +419,25 @@ class refnotes_note {
      *
      */
     function render() {
+        $html = '<div class="' . $this->_renderNoteClass() . '">' . DOKU_LF;
+        $html .= $this->_renderBackReferences();
+        $html .= '<span id="' . $this->_renderAnchorName() . '">' . DOKU_LF;
+        $html .= $this->text . DOKU_LF;
+        $html .= '</span></div>' . DOKU_LF;
+
+        $this->rendered = true;
+
+        return $html;
+    }
+
+    /**
+     *
+     */
+    function _renderBackReferences() {
         $nameAttribute = ' name="' . $this->_renderAnchorName() .'"';
         $backRefFormat = $this->_getStyle('back-ref-format');
         $backRefCaret = '';
         list($formatOpen, $formatClose) = $this->_renderNoteIdFormat();
-
-        $html = '<div class="' . $this->_renderNoteClass() . '">' . DOKU_LF;
 
         if (($backRefFormat != 'note') && ($backRefFormat != '')) {
             list($baseOpen, $baseClose) = $this->_renderNoteIdBase();
@@ -465,12 +478,6 @@ class refnotes_note {
             }
             $html .= $baseClose . DOKU_LF;
         }
-
-        $html .=  $this->text . DOKU_LF;
-        $html .= '</div>' . DOKU_LF;
-
-        $this->rendered = true;
-
         return $html;
     }
 
