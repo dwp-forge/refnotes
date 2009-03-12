@@ -402,12 +402,13 @@ class refnotes_note {
     function renderReference() {
         $noteName = $this->_renderAnchorName();
         $referenceName = $this->_renderAnchorName($this->references);
+        $class = $this->_renderReferenceClass();
         list($baseOpen, $baseClose) = $this->_renderReferenceBase();
         list($fontOpen, $fontClose) = $this->_renderReferenceFont();
         list($formatOpen, $formatClose) = $this->_renderReferenceFormat();
 
         $html = $baseOpen . $fontOpen;
-        $html .= '<a href="#' . $noteName . '" name="' . $referenceName . '" class="refnotes-ref">';
+        $html .= '<a href="#' . $noteName . '" name="' . $referenceName . '" class="' . $class . '">';
         $html .= $formatOpen . $this->_renderReferenceId() . $formatClose;
         $html .= '</a>';
         $html .= $fontClose . $baseClose;
@@ -490,6 +491,22 @@ class refnotes_note {
         $result .= ':note' . $this->id;
         if ($reference > 0) {
             $result .= ':ref' . $reference;
+        }
+        return $result;
+    }
+
+    /**
+     *
+     */
+    function _renderReferenceClass() {
+        switch ($this->_getStyle('reference-popup')) {
+            case 'none':
+                $result = 'refnotes-ref';
+                break;
+
+            default:
+                $result = 'refnotes-ref-popup';
+                break;
         }
         return $result;
     }

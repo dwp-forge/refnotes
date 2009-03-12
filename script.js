@@ -90,7 +90,7 @@ function plugin_refnotes_popup(e) {
  * Add the event handlers to footnotes
  */
 addInitEvent(function(){
-    var elems = getElementsByClass('refnotes-ref', null, 'a');
+    var elems = getElementsByClass('refnotes-ref-popup', null, 'a');
     for (var i = 0; i < elems.length; i++) {
         addEvent(elems[i], 'mouseover', function(e) {
             plugin_refnotes_popup(e);
