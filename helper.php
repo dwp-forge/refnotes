@@ -422,7 +422,7 @@ class refnotes_note {
     function render() {
         $html = '<div class="' . $this->_renderNoteClass() . '">' . DOKU_LF;
         $html .= $this->_renderBackReferences();
-        $html .= '<span id="' . $this->_renderAnchorName() . '">' . DOKU_LF;
+        $html .= '<span id="' . $this->_renderAnchorName() . ':text">' . DOKU_LF;
         $html .= $this->text . DOKU_LF;
         $html .= '</span></div>' . DOKU_LF;
 
@@ -499,13 +499,17 @@ class refnotes_note {
      *
      */
     function _renderReferenceClass() {
-        switch ($this->_getStyle('reference-popup')) {
+        switch ($this->_getStyle('note-preview')) {
+            case 'tooltip':
+                $result = 'refnotes-ref note-tooltip';
+                break;
+
             case 'none':
                 $result = 'refnotes-ref';
                 break;
 
             default:
-                $result = 'refnotes-ref-popup';
+                $result = 'refnotes-ref note-popup';
                 break;
         }
         return $result;

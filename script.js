@@ -1,99 +1,197 @@
-/**
- * Display a popup
- *
- * @author Andreas Gohr <andi@splitbrain.org>
- * @author Chris Smith <chris@jalakai.co.uk>
- * @author Mykola Ostrovskyy <spambox03@mail.ru>
- */
-function plugin_refnotes_popup(e) {
-    var obj = e.target;
-    var id = obj.href.replace(/^.*?#([\w:]+)$/gi, '$1');
+(function() {
+    var cssComp = document.compatMode && (document.compatMode == "CSS1Compat");
+    var canvas = document.getElementsByTagName(cssComp ? "html" : "body")[0];
+    var preview = null;
+    var tracking = false;
+    var shown = false;
+    var timer = null;
 
-    // get or create the footnote popup div
-    var popup = $('insitu__fn');
-    if (!popup) {
-        popup = document.createElement('div');
-        popup.id = 'insitu__fn';
-        popup.className = 'insitu-footnote JSpopup dokuwiki';
+    function createPreview() {
+        preview = document.createElement('div');
+        preview.id = 'insitu__fn';
+        preview.className = 'insitu-footnote JSpopup dokuwiki';
+        preview.style.position = 'absolute';
+        preview.style.left = '0px';
+        preview.style.top = '-100px';
 
         // autoclose on mouseout - ignoring bubbled up events
-        addEvent(popup, 'mouseout', function(e) {
-            if (e.target != popup) {
+        addEvent(preview, 'mouseout', function(e) {
+            if (e.target != preview) {
                 e.stopPropagation();
                 return;
             }
             // check if the element was really left
-            if (e.pageX) {
-                // Mozilla
-                var bx1 = findPosX(popup);
-                var bx2 = bx1 + popup.offsetWidth;
-                var by1 = findPosY(popup);
-                var by2 = by1 + popup.offsetHeight;
-                var x = e.pageX;
-                var y = e.pageY;
-                if ((x > bx1) && (x < bx2) && (y > by1) && (y < by2)) {
-                    // we're still inside boundaries
-                    e.stopPropagation();
-                    return;
-                }
+            var offsetX = e.pageX ? e.pageX - findPosX(preview) : e.offsetX;
+            var offsetY = e.pageY ? e.pageY - findPosY(preview) : e.offsetY;
+            var msieDelta = e.pageX ? 0 : 1;
+            var width = preview.offsetWidth - msieDelta;
+            var height = preview.offsetHeight - msieDelta;
+            if ((offsetX > 0) && (offsetX < width) && (offsetY > 0) && (offsetY < height)) {
+                // we're still inside boundaries
+                e.stopPropagation();
+                return;
             }
-            else {
-                // IE
-                if ((e.offsetX > 0) && (e.offsetX < (popup.offsetWidth - 1)) &&
-                    (e.offsetY > 0) && (e.offsetY < (popup.offsetHeight - 1))){
-                    // we're still inside boundaries
-                    e.stopPropagation();
-                    return;
-                }
-            }
-            // okay, hide it
-            popup.style.display = 'none';
+            hidePreview();
         });
-        document.body.appendChild(popup);
+        document.body.appendChild(preview);
     }
 
-    // locate the footnote anchor element
-    var note = $( id );
-    if (!note) {
-        return;
+    function getPreview() {
+        if (!preview) {
+            preview = $('insitu__fn');
+            if (!preview) {
+                createPreview();
+            }
+        }
+        return preview;
     }
 
-    // anchor parent is the footnote container, get its innerHTML
-    var content = new String(note.innerHTML);
-
-    // prefix ids on any elements with "insitu__" to ensure they remain unique
-    content = content.replace(/\bid=\"(.*?)\"/gi, 'id="refnotes-popup-$1');
-
-    // now put the content into the wrapper
-    popup.innerHTML = content;
-
-    // position the div and make it visible
-    var x;
-    var y;
-    if (e.pageX) {
-        // Mozilla
-        x = e.pageX;
-        y = e.pageY;
+    function showPreview() {
+        var preview = getPreview();
+        if (preview) {
+            preview.style.visibility = 'visible';
+            preview.style.display = '';
+        }
+        shown = true;
     }
-    else {
-        // IE
-        x = e.offsetX;
-        y = e.offsetY;
+
+    function hidePreview() {
+        if (shown) {
+            var preview = getPreview();
+            if (preview) {
+                preview.style.display = 'none';
+            }
+            shown = false;
+        }
     }
-    popup.style.position = 'absolute';
-    popup.style.left = (x + 2) + 'px';
-    popup.style.top = (y + 2) + 'px';
-    popup.style.display = '';
-}
+
+    function movePreview(x, y, dx, dy) {
+        var preview = getPreview();
+        if (!preview) {
+            return;
+        }
+        var windowWidth = canvas.clientWidth + canvas.scrollLeft;
+        var windowHeight = canvas.clientHeight + canvas.scrollTop;
+        var previewWidth = 10 + window.event ? preview.clientWidth : preview.offsetWidth;
+        var previewHeight = 10 + window.event ? preview.clientHeight : preview.offsetHeight;
+
+        x += dx;
+        if ((x + previewWidth) > windowWidth) {
+            x -= dx + 2 + previewWidth;
+        }
+        y += dy;
+        if ((y + previewHeight) > windowHeight ) {
+            y -= dy + 2 + previewHeight;
+        }
+        preview.style.left = x + 'px';
+        preview.style.top = y + 'px';
+    }
+
+    function getNote(e) {
+        var id = e.target.href.replace(/^.*?#([\w:]+)$/gi, '$1');
+        // locate the note span element
+        var note = $(id + ':text');
+        if (!note) {
+            return;
+        }
+        // get the note HTML
+        var html = new String(note.innerHTML);
+        // prefix ids on any elements to ensure they remain unique
+        return html.replace(/\bid=\"(.*?)\"/gi, 'id="refnotes-preview-$1');
+    }
+
+    function log(message) {
+        var console = window['console'];
+        if (console && console.log) {
+          console.log(message);
+        }
+    }
+
+    plugin_refnotes = {
+        popup: {
+            show: function(e) {
+                plugin_refnotes.tooltip.hide(e);
+
+                var preview = getPreview();
+                var note = getNote(e);
+                if (!preview || !note) {
+                    return;
+                }
+                // now put the content into the wrapper
+                preview.innerHTML = note;
+
+                // display hidden tooltip so we can measure it's size
+                preview.style.visibility = 'hidden';
+                preview.style.display = '';
+                preview.style.left = '0px';
+                preview.style.top = '0px';
+
+                // position the div and make it visible
+                var x = e.pageX ? e.pageX : e.offsetX;
+                var y = e.pageY ? e.pageY : e.offsetY;
+                movePreview(x, y, 2, 2);
+                showPreview();
+            }
+        },
+
+        tooltip: {
+            show: function(e) {
+                plugin_refnotes.tooltip.hide(e);
+
+                var preview = getPreview();
+                var note = getNote(e);
+                if (!preview || !note) {
+                    return;
+                }
+                // now put the content into the wrapper
+                preview.innerHTML = note;
+
+                // display hidden tooltip so we can measure it's size
+                preview.style.visibility = 'hidden';
+                preview.style.display = '';
+                preview.style.left = '0px';
+                preview.style.top = '0px';
+
+                // start tooltip timeout
+                timer = setTimeout(function(){ showPreview(); }, 500);
+                tracking = true;
+            },
+
+            hide: function(e) {
+                if (tracking) {
+                    clearTimeout(timer);
+                    tracking = false;
+                }
+                hidePreview();
+            },
+
+            track: function(e) {
+                if (tracking) {
+                    var x = e.pageX ? e.pageX : e.offsetX;
+                    var y = e.pageY ? e.pageY : e.offsetY;
+                    //var x = window.event ? event.clientX + canvas.scrollLeft : e.pageX;
+                    //var y = window.event ? event.clientY + canvas.scrollTop : e.pageY;
+
+                    movePreview(x, y, 10, 12);
+                }
+            }
+        }
+    };
+})();
 
 /**
  * Add the event handlers to footnotes
  */
 addInitEvent(function(){
-    var elems = getElementsByClass('refnotes-ref-popup', null, 'a');
+    var elems = getElementsByClass('refnotes-ref note-popup', null, 'a');
     for (var i = 0; i < elems.length; i++) {
-        addEvent(elems[i], 'mouseover', function(e) {
-            plugin_refnotes_popup(e);
-        });
+        addEvent(elems[i], 'mouseover', function(e) { plugin_refnotes.popup.show(e); });
     }
+    elems = getElementsByClass('refnotes-ref note-tooltip', null, 'a');
+    for (var i = 0; i < elems.length; i++) {
+        addEvent(elems[i], 'mouseover', function(e) { plugin_refnotes.tooltip.show(e); });
+        addEvent(elems[i], 'mouseout', function(e) { plugin_refnotes.tooltip.hide(e); });
+    }
+    addEvent(document, 'mousemove', function(e) { plugin_refnotes.tooltip.track(e); });
+    addEvent(window, 'scroll', function(e) { plugin_refnotes.tooltip.hide(e); });
 });
