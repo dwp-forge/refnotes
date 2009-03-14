@@ -150,13 +150,6 @@
         return e.pageY ? e.pageY : e.offsetY;
     }
 
-    function log(message) {
-        var console = window['console'];
-        if (console && console.log) {
-          console.log(message);
-        }
-    }
-
     plugin_refnotes = {
         popup: {
             show: function(e) {
