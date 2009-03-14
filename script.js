@@ -72,10 +72,9 @@
                 return false;
             }
             // get the note HTML
-            var html = new String(note.innerHTML);
+            var html = note.innerHTML;
             // prefix ids on any elements to ensure they remain unique
             html.replace(/\bid=\"(.*?)\"/gi, 'id="refnotes-preview-$1');
-
             // now put the content into the floater
             floater.innerHTML = html;
 
