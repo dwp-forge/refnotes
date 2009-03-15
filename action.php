@@ -12,6 +12,7 @@ if(!defined('DOKU_INC')) die();
 
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'action.php');
+require_once(DOKU_PLUGIN . 'refnotes/info.php');
 
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
 
@@ -28,14 +29,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Return some info
      */
     function getInfo() {
-        return array(
-            'author' => 'Mykola Ostrovskyy',
-            'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-02-22',
-            'name'   => 'RefNotes',
-            'desc'   => 'Extended syntax for footnotes and references.',
-            'url'    => 'http://code.google.com/p/dwp-forge/',
-        );
+        return refnotes_getinfo('default notes renderer');
     }
 
     /**

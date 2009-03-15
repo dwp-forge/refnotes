@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Plugin RefNotes: Notes list
+ * Plugin RefNotes: Notes collection
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
@@ -12,6 +12,7 @@ if(!defined('DOKU_INC')) die();
 
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_INC . 'inc/plugin.php');
+require_once(DOKU_PLUGIN . 'refnotes/info.php');
 
 class helper_plugin_refnotes extends DokuWiki_Plugin {
 
@@ -28,14 +29,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      * Return some info
      */
     function getInfo() {
-        return array(
-            'author' => 'Mykola Ostrovskyy',
-            'email'  => 'spambox03@mail.ru',
-            'date'   => '2009-02-22',
-            'name'   => 'RefNotes Plugin',
-            'desc'   => 'Extended syntax for footnotes and references.',
-            'url'    => 'http://code.google.com/p/dwp-forge/',
-        );
+        return refnotes_getinfo('notes collection');
     }
 
     /**
