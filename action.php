@@ -17,12 +17,16 @@ require_once(DOKU_PLUGIN . 'refnotes/info.php');
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
 
     var $core;
+    var $render;
+    var $style;
 
     /**
      * Constructor
      */
     function action_plugin_refnotes() {
         $this->core = NULL;
+        $this->render = array();
+        $this->style = array();
     }
 
     /**
@@ -43,9 +47,9 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      *
      */
     function handle(&$event, $param) {
-        $style = $this->_extractStyles($event);
-        if (count($style) > 0) {
-            $this->_insertStyles($event, $style);
+        $this->_extractStyles($event);
+        if (count($this->style) > 0) {
+            $this->_insertStyles($event);
         }
         $this->_renderLeftovers($event);
     }
@@ -55,43 +59,46 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      */
     function _extractStyles(&$event) {
         $count = count($event->data->calls);
-        $render = array();
-        $style = array();
         for ($i = 0; $i < $count; $i++) {
             $call =& $event->data->calls[$i];
             if (($call[0] == 'plugin') && ($call[1][0] == 'refnotes_notes')) {
-                $namespace = $this->_getCore()->canonizeNamespace($call[1][1][1]['ns']);
-                switch ($call[1][1][0]) {
-                    case 'render':
-                        $render[$namespace] = $i;
-                        break;
-
-                    case 'split':
-                        $pos = array_key_exists($namespace, $render) ? $render[$namespace] + 1: 0;
-                        $style[] = array('pos' => $pos, 'ns' => $namespace, 'data' => $call[1][1][2]);
-                        $call[1][1][0] = 'render';
-                        unset($call[1][1][2]);
-                        $render[$namespace] = $i;
-                        break;
-                }
+                $this->_handleNotes($call);
             }
         }
-        return $style;
+    }
+
+    /**
+     * Extract style data and replace "split" instructions by "render"
+     */
+    function _handleNotes(&$call) {
+        $namespace = $this->_getCore()->canonizeNamespace($call[1][1][1]['ns']);
+        if ($call[1][1][0] == 'split') {
+            if (array_key_exists($namespace, $this->render)) {
+                $pos = $this->render[$namespace] + 1;
+            }
+            else {
+                $pos = 0;
+            }
+            $this->style[] = array('pos' => $pos, 'ns' => $namespace, 'data' => $call[1][1][2]);
+            $call[1][1][0] = 'render';
+            unset($call[1][1][2]);
+        }
+        $this->render[$namespace] = $i;
     }
 
     /**
      * Insert style instructions
      */
-    function _insertStyles(&$event, $style) {
+    function _insertStyles(&$event) {
         $calls = count($event->data->calls);
-        $styles = count($style);
+        $styles = count($this->style);
         $call = array();
         for ($c = 0, $s = 0; $c < $calls; $c++) {
-            while (($s < $styles) && ($style[$s]['pos'] == $c)) {
-                $attribute['ns'] = $style[$s]['ns'];
+            while (($s < $styles) && ($this->style[$s]['pos'] == $c)) {
+                $attribute['ns'] = $this->style[$s]['ns'];
                 $data[0] = 'style';
                 $data[1] = $attribute;
-                $data[2] = $style[$s]['data'];
+                $data[2] = $this->style[$s]['data'];
                 $call[] = $this->_getInstruction($data, $event->data->calls[$c][2]);
                 $s++;
             }
