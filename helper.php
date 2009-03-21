@@ -111,7 +111,14 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
             }
         }
         if (($result == NULL) && $create) {
-            $this->namespace[] = new refnotes_namespace($name);
+            if ($name != ':') {
+                $parentName = preg_replace('/\w+:$/', '', $name);
+                $parent = $this->_findNamespace($parentName, true);
+                $this->namespace[] = new refnotes_namespace($name, $parent);
+            }
+            else {
+                $this->namespace[] = new refnotes_namespace($name);
+            }
             $result = end($this->namespace);
         }
         return $result;
@@ -128,11 +135,14 @@ class refnotes_namespace {
     /**
      * Constructor
      */
-    function refnotes_namespace($name) {
+    function refnotes_namespace($name, $parent = NULL) {
         $this->name = $name;
         $this->style = array();
         $this->scope = array();
         $this->newScope = true;
+        if ($parent != NULL) {
+            $this->style = $parent->style;
+        }
     }
 
     /**
