@@ -13,10 +13,10 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'action.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
 
-    var $core;
     var $render;
     var $style;
 
@@ -24,7 +24,6 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Constructor
      */
     function action_plugin_refnotes() {
-        $this->core = NULL;
         $this->render = array();
         $this->style = array();
     }
@@ -71,7 +70,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Extract style data and replace "split" instructions by "render"
      */
     function _handleNotes(&$call) {
-        $namespace = $this->_getCore()->canonizeNamespace($call[1][1][1]['ns']);
+        $namespace = refnotes_canonizeNamespace($call[1][1][1]['ns']);
         if ($call[1][1][0] == 'split') {
             if (array_key_exists($namespace, $this->render)) {
                 $pos = $this->render[$namespace] + 1;
@@ -125,18 +124,5 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     function _getInstruction($data, $offset) {
         $parameters = array('refnotes_notes', $data, 5, 'refnotes_action');
         return array('plugin', $parameters, $offset);
-    }
-
-    /**
-     *
-     */
-    function _getCore() {
-        if ($this->core == NULL) {
-            $this->core =& plugin_load('helper', 'refnotes');
-            if ($this->core == NULL) {
-                throw new Exception('Helper plugin "refnotes" is not available or invalid.');
-            }
-        }
-        return $this->core;
     }
 }

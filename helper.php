@@ -13,6 +13,7 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_INC . 'inc/plugin.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class helper_plugin_refnotes extends DokuWiki_Plugin {
 
@@ -40,13 +41,6 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     }
 
     /**
-     * Returns canonic name for a namespace
-     */
-    function canonizeNamespace($name) {
-        return preg_replace('/:{2,}/', ':', ':' . $name . ':');
-    }
-
-    /**
      * Adds a reference to the notes array. Returns a note
      */
     function addReference($name, $hidden) {
@@ -59,7 +53,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      *
      */
     function styleNotes($name, $style) {
-        $namespaceName = $this->canonizeNamespace($name);
+        $namespaceName = refnotes_canonizeNamespace($name);
         $namespace = $this->_findNamespace($namespaceName, true);
         $namespace->style($style);
     }
@@ -75,7 +69,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
             }
         }
         else {
-            $namespaceName = $this->canonizeNamespace($name);
+            $namespaceName = refnotes_canonizeNamespace($name);
             $namespace = $this->_findNamespace($namespaceName);
             if ($namespace != NULL) {
                 $html = $namespace->renderNotes($limit);
@@ -90,7 +84,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     function _parseName($name) {
         $pos = strrpos($name, ':');
         if ($pos !== false) {
-            $namespace = $this->canonizeNamespace(substr($name, 0, $pos));
+            $namespace = refnotes_canonizeNamespace(substr($name, 0, $pos));
             $name = substr($name, $pos + 1);
         }
         else {
@@ -112,7 +106,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
         }
         if (($result == NULL) && $create) {
             if ($name != ':') {
-                $parentName = preg_replace('/\w+:$/', '', $name);
+                $parentName = refnotes_getParentNamespace($name);
                 $parent = $this->_findNamespace($parentName, true);
                 $this->namespace[] = new refnotes_namespace($name, $parent);
             }
