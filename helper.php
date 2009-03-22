@@ -44,7 +44,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      * Adds a reference to the notes array. Returns a note
      */
     function addReference($name, $hidden) {
-        list($namespaceName, $noteName) = $this->_parseName($name);
+        list($namespaceName, $noteName) = refnotes_parseName($name);
         $namespace = $this->_findNamespace($namespaceName, true);
         return $namespace->addReference($noteName, $hidden);
     }
@@ -76,21 +76,6 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
             }
         }
         return $html;
-    }
-
-    /**
-     * Splits full note name into namespace and name components
-     */
-    function _parseName($name) {
-        $pos = strrpos($name, ':');
-        if ($pos !== false) {
-            $namespace = refnotes_canonizeNamespace(substr($name, 0, $pos));
-            $name = substr($name, $pos + 1);
-        }
-        else {
-            $namespace = ':';
-        }
-        return array($namespace, $name);
     }
 
     /**
