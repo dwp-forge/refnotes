@@ -133,14 +133,57 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     }
 
     /**
-     *
+     * Sort the style blocks so that the namespaces with inherited style go after
+     * the namespaces they inherit from
      */
     function _sortStyles() {
+        /* Sort in ascending order to ensure the default enheritance */
         foreach ($this->style as $key => $style) {
-            $index[$key]  = $style['idx'];
+            $index[$key] = $style['idx'];
             $namespace[$key] = $style['ns'];
         }
         array_multisort($index, SORT_ASC, $namespace, SORT_ASC, $this->style);
+        /* Sort to ensure explicit enheritance */
+        foreach ($this->style as $style) {
+            $bucket[$style['idx']][] = $style;
+        }
+        $this->style = array();
+        foreach ($bucket as $b) {
+            $inherit = array();
+            foreach ($b as $style) {
+                if (array_key_exists('inherit', $style['data'])) {
+                    $inherit[] = $style;
+                }
+                else {
+                    $this->style[] = $style;
+                }
+            }
+            $inherits = count($inherit);
+            if ($inherits > 0) {
+                if ($inherits > 1) {
+                    /* Perform simplified topological sorting */
+                    $target = array();
+                    $source = array();
+                    for ($i = 0; $i < $inherits; $i++) {
+                        $target[$i] = refnotes_canonizeNamespace($inherit[$i]['ns']);
+                        $source[$i] = refnotes_canonizeNamespace($inherit[$i]['data']['inherit']);
+                    }
+                    for ($i = 0; $i < $inherits; $i++) {
+                        foreach ($source as $index => $s) {
+                            if (!in_array($s, $target)) {
+                                break;
+                            }
+                        }
+                        $this->style[] = $inherit[$index];
+                        unset($target[$index]);
+                        unset($source[$index]);
+                    }
+                }
+                else {
+                    $this->style[] = $inherit[0];
+                }
+            }
+        }
     }
 
     /**

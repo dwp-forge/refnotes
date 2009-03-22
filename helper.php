@@ -55,6 +55,11 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     function styleNotes($name, $style) {
         $namespaceName = refnotes_canonizeNamespace($name);
         $namespace = $this->_findNamespace($namespaceName, true);
+        if (array_key_exists('inherit', $style)) {
+            $sourceName = refnotes_canonizeNamespace($style['inherit']);
+            $source = $this->_findNamespace($sourceName, true);
+            $namespace->inheritStyle($source);
+        }
         $namespace->style($style);
     }
 
@@ -138,6 +143,13 @@ class refnotes_namespace {
         foreach ($style as $property => $value) {
             $this->style[$property] = $value;
         }
+    }
+
+    /**
+     *
+     */
+    function inheritStyle($source) {
+        $this->style = $source->style;
     }
 
     /**
