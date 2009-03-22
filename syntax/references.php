@@ -107,7 +107,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     function handle($match, $state, $pos, &$handler) {
         switch ($state) {
             case DOKU_LEXER_ENTER:
-                return $this->_handleEnter($match, $pos);
+                return $this->_handleEnter($match, $pos, $handler);
 
             case DOKU_LEXER_UNMATCHED:
                 return array($state, $match);
@@ -149,14 +149,14 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    function _handleEnter($syntax, $pos) {
+    function _handleEnter($syntax, $pos, &$handler) {
         if (!$this->handling) {
             if (preg_match($this->syntaxParse, $syntax, $match) == 0) {
                 return false;
             }
             $this->handling = true;
             $info['name'] = $match[2];
-            $info['hidden'] = $this->_isHiddenReference($match[1], $pos);
+            $info['hidden'] = $this->_isHiddenReference($match[1], $pos, $handler);
 
             return array(DOKU_LEXER_ENTER, $info);
         }
@@ -186,20 +186,20 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    function _isHiddenReference($space, $pos) {
+    function _isHiddenReference($space, $pos, &$handler) {
         $newLines = substr_count($space, "\n");
-        switch ($newLines) {
-            case 0:
-            case 1:
+        $lastCall = end($handler->calls);
+        $lastCall = $lastCall[0];
+        if (($newLines == 2) || ($lastCall == 'table_close')) {
+            $this->lastHiddenExit = $pos;
+        }
+        else {
+            if ($this->lastHiddenExit > 0) {
                 $entry = $this->lastHiddenExit + strlen($this->syntaxExit);
                 if ($entry < $pos) {
                     $this->lastHiddenExit = 0;
                 }
-                break;
-
-            case 2:
-                $this->lastHiddenExit = $pos;
-                break;
+            }
         }
         return $this->lastHiddenExit > 0;
     }
