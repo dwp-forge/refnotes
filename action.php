@@ -65,7 +65,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
             if ($call[0] == 'plugin') {
                 switch ($call[1][0]) {
                     case 'refnotes_references':
-                        $this->_handleReference($i, $call[1][1]);
+                        $this->_handleReference($call[1][1]);
                         break;
 
                     case 'refnotes_notes':
@@ -79,11 +79,11 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      * Mark namespace creation instructions
      */
-    function _handleReference($callIndex, &$callData) {
+    function _handleReference(&$callData) {
         if ($callData[0] == DOKU_LEXER_ENTER) {
             list($namespace, $note) = refnotes_parseName($callData[1]['name']);
             if (!array_key_exists($namespace, $this->create)) {
-                $this->_markNamespaceCreation($namespace, $callIndex);
+                $this->_markNamespaceCreation($namespace);
             }
         }
     }
@@ -91,13 +91,13 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      * Mark namespace creation instructions
      */
-    function _markNamespaceCreation($namespace, $callIndex) {
-        while (!array_key_exists($namespace, $this->create)) {
-            $this->create[$namespace] = $callIndex;
-            if ($namespace == ':') {
-                break;
-            }
-            $namespace = refnotes_getParentNamespace($namespace);
+    function _markNamespaceCreation($namespace) {
+        if ($namespace == ':') {
+            $this->create[$namespace] = 0;
+        }
+        else {
+            $parent = refnotes_getParentNamespace($namespace);
+            $this->create[$namespace] = $this->_getScopeStart($parent);
         }
     }
 
@@ -107,8 +107,8 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     function _handleNotes($callIndex, &$callData) {
         $namespace = refnotes_canonizeNamespace($callData[1]['ns']);
         if ($callData[0] == 'split') {
-            $pos = $this->_getScopeStart($namespace, $callIndex);
-            $this->style[] = array('pos' => $pos, 'ns' => $namespace, 'data' => $callData[2]);
+            $index = $this->_getScopeStart($namespace);
+            $this->style[] = array('pos' => $index, 'ns' => $namespace, 'data' => $callData[2]);
             $callData[0] = 'render';
             unset($callData[2]);
         }
@@ -118,13 +118,13 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      * Returns index of instruction that starts current scope of the specified namespace
      */
-    function _getScopeStart($namespace, $callIndex) {
+    function _getScopeStart($namespace) {
         if (array_key_exists($namespace, $this->render)) {
             $index = $this->render[$namespace] + 1;
         }
         else {
             if (!array_key_exists($namespace, $this->create)) {
-                $this->_markNamespaceCreation($namespace, $callIndex);
+                $this->_markNamespaceCreation($namespace);
             }
             $index = $this->create[$namespace];
         }
