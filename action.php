@@ -17,6 +17,7 @@ require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
 
+    var $create;
     var $render;
     var $style;
 
@@ -24,6 +25,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Constructor
      */
     function action_plugin_refnotes() {
+        $this->create = array();
         $this->render = array();
         $this->style = array();
     }
@@ -60,9 +62,42 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $count = count($event->data->calls);
         for ($i = 0; $i < $count; $i++) {
             $call =& $event->data->calls[$i];
-            if (($call[0] == 'plugin') && ($call[1][0] == 'refnotes_notes')) {
-                $this->_handleNotes($i, $call[1][1]);
+            if ($call[0] == 'plugin') {
+                switch ($call[1][0]) {
+                    case 'refnotes_references':
+                        $this->_handleReference($i, $call[1][1]);
+                        break;
+
+                    case 'refnotes_notes':
+                        $this->_handleNotes($i, $call[1][1]);
+                        break;
+                }
             }
+        }
+    }
+
+    /**
+     * Mark namespace creation instructions
+     */
+    function _handleReference($callIndex, &$callData) {
+        if ($callData[0] == DOKU_LEXER_ENTER) {
+            list($namespace, $note) = refnotes_parseName($callData[1]['name']);
+            if (!array_key_exists($namespace, $this->create)) {
+                $this->_markNamespaceCreation($namespace, $callIndex);
+            }
+        }
+    }
+
+    /**
+     * Mark namespace creation instructions
+     */
+    function _markNamespaceCreation($namespace, $callIndex) {
+        while (!array_key_exists($namespace, $this->create)) {
+            $this->create[$namespace] = $callIndex;
+            if ($namespace == ':') {
+                break;
+            }
+            $namespace = refnotes_getParentNamespace($namespace);
         }
     }
 
@@ -72,17 +107,28 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     function _handleNotes($callIndex, &$callData) {
         $namespace = refnotes_canonizeNamespace($callData[1]['ns']);
         if ($callData[0] == 'split') {
-            if (array_key_exists($namespace, $this->render)) {
-                $pos = $this->render[$namespace] + 1;
-            }
-            else {
-                $pos = 0;
-            }
+            $pos = $this->_getScopeStart($namespace, $callIndex);
             $this->style[] = array('pos' => $pos, 'ns' => $namespace, 'data' => $callData[2]);
             $callData[0] = 'render';
             unset($callData[2]);
         }
         $this->render[$namespace] = $callIndex;
+    }
+
+    /**
+     * Returns index of instruction that starts current scope of the specified namespace
+     */
+    function _getScopeStart($namespace, $callIndex) {
+        if (array_key_exists($namespace, $this->render)) {
+            $index = $this->render[$namespace] + 1;
+        }
+        else {
+            if (!array_key_exists($namespace, $this->create)) {
+                $this->_markNamespaceCreation($namespace, $callIndex);
+            }
+            $index = $this->create[$namespace];
+        }
+        return $index;
     }
 
     /**
