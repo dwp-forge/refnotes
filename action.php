@@ -50,6 +50,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     function handle(&$event, $param) {
         $this->_extractStyles($event);
         if (count($this->style) > 0) {
+            $this->_sortStyles();
             $this->_insertStyles($event);
         }
         $this->_renderLeftovers($event);
@@ -108,7 +109,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $namespace = refnotes_canonizeNamespace($callData[1]['ns']);
         if ($callData[0] == 'split') {
             $index = $this->_getScopeStart($namespace);
-            $this->style[] = array('pos' => $index, 'ns' => $namespace, 'data' => $callData[2]);
+            $this->style[] = array('idx' => $index, 'ns' => $namespace, 'data' => $callData[2]);
             $callData[0] = 'render';
             unset($callData[2]);
         }
@@ -132,6 +133,17 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     }
 
     /**
+     *
+     */
+    function _sortStyles() {
+        foreach ($this->style as $key => $style) {
+            $index[$key]  = $style['idx'];
+            $namespace[$key] = $style['ns'];
+        }
+        array_multisort($index, SORT_ASC, $namespace, SORT_ASC, $this->style);
+    }
+
+    /**
      * Insert style instructions
      */
     function _insertStyles(&$event) {
@@ -139,7 +151,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $styles = count($this->style);
         $call = array();
         for ($c = 0, $s = 0; $c < $calls; $c++) {
-            while (($s < $styles) && ($this->style[$s]['pos'] == $c)) {
+            while (($s < $styles) && ($this->style[$s]['idx'] == $c)) {
                 $attribute['ns'] = $this->style[$s]['ns'];
                 $data[0] = 'style';
                 $data[1] = $attribute;
