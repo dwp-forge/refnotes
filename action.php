@@ -61,28 +61,28 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         for ($i = 0; $i < $count; $i++) {
             $call =& $event->data->calls[$i];
             if (($call[0] == 'plugin') && ($call[1][0] == 'refnotes_notes')) {
-                $this->_handleNotes($call);
+                $this->_handleNotes($i, $call[1][1]);
             }
         }
     }
 
     /**
-     * Extract style data and replace "split" instructions by "render"
+     * Extract style data and replace "split" instructions with "render"
      */
-    function _handleNotes(&$call) {
-        $namespace = refnotes_canonizeNamespace($call[1][1][1]['ns']);
-        if ($call[1][1][0] == 'split') {
+    function _handleNotes($callIndex, &$callData) {
+        $namespace = refnotes_canonizeNamespace($callData[1]['ns']);
+        if ($callData[0] == 'split') {
             if (array_key_exists($namespace, $this->render)) {
                 $pos = $this->render[$namespace] + 1;
             }
             else {
                 $pos = 0;
             }
-            $this->style[] = array('pos' => $pos, 'ns' => $namespace, 'data' => $call[1][1][2]);
-            $call[1][1][0] = 'render';
-            unset($call[1][1][2]);
+            $this->style[] = array('pos' => $pos, 'ns' => $namespace, 'data' => $callData[2]);
+            $callData[0] = 'render';
+            unset($callData[2]);
         }
-        $this->render[$namespace] = $i;
+        $this->render[$namespace] = $callIndex;
     }
 
     /**
