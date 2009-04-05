@@ -17,16 +17,14 @@ require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
 
-    var $create;
-    var $render;
+    var $scopeStart;
     var $style;
 
     /**
      * Constructor
      */
     function action_plugin_refnotes() {
-        $this->create = array();
-        $this->render = array();
+        $this->scopeStart = array();
         $this->style = array();
     }
 
@@ -83,22 +81,22 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     function _handleReference(&$callData) {
         if ($callData[0] == DOKU_LEXER_ENTER) {
             list($namespace, $note) = refnotes_parseName($callData[1]['name']);
-            if (!array_key_exists($namespace, $this->create)) {
-                $this->_markNamespaceCreation($namespace);
+            if (!array_key_exists($namespace, $this->scopeStart)) {
+                $this->_markScopeStart($namespace);
             }
         }
     }
 
     /**
-     * Mark namespace creation instructions
+     * Mark start of a scope instructions
      */
-    function _markNamespaceCreation($namespace) {
+    function _markScopeStart($namespace) {
         if ($namespace == ':') {
-            $this->create[$namespace] = 0;
+            $this->scopeStart[$namespace] = 0;
         }
         else {
             $parent = refnotes_getParentNamespace($namespace);
-            $this->create[$namespace] = $this->_getScopeStart($parent);
+            $this->scopeStart[$namespace] = $this->_getScopeStart($parent);
         }
     }
 
@@ -113,23 +111,17 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
             $callData[0] = 'render';
             unset($callData[2]);
         }
-        $this->render[$namespace] = $callIndex;
+        $this->scopeStart[$namespace] = $callIndex + 1;
     }
 
     /**
      * Returns index of instruction that starts current scope of the specified namespace
      */
     function _getScopeStart($namespace) {
-        if (array_key_exists($namespace, $this->render)) {
-            $index = $this->render[$namespace] + 1;
+        if (!array_key_exists($namespace, $this->scopeStart)) {
+            $this->_markScopeStart($namespace);
         }
-        else {
-            if (!array_key_exists($namespace, $this->create)) {
-                $this->_markNamespaceCreation($namespace);
-            }
-            $index = $this->create[$namespace];
-        }
-        return $index;
+        return $this->scopeStart[$namespace];
     }
 
     /**
