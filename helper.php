@@ -13,6 +13,7 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_INC . 'inc/plugin.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class helper_plugin_refnotes extends DokuWiki_Plugin {
 
@@ -40,17 +41,10 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     }
 
     /**
-     * Returns canonic name for a namespace
-     */
-    function canonizeNamespace($name) {
-        return preg_replace('/:{2,}/', ':', ':' . $name . ':');
-    }
-
-    /**
      * Adds a reference to the notes array. Returns a note
      */
     function addReference($name, $hidden) {
-        list($namespaceName, $noteName) = $this->_parseName($name);
+        list($namespaceName, $noteName) = refnotes_parseName($name);
         $namespace = $this->_findNamespace($namespaceName, true);
         return $namespace->addReference($noteName, $hidden);
     }
@@ -59,8 +53,13 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      *
      */
     function styleNotes($name, $style) {
-        $namespaceName = $this->canonizeNamespace($name);
+        $namespaceName = refnotes_canonizeNamespace($name);
         $namespace = $this->_findNamespace($namespaceName, true);
+        if (array_key_exists('inherit', $style)) {
+            $sourceName = refnotes_canonizeNamespace($style['inherit']);
+            $source = $this->_findNamespace($sourceName, true);
+            $namespace->inheritStyle($source);
+        }
         $namespace->style($style);
     }
 
@@ -75,28 +74,13 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
             }
         }
         else {
-            $namespaceName = $this->canonizeNamespace($name);
+            $namespaceName = refnotes_canonizeNamespace($name);
             $namespace = $this->_findNamespace($namespaceName);
             if ($namespace != NULL) {
                 $html = $namespace->renderNotes($limit);
             }
         }
         return $html;
-    }
-
-    /**
-     * Splits full note name into namespace and name components
-     */
-    function _parseName($name) {
-        $pos = strrpos($name, ':');
-        if ($pos !== false) {
-            $namespace = $this->canonizeNamespace(substr($name, 0, $pos));
-            $name = substr($name, $pos + 1);
-        }
-        else {
-            $namespace = ':';
-        }
-        return array($namespace, $name);
     }
 
     /**
@@ -111,7 +95,14 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
             }
         }
         if (($result == NULL) && $create) {
-            $this->namespace[] = new refnotes_namespace($name);
+            if ($name != ':') {
+                $parentName = refnotes_getParentNamespace($name);
+                $parent = $this->_findNamespace($parentName, true);
+                $this->namespace[] = new refnotes_namespace($name, $parent);
+            }
+            else {
+                $this->namespace[] = new refnotes_namespace($name);
+            }
             $result = end($this->namespace);
         }
         return $result;
@@ -128,11 +119,14 @@ class refnotes_namespace {
     /**
      * Constructor
      */
-    function refnotes_namespace($name) {
+    function refnotes_namespace($name, $parent = NULL) {
         $this->name = $name;
         $this->style = array();
         $this->scope = array();
         $this->newScope = true;
+        if ($parent != NULL) {
+            $this->style = $parent->style;
+        }
     }
 
     /**
@@ -149,6 +143,13 @@ class refnotes_namespace {
         foreach ($style as $property => $value) {
             $this->style[$property] = $value;
         }
+    }
+
+    /**
+     *
+     */
+    function inheritStyle($source) {
+        $this->style = $source->style;
     }
 
     /**

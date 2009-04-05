@@ -13,16 +13,21 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'action.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
 
-    var $core;
+    var $scopeStart;
+    var $scopeEnd;
+    var $style;
 
     /**
      * Constructor
      */
     function action_plugin_refnotes() {
-        $this->core = NULL;
+        $this->scopeStart = array();
+        $this->scopeEnd = array();
+        $this->style = array();
     }
 
     /**
@@ -43,9 +48,10 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      *
      */
     function handle(&$event, $param) {
-        $style = $this->_extractStyles($event);
-        if (count($style) > 0) {
-            $this->_insertStyles($event, $style);
+        $this->_extractStyles($event);
+        if (count($this->style) > 0) {
+            $this->_sortStyles();
+            $this->_insertStyles($event);
         }
         $this->_renderLeftovers($event);
     }
@@ -55,43 +61,169 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      */
     function _extractStyles(&$event) {
         $count = count($event->data->calls);
-        $render = array();
-        $style = array();
         for ($i = 0; $i < $count; $i++) {
             $call =& $event->data->calls[$i];
-            if (($call[0] == 'plugin') && ($call[1][0] == 'refnotes_notes')) {
-                $namespace = $this->_getCore()->canonizeNamespace($call[1][1][1]['ns']);
-                switch ($call[1][1][0]) {
-                    case 'render':
-                        $render[$namespace] = $i;
+            if ($call[0] == 'plugin') {
+                switch ($call[1][0]) {
+                    case 'refnotes_references':
+                        $this->_handleReference($i, $call[1][1]);
                         break;
 
-                    case 'split':
-                        $pos = array_key_exists($namespace, $render) ? $render[$namespace] + 1: 0;
-                        $style[] = array('pos' => $pos, 'ns' => $namespace, 'data' => $call[1][1][2]);
-                        $call[1][1][0] = 'render';
-                        unset($call[1][1][2]);
-                        $render[$namespace] = $i;
+                    case 'refnotes_notes':
+                        $this->_handleNotes($i, $call[1][1]);
                         break;
                 }
             }
         }
-        return $style;
+    }
+
+    /**
+     * Mark namespace creation instructions
+     */
+    function _handleReference($callIndex, &$callData) {
+        if ($callData[0] == DOKU_LEXER_ENTER) {
+            list($namespace, $note) = refnotes_parseName($callData[1]['name']);
+            $this->_markScopeStart($namespace, $callIndex);
+        }
+    }
+
+    /**
+     * Mark start of a scope instruction
+     */
+    function _markScopeStart($namespace, $callIndex) {
+        if (array_key_exists($namespace, $this->scopeStart)) {
+            if (count($this->scopeStart[$namespace]) < count($this->scopeEnd[$namespace])) {
+                $this->scopeStart[$namespace][] = $callIndex;
+            }
+        }
+        else {
+            $this->_markScopeEnd($namespace, -1);
+            $this->scopeStart[$namespace][] = $callIndex;
+        }
+    }
+
+    /**
+     * Mark end of a scope instruction
+     */
+    function _markScopeEnd($namespace, $callIndex) {
+        $this->scopeEnd[$namespace][] = $callIndex;
+    }
+
+    /**
+     * Extract style data and replace "split" instructions with "render"
+     */
+    function _handleNotes($callIndex, &$callData) {
+        $namespace = refnotes_canonizeNamespace($callData[1]['ns']);
+        if ($callData[0] == 'split') {
+            if (array_key_exists('inherit', $callData[2])) {
+                $parent = refnotes_canonizeNamespace($callData[2]['inherit']);
+                $index = $this->_getStyleIndex($namespace, $parent);
+            }
+            else {
+                $index = $this->_getStyleIndex($namespace);
+            }
+            $this->style[] = array('idx' => $index, 'ns' => $namespace, 'data' => $callData[2]);
+            $callData[0] = 'render';
+            unset($callData[2]);
+        }
+        $this->_markScopeEnd($namespace, $callIndex);
+    }
+
+    /**
+     * Returns instruction index where the style instruction has to be inserted
+     */
+    function _getStyleIndex($namespace, $parent = '') {
+        if (($parent == '') && (count($this->scopeStart[$namespace]) == 1)) {
+            /* Default inheritance for the first scope */
+            $parent = refnotes_getParentNamespace($namespace);
+        }
+        $index = end($this->scopeEnd[$namespace]) + 1;
+        if ($parent != '') {
+            $start = end($this->scopeStart[$namespace]);
+            $end = end($this->scopeEnd[$namespace]);
+            while ($parent != '') {
+                if (array_key_exists($parent, $this->scopeEnd)) {
+                    for ($i = count($this->scopeEnd[$parent]) - 1; $i >= 0; $i--) {
+                        $parentEnd = $this->scopeEnd[$parent][$i];
+                        if (($parentEnd >= $end) && ($parentEnd < $start)) {
+                            $index = $parentEnd + 1;
+                            break 2;
+                        }
+                    }
+                }
+                $parent = refnotes_getParentNamespace($parent);
+            }
+        }
+        return $index;
+    }
+
+    /**
+     * Sort the style blocks so that the namespaces with inherited style go after
+     * the namespaces they inherit from
+     */
+    function _sortStyles() {
+        /* Sort in ascending order to ensure the default enheritance */
+        foreach ($this->style as $key => $style) {
+            $index[$key] = $style['idx'];
+            $namespace[$key] = $style['ns'];
+        }
+        array_multisort($index, SORT_ASC, $namespace, SORT_ASC, $this->style);
+        /* Sort to ensure explicit enheritance */
+        foreach ($this->style as $style) {
+            $bucket[$style['idx']][] = $style;
+        }
+        $this->style = array();
+        foreach ($bucket as $b) {
+            $inherit = array();
+            foreach ($b as $style) {
+                if (array_key_exists('inherit', $style['data'])) {
+                    $inherit[] = $style;
+                }
+                else {
+                    $this->style[] = $style;
+                }
+            }
+            $inherits = count($inherit);
+            if ($inherits > 0) {
+                if ($inherits > 1) {
+                    /* Perform simplified topological sorting */
+                    $target = array();
+                    $source = array();
+                    for ($i = 0; $i < $inherits; $i++) {
+                        $target[$i] = refnotes_canonizeNamespace($inherit[$i]['ns']);
+                        $source[$i] = refnotes_canonizeNamespace($inherit[$i]['data']['inherit']);
+                    }
+                    for ($i = 0; $i < $inherits; $i++) {
+                        foreach ($source as $index => $s) {
+                            if (!in_array($s, $target)) {
+                                break;
+                            }
+                        }
+                        $this->style[] = $inherit[$index];
+                        unset($target[$index]);
+                        unset($source[$index]);
+                    }
+                }
+                else {
+                    $this->style[] = $inherit[0];
+                }
+            }
+        }
     }
 
     /**
      * Insert style instructions
      */
-    function _insertStyles(&$event, $style) {
+    function _insertStyles(&$event) {
         $calls = count($event->data->calls);
-        $styles = count($style);
+        $styles = count($this->style);
         $call = array();
         for ($c = 0, $s = 0; $c < $calls; $c++) {
-            while (($s < $styles) && ($style[$s]['pos'] == $c)) {
-                $attribute['ns'] = $style[$s]['ns'];
+            while (($s < $styles) && ($this->style[$s]['idx'] == $c)) {
+                $attribute['ns'] = $this->style[$s]['ns'];
                 $data[0] = 'style';
                 $data[1] = $attribute;
-                $data[2] = $style[$s]['data'];
+                $data[2] = $this->style[$s]['data'];
                 $call[] = $this->_getInstruction($data, $event->data->calls[$c][2]);
                 $s++;
             }
@@ -118,18 +250,5 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     function _getInstruction($data, $offset) {
         $parameters = array('refnotes_notes', $data, 5, 'refnotes_action');
         return array('plugin', $parameters, $offset);
-    }
-
-    /**
-     *
-     */
-    function _getCore() {
-        if ($this->core == NULL) {
-            $this->core =& plugin_load('helper', 'refnotes');
-            if ($this->core == NULL) {
-                throw new Exception('Helper plugin "refnotes" is not available or invalid.');
-            }
-        }
-        return $this->core;
     }
 }
