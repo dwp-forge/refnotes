@@ -18,7 +18,7 @@ function refnotes_canonizeNamespace($name) {
  * Returns name of the parent namespace
  */
 function refnotes_getParentNamespace($name) {
-    return preg_replace('/\w+:$/', '', $name);
+    return preg_replace('/\w*:$/', '', $name);
 }
 
 /**
