@@ -18,6 +18,7 @@ require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
 
     var $scopeStart;
+    var $scopeEnd;
     var $style;
 
     /**
@@ -25,6 +26,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      */
     function action_plugin_refnotes() {
         $this->scopeStart = array();
+        $this->scopeEnd = array();
         $this->style = array();
     }
 
@@ -64,7 +66,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
             if ($call[0] == 'plugin') {
                 switch ($call[1][0]) {
                     case 'refnotes_references':
-                        $this->_handleReference($call[1][1]);
+                        $this->_handleReference($i, $call[1][1]);
                         break;
 
                     case 'refnotes_notes':
@@ -78,26 +80,33 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      * Mark namespace creation instructions
      */
-    function _handleReference(&$callData) {
+    function _handleReference($callIndex, &$callData) {
         if ($callData[0] == DOKU_LEXER_ENTER) {
             list($namespace, $note) = refnotes_parseName($callData[1]['name']);
-            if (!array_key_exists($namespace, $this->scopeStart)) {
-                $this->_markScopeStart($namespace);
-            }
+            $this->_markScopeStart($namespace, $callIndex);
         }
     }
 
     /**
-     * Mark start of a scope instructions
+     * Mark start of a scope instruction
      */
-    function _markScopeStart($namespace) {
-        if ($namespace == ':') {
-            $this->scopeStart[$namespace] = 0;
+    function _markScopeStart($namespace, $callIndex) {
+        if (array_key_exists($namespace, $this->scopeStart)) {
+            if (count($this->scopeStart[$namespace]) < count($this->scopeEnd[$namespace])) {
+                $this->scopeStart[$namespace][] = $callIndex;
+            }
         }
         else {
-            $parent = refnotes_getParentNamespace($namespace);
-            $this->scopeStart[$namespace] = $this->_getScopeStart($parent);
+            $this->_markScopeEnd($namespace, -1);
+            $this->scopeStart[$namespace][] = $callIndex;
         }
+    }
+
+    /**
+     * Mark end of a scope instruction
+     */
+    function _markScopeEnd($namespace, $callIndex) {
+        $this->scopeEnd[$namespace][] = $callIndex;
     }
 
     /**
@@ -106,22 +115,46 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     function _handleNotes($callIndex, &$callData) {
         $namespace = refnotes_canonizeNamespace($callData[1]['ns']);
         if ($callData[0] == 'split') {
-            $index = $this->_getScopeStart($namespace);
+            if (array_key_exists('inherit', $callData[2])) {
+                $parent = refnotes_canonizeNamespace($callData[2]['inherit']);
+                $index = $this->_getStyleIndex($namespace, $parent);
+            }
+            else {
+                $index = $this->_getStyleIndex($namespace);
+            }
             $this->style[] = array('idx' => $index, 'ns' => $namespace, 'data' => $callData[2]);
             $callData[0] = 'render';
             unset($callData[2]);
         }
-        $this->scopeStart[$namespace] = $callIndex + 1;
+        $this->_markScopeEnd($namespace, $callIndex);
     }
 
     /**
-     * Returns index of instruction that starts current scope of the specified namespace
+     * Returns instruction index where the style instruction has to be inserted
      */
-    function _getScopeStart($namespace) {
-        if (!array_key_exists($namespace, $this->scopeStart)) {
-            $this->_markScopeStart($namespace);
+    function _getStyleIndex($namespace, $parent = '') {
+        if (($parent == '') && (count($this->scopeStart[$namespace]) == 1)) {
+            /* Default inheritance for the first scope */
+            $parent = refnotes_getParentNamespace($namespace);
         }
-        return $this->scopeStart[$namespace];
+        $index = end($this->scopeEnd[$namespace]) + 1;
+        if ($parent != '') {
+            $start = end($this->scopeStart[$namespace]);
+            $end = end($this->scopeEnd[$namespace]);
+            while ($parent != '') {
+                if (array_key_exists($parent, $this->scopeEnd)) {
+                    for ($i = count($this->scopeEnd[$parent]) - 1; $i >= 0; $i--) {
+                        $parentEnd = $this->scopeEnd[$parent][$i];
+                        if (($parentEnd >= $end) && ($parentEnd < $start)) {
+                            $index = $parentEnd + 1;
+                            break 2;
+                        }
+                    }
+                }
+                $parent = refnotes_getParentNamespace($parent);
+            }
+        }
+        return $index;
     }
 
     /**
