@@ -17,12 +17,14 @@ require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class helper_plugin_refnotes extends DokuWiki_Plugin {
 
+    var $namespaceStyle;
     var $namespace;
 
     /**
      * Constructor
      */
     function helper_plugin_refnotes() {
+        $this->_loadNamespaceStyle();
         $this->namespace = array();
     }
 
@@ -88,24 +90,44 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      */
     function _findNamespace($name, $create = false) {
         $result = NULL;
-        foreach ($this->namespace as $namespace) {
-            if ($namespace->name == $name) {
-                $result = $namespace;
-                break;
-            }
+        if (array_key_exists($name, $this->namespace)) {
+            $result = $this->namespace[$name];
         }
         if (($result == NULL) && $create) {
             if ($name != ':') {
                 $parentName = refnotes_getParentNamespace($name);
                 $parent = $this->_findNamespace($parentName, true);
-                $this->namespace[] = new refnotes_namespace($name, $parent);
+                $this->namespace[$name] = new refnotes_namespace($name, $parent);
             }
             else {
-                $this->namespace[] = new refnotes_namespace($name);
+                $this->namespace[$name] = new refnotes_namespace($name);
             }
-            $result = end($this->namespace);
+            if (array_key_exists($name, $this->namespaceStyle)) {
+                $this->namespace[$name]->style($this->namespaceStyle[$name]);
+            }
+            $result = $this->namespace[$name];
         }
         return $result;
+    }
+
+    /**
+     * Load pre-defined namespaces
+     */
+    function _loadNamespaceStyle() {
+        $pluginRoot = DOKU_PLUGIN . 'refnotes/';
+        $fileName = $pluginRoot . 'namespaces.local.dat';
+        if (!file_exists($fileName)) {
+            $fileName = $pluginRoot . 'namespaces.dat';
+            if (!file_exists($fileName)) {
+                $fileName = '';
+            }
+        }
+        if ($fileName != '') {
+            $this->namespaceStyle = unserialize(io_readFile($fileName, false));
+        }
+        else {
+            $this->namespaceStyle = array();
+        }
     }
 }
 
