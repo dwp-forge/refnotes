@@ -34,7 +34,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Return some info
      */
     function getInfo() {
-        return refnotes_getinfo('default notes renderer');
+        return refnotes_getInfo('default notes renderer');
     }
 
     /**

@@ -7,7 +7,7 @@
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
  */
 
-function refnotes_getinfo($component = '') {
+function refnotes_getInfo($component = '') {
     $info = array(
         'author' => 'Mykola Ostrovskyy',
         'email'  => 'spambox03@mail.ru',

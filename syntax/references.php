@@ -64,7 +64,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Return some info
      */
     function getInfo() {
-        return refnotes_getinfo('references syntax');
+        return refnotes_getInfo('references syntax');
     }
 
     /**

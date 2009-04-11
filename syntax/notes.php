@@ -31,7 +31,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      * Return some info
      */
     function getInfo() {
-        return refnotes_getinfo('notes syntax');
+        return refnotes_getInfo('notes syntax');
     }
 
     /**

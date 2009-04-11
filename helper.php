@@ -30,7 +30,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      * Return some info
      */
     function getInfo() {
-        return refnotes_getinfo('notes collection');
+        return refnotes_getInfo('notes collection');
     }
 
     /**
