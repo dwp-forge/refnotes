@@ -110,7 +110,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
                 return $this->_handleEnter($match, $pos, $handler);
 
             case DOKU_LEXER_UNMATCHED:
-                return array($state, $match);
+                $handler->_addCall('cdata', array($match), $pos);
+                break;
 
             case DOKU_LEXER_EXIT:
                 return $this->_handleExit($pos);
@@ -127,10 +128,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
                 switch ($data[0]) {
                     case DOKU_LEXER_ENTER:
                         $this->_renderEnter($renderer, $data[1]);
-                        break;
-
-                    case DOKU_LEXER_UNMATCHED:
-                        $renderer->doc .= $renderer->_xmlEntities($data[1]);
                         break;
 
                     case DOKU_LEXER_EXIT:
