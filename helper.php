@@ -45,8 +45,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      * Adds a reference to the notes array. Returns a note
      */
-    function addReference($name, $hidden) {
-        list($namespaceName, $noteName) = refnotes_parseName($name);
+    function addReference($namespaceName, $noteName, $hidden) {
         $namespace = $this->_findNamespace($namespaceName, true);
         return $namespace->addReference($noteName, $hidden);
     }
@@ -54,12 +53,10 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      *
      */
-    function styleNotes($name, $style) {
-        $namespaceName = refnotes_canonizeNamespace($name);
+    function styleNotes($namespaceName, $style) {
         $namespace = $this->_findNamespace($namespaceName, true);
         if (array_key_exists('inherit', $style)) {
-            $sourceName = refnotes_canonizeNamespace($style['inherit']);
-            $source = $this->_findNamespace($sourceName, true);
+            $source = $this->_findNamespace($style['inherit'], true);
             $namespace->inheritStyle($source);
         }
         $namespace->style($style);
@@ -68,15 +65,14 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      *
      */
-    function renderNotes($name, $limit = '') {
+    function renderNotes($namespaceName, $limit = '') {
         $html = '';
-        if ($name == '*') {
+        if ($namespaceName == '*') {
             foreach ($this->namespace as $namespace) {
                 $html .= $namespace->renderNotes();
             }
         }
         else {
-            $namespaceName = refnotes_canonizeNamespace($name);
             $namespace = $this->_findNamespace($namespaceName);
             if ($namespace != NULL) {
                 $html = $namespace->renderNotes($limit);

@@ -13,6 +13,7 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'syntax.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
 
@@ -140,6 +141,8 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
                 }
             }
         }
+        /* Ensure that namespaces are in canonic form */
+        $attribute['ns'] = refnotes_canonizeNamespace($attribute['ns']);
         return $attribute;
     }
 
@@ -160,6 +163,10 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
             else {
                 $style['notes-separator'] = '';
             }
+        }
+        /* Ensure that namespaces are in canonic form */
+        if (array_key_exists('inherit', $style)) {
+            $style['inherit'] = refnotes_canonizeNamespace($style['inherit']);
         }
         return $style;
     }

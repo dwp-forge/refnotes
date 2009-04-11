@@ -82,8 +82,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      */
     function _handleReference($callIndex, &$callData) {
         if ($callData[0] == DOKU_LEXER_ENTER) {
-            list($namespace, $note) = refnotes_parseName($callData[1]['name']);
-            $this->_markScopeStart($namespace, $callIndex);
+            $this->_markScopeStart($callData[1]['ns'], $callIndex);
         }
     }
 
@@ -113,11 +112,10 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Extract style data and replace "split" instructions with "render"
      */
     function _handleNotes($callIndex, &$callData) {
-        $namespace = refnotes_canonizeNamespace($callData[1]['ns']);
+        $namespace = $callData[1]['ns'];
         if ($callData[0] == 'split') {
             if (array_key_exists('inherit', $callData[2])) {
-                $parent = refnotes_canonizeNamespace($callData[2]['inherit']);
-                $index = $this->_getStyleIndex($namespace, $parent);
+                $index = $this->_getStyleIndex($namespace, $callData[2]['inherit']);
             }
             else {
                 $index = $this->_getStyleIndex($namespace);
@@ -190,8 +188,8 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
                     $target = array();
                     $source = array();
                     for ($i = 0; $i < $inherits; $i++) {
-                        $target[$i] = refnotes_canonizeNamespace($inherit[$i]['ns']);
-                        $source[$i] = refnotes_canonizeNamespace($inherit[$i]['data']['inherit']);
+                        $target[$i] = $inherit[$i]['ns'];
+                        $source[$i] = $inherit[$i]['data']['inherit'];
                     }
                     for ($i = 0; $i < $inherits; $i++) {
                         foreach ($source as $index => $s) {

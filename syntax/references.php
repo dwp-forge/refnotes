@@ -13,6 +13,7 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'syntax.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
@@ -152,7 +153,9 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
                 return false;
             }
             $this->handling = true;
-            $info['name'] = $match[2];
+            list($namespace, $name) = refnotes_parseName($match[2]);
+            $info['ns'] = $namespace;
+            $info['name'] = $name;
             $info['hidden'] = $this->_isHiddenReference($match[1], $pos, $handler);
 
             return array(DOKU_LEXER_ENTER, $info);
@@ -206,7 +209,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     function _renderEnter(&$renderer, $info) {
         $core = $this->_getCore();
-        $note = $core->addReference($info['name'], $info['hidden']);
+        $note = $core->addReference($info['ns'], $info['name'], $info['hidden']);
         if (($note != NULL) && !$info['hidden']) {
             $renderer->doc .= $note->renderReference();
         }
