@@ -13,15 +13,19 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'syntax.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
     var $mode;
+    var $entrySyntax;
+    var $exitSyntax;
     var $entryPattern;
     var $exitPattern;
     var $handlePattern;
     var $core;
+    var $note;
     var $handling;
     var $lastHiddenExit;
     var $capturedNote;
@@ -32,6 +36,9 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     function syntax_plugin_refnotes_references() {
         $this->mode = substr(get_class($this), 7);
+
+        $this->entrySyntax = '[(';
+        $this->exitSyntax = ')]';
 
         $newLine = '(?:\n?[ \t]*\n)?';
         $entry = '\[\(';
@@ -55,6 +62,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->handlePattern = '/(\s*)' . $entry . '\s*(' . $namespace . $optionalName . ').*/';
 
         $this->core = NULL;
+        $this->note = refnotes_loadConfigFile('notes');
         $this->handling = false;
         $this->lastHiddenExit = -1;
         $this->capturedNote = NULL;
@@ -73,6 +81,13 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     function getType() {
         return 'formatting';
+    }
+
+    function accepts($mode) {
+        if ($mode == $this->mode) {
+            return true;
+        }
+        return parent::accepts($mode);
     }
 
     /**
@@ -154,8 +169,12 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         if (preg_match($this->handlePattern, $syntax, $match) == 0) {
             return false;
         }
-        $this->handling = true;
         list($namespace, $name) = refnotes_parseName($match[2]);
+        $fullName = $namespace . $name;
+        if (array_key_exists($fullName, $this->note)) {
+            $this->_embedPredefinedNote($fullName, $pos, $handler);
+        }
+        $this->handling = true;
         $info['ns'] = $namespace;
         $info['name'] = $name;
         $info['hidden'] = $this->_isHiddenReference($match[1], $pos, $handler);
@@ -166,9 +185,36 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
+    function _embedPredefinedNote($name, $pos, &$handler) {
+        $text = $this->entrySyntax . $name . '>' . $this->note[$name]['text'] . $this->exitSyntax;
+        $inline = $this->note[$name]['inline'];
+        unset($this->note[$name]);
+        $lastHiddenExit = $this->lastHiddenExit;
+        $this->lastHiddenExit = 0;
+        $this->_parseNestedText($text, $pos, $handler);
+        $this->lastHiddenExit = $lastHiddenExit;
+        if ($inline) {
+            $handler->calls[count($handler->calls) - 1][1][0][0][1][1][1]['inline'] = true;
+        }
+    }
+
+    /**
+     *
+     */
+    function _parseNestedText($text, $pos, &$handler) {
+        $nestedWriter =& new Doku_Handler_Nest($handler->CallWriter);
+        $handler->CallWriter =& $nestedWriter;
+        $this->Lexer->parse($text);
+        $nestedWriter->process();
+        $handler->CallWriter =& $nestedWriter->CallWriter;
+        $handler->calls[count($handler->calls) - 1][2] = $pos;
+    }
+
+    /**
+     *
+     */
     function _handleExit($syntax, $pos) {
         $this->handling = false;
-
         if ($this->lastHiddenExit >= 0) {
             $this->lastHiddenExit = $pos + strlen($syntax);
         }
