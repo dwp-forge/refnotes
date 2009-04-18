@@ -13,6 +13,7 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_INC . 'inc/plugin.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class helper_plugin_refnotes extends DokuWiki_Plugin {
@@ -24,7 +25,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      * Constructor
      */
     function helper_plugin_refnotes() {
-        $this->_loadNamespaceStyle();
+        $this->namespaceStyle = refnotes_loadConfigFile('namespaces');
         $this->namespace = array();
     }
 
@@ -104,26 +105,6 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
             $result = $this->namespace[$name];
         }
         return $result;
-    }
-
-    /**
-     * Load pre-defined namespaces
-     */
-    function _loadNamespaceStyle() {
-        $pluginRoot = DOKU_PLUGIN . 'refnotes/';
-        $fileName = $pluginRoot . 'namespaces.local.dat';
-        if (!file_exists($fileName)) {
-            $fileName = $pluginRoot . 'namespaces.dat';
-            if (!file_exists($fileName)) {
-                $fileName = '';
-            }
-        }
-        if ($fileName != '') {
-            $this->namespaceStyle = unserialize(io_readFile($fileName, false));
-        }
-        else {
-            $this->namespaceStyle = array();
-        }
     }
 }
 
