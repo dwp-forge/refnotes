@@ -41,19 +41,21 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Register callbacks
      */
     function register(&$controller) {
-        $controller->register_hook('PARSER_HANDLER_DONE', 'AFTER', $this, 'handle');
+        $controller->register_hook('PARSER_HANDLER_DONE', 'AFTER', $this, 'processCallList');
     }
 
     /**
      *
      */
-    function handle(&$event, $param) {
+    function processCallList(&$event, $param) {
         $this->_extractStyles($event);
         if (count($this->style) > 0) {
             $this->_sortStyles();
             $this->_insertStyles($event);
         }
-        $this->_renderLeftovers($event);
+        if (count($this->scopeStart) > 0) {
+            $this->_renderLeftovers($event);
+        }
     }
 
     /**
