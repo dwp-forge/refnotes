@@ -56,7 +56,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $this->core = NULL;
         $this->handling = false;
-        $this->lastHiddenExit = 0;
+        $this->lastHiddenExit = -1;
         $this->capturedNote = NULL;
         $this->docBackup = '';
     }
@@ -108,15 +108,18 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     function handle($match, $state, $pos, &$handler) {
         switch ($state) {
             case DOKU_LEXER_ENTER:
-                return $this->_handleEnter($match, $pos, $handler);
-
-            case DOKU_LEXER_UNMATCHED:
-                $handler->_addCall('cdata', array($match), $pos);
+                if (!$this->handling) {
+                    return $this->_handleEnter($match, $pos, $handler);
+                }
                 break;
 
             case DOKU_LEXER_EXIT:
-                return $this->_handleExit($pos);
+                if ($this->handling) {
+                    return $this->_handleExit($match, $pos);
+                }
+                break;
         }
+        $handler->_addCall('cdata', array($match), $pos);
         return false;
     }
 
@@ -148,39 +151,28 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      *
      */
     function _handleEnter($syntax, $pos, &$handler) {
-        if (!$this->handling) {
-            if (preg_match($this->syntaxParse, $syntax, $match) == 0) {
-                return false;
-            }
-            $this->handling = true;
-            list($namespace, $name) = refnotes_parseName($match[2]);
-            $info['ns'] = $namespace;
-            $info['name'] = $name;
-            $info['hidden'] = $this->_isHiddenReference($match[1], $pos, $handler);
+        if (preg_match($this->syntaxParse, $syntax, $match) == 0) {
+            return false;
+        }
+        $this->handling = true;
+        list($namespace, $name) = refnotes_parseName($match[2]);
+        $info['ns'] = $namespace;
+        $info['name'] = $name;
+        $info['hidden'] = $this->_isHiddenReference($match[1], $pos, $handler);
 
-            return array(DOKU_LEXER_ENTER, $info);
-        }
-        else {
-            //TODO: Check if it's possible to prevent nesting on accepts() level
-            return false; //TODO: return the match as unmatched?
-        }
+        return array(DOKU_LEXER_ENTER, $info);
     }
 
     /**
      *
      */
-    function _handleExit($pos) {
-        if ($this->handling) {
-            $this->handling = false;
+    function _handleExit($syntax, $pos) {
+        $this->handling = false;
 
-            if ($this->lastHiddenExit > 0) {
-                $this->lastHiddenExit = $pos;
-            }
-            return array(DOKU_LEXER_EXIT);
+        if ($this->lastHiddenExit >= 0) {
+            $this->lastHiddenExit = $pos + strlen($syntax);
         }
-        else {
-            return false; //TODO: return the match as unmatched?
-        }
+        return array(DOKU_LEXER_EXIT);
     }
 
     /**
@@ -194,14 +186,11 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             $this->lastHiddenExit = $pos;
         }
         else {
-            if ($this->lastHiddenExit > 0) {
-                $entry = $this->lastHiddenExit + strlen($this->syntaxExit);
-                if ($entry < $pos) {
-                    $this->lastHiddenExit = 0;
-                }
+            if (($this->lastHiddenExit >= 0) && ($this->lastHiddenExit < $pos)) {
+                $this->lastHiddenExit = -1;
             }
         }
-        return $this->lastHiddenExit > 0;
+        return $this->lastHiddenExit >= 0;
     }
 
     /**
