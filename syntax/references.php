@@ -18,9 +18,9 @@ require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
     var $mode;
-    var $syntaxEntry;
-    var $syntaxExit;
-    var $syntaxParse;
+    var $entryPattern;
+    var $exitPattern;
+    var $handlePattern;
     var $core;
     var $handling;
     var $lastHiddenExit;
@@ -50,9 +50,9 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $lookaheadExit = '(?=' . $text . $exit . ')';
         $defineEntry = $optionalDefine . $lookaheadExit;
 
-        $this->syntaxEntry = $newLine . $entry . '(?:' . $nameEntry . '|' . $defineEntry . ')';
-        $this->syntaxExit = $exit;
-        $this->syntaxParse = '/(\s*)' . $entry . '\s*(' . $namespace . $optionalName . ').*/';
+        $this->entryPattern = $newLine . $entry . '(?:' . $nameEntry . '|' . $defineEntry . ')';
+        $this->exitPattern = $exit;
+        $this->handlePattern = '/(\s*)' . $entry . '\s*(' . $namespace . $optionalName . ').*/';
 
         $this->core = NULL;
         $this->handling = false;
@@ -95,11 +95,11 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     }
 
     function connectTo($mode) {
-        $this->Lexer->addEntryPattern($this->syntaxEntry, $mode, $this->mode);
+        $this->Lexer->addEntryPattern($this->entryPattern, $mode, $this->mode);
     }
 
     function postConnect() {
-        $this->Lexer->addExitPattern($this->syntaxExit, $this->mode);
+        $this->Lexer->addExitPattern($this->exitPattern, $this->mode);
     }
 
     /**
@@ -151,7 +151,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      *
      */
     function _handleEnter($syntax, $pos, &$handler) {
-        if (preg_match($this->syntaxParse, $syntax, $match) == 0) {
+        if (preg_match($this->handlePattern, $syntax, $match) == 0) {
             return false;
         }
         $this->handling = true;
