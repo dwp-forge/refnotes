@@ -89,6 +89,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         if ($mode == $this->mode) {
             return true;
         }
+
         return parent::accepts($mode);
     }
 
@@ -136,7 +137,9 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
                 }
                 break;
         }
+
         $handler->_addCall('cdata', array($match), $pos);
+
         return false;
     }
 
@@ -155,12 +158,14 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
                         $this->_renderExit($renderer);
                         break;
                 }
+
                 return true;
             }
         }
         catch (Exception $error) {
             msg($error->getMessage(), -1);
         }
+
         return false;
     }
 
@@ -171,14 +176,18 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         if (preg_match($this->handlePattern, $syntax, $match) == 0) {
             return false;
         }
+
         list($namespace, $name) = refnotes_parseName($match[2]);
+
         if (!$this->embedding) {
             $fullName = $namespace . $name;
             if (array_key_exists($fullName, $this->note)) {
                 $this->_embedPredefinedNote($fullName, $pos, $handler);
             }
         }
+
         $this->handling = true;
+
         $info['ns'] = $namespace;
         $info['name'] = $name;
         $info['hidden'] = $this->_isHiddenReference($match[1], $pos, $handler);
@@ -191,12 +200,16 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     function _embedPredefinedNote($name, $pos, &$handler) {
         $text = $this->entrySyntax . $name . '>' . $this->note[$name]['text'] . $this->exitSyntax;
+
         $lastHiddenExit = $this->lastHiddenExit;
         $this->lastHiddenExit = 0;
         $this->embedding = true;
+
         $this->_parseNestedText($text, $pos, $handler);
+
         $this->embedding = false;
         $this->lastHiddenExit = $lastHiddenExit;
+
         if ($this->note[$name]['inline']) {
             $handler->calls[count($handler->calls) - 1][1][0][0][1][1][1]['inline'] = true;
         }
@@ -208,9 +221,12 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     function _parseNestedText($text, $pos, &$handler) {
         $nestedWriter =& new Doku_Handler_Nest($handler->CallWriter);
         $handler->CallWriter =& $nestedWriter;
+
         $this->Lexer->parse($text);
+
         $nestedWriter->process();
         $handler->CallWriter =& $nestedWriter->CallWriter;
+
         $handler->calls[count($handler->calls) - 1][2] = $pos;
     }
 
@@ -219,9 +235,11 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     function _handleExit($syntax, $pos) {
         $this->handling = false;
+
         if ($this->lastHiddenExit >= 0) {
             $this->lastHiddenExit = $pos + strlen($syntax);
         }
+
         return array(DOKU_LEXER_EXIT);
     }
 
@@ -232,6 +250,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $newLines = substr_count($space, "\n");
         $lastCall = end($handler->calls);
         $lastCall = $lastCall[0];
+
         if (($newLines == 2) || ($lastCall == 'table_close')) {
             $this->lastHiddenExit = $pos;
         }
@@ -240,6 +259,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
                 $this->lastHiddenExit = -1;
             }
         }
+
         return $this->lastHiddenExit >= 0;
     }
 
@@ -252,6 +272,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         if (($note != NULL) && !$info['hidden']) {
             $renderer->doc .= $note->renderReference();
         }
+
         $this->_startCapture($renderer, $note);
     }
 
@@ -272,6 +293,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
                 throw new Exception('Helper plugin "refnotes" is not available or invalid.');
             }
         }
+
         return $this->core;
     }
 
@@ -292,6 +314,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         if ($text != '') {
             $this->capturedNote->setText($text);
         }
+
         $renderer->doc = $this->docBackup;
         $this->capturedNote = NULL;
         $this->docBackup = '';

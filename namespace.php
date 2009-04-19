@@ -33,5 +33,6 @@ function refnotes_parseName($name) {
     else {
         $namespace = ':';
     }
+
     return array($namespace, $name);
 }

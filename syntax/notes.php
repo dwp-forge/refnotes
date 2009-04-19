@@ -70,6 +70,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
             case '<':
                 return $this->_handleExtended($match);
         }
+
         return false;
     }
 
@@ -94,6 +95,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
         catch (Exception $error) {
             msg($error->getMessage(), -1);
         }
+
         return false;
     }
 
@@ -102,6 +104,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      */
     function _handleBasic($syntax) {
         preg_match('/~~REFNOTES(.*?)~~/', $syntax, $match);
+
         return array('render', $this->_parseAttributes($match[1]));
     }
 
@@ -112,9 +115,11 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
         preg_match('/<refnotes(.*?)(?:\/>|>(.*?)<\/refnotes>)/s', $syntax, $match);
         $attribute = $this->_parseAttributes($match[1]);
         $style = array();
+
         if ($match[2] != '') {
             $style = $this->_parseStyles($match[2]);
         }
+
         if (count($style) > 0) {
             return array('split', $attribute, $style);
         }
@@ -131,6 +136,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
             'ns' => '/^(:|:*([[:alpha:]]\w*:+)*?[[:alpha:]]\w*:*)$/',
             'limit' => '/^\/?\d+$/'
         );
+
         $attribute = array('ns' => ':');
         $token = preg_split('/\s+/', $syntax);
         foreach ($token as $t) {
@@ -141,8 +147,10 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
                 }
             }
         }
+
         /* Ensure that namespaces are in canonic form */
         $attribute['ns'] = refnotes_canonizeNamespace($attribute['ns']);
+
         return $attribute;
     }
 
@@ -155,6 +163,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
         foreach ($match as $m) {
             $style[$m[1]] = $m[2];
         }
+
         /* Validate direct-to-html styles */
         if (array_key_exists('notes-separator', $style)) {
             if (preg_match('/(?:\d+\.?|\d*\.\d+)(?:%|em|px)|none/', $style['notes-separator'], $match) == 1) {
@@ -164,10 +173,12 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
                 $style['notes-separator'] = '';
             }
         }
+
         /* Ensure that namespaces are in canonic form */
         if (array_key_exists('inherit', $style)) {
             $style['inherit'] = refnotes_canonizeNamespace($style['inherit']);
         }
+
         return $style;
     }
 
@@ -201,6 +212,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
                 throw new Exception('Helper plugin "refnotes" is not available or invalid.');
             }
         }
+
         return $this->core;
     }
 }

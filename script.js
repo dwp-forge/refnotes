@@ -23,19 +23,23 @@
                     e.stopPropagation();
                     return;
                 }
+
                 // check if the element was really left
                 var offsetX = e.pageX ? e.pageX - findPosX(floater) : e.offsetX;
                 var offsetY = e.pageY ? e.pageY - findPosY(floater) : e.offsetY;
                 var msieDelta = e.pageX ? 0 : 1;
                 var width = floater.offsetWidth - msieDelta;
                 var height = floater.offsetHeight - msieDelta;
+
                 if ((offsetX > 0) && (offsetX < width) && (offsetY > 0) && (offsetY < height)) {
                     // we're still inside boundaries
                     e.stopPropagation();
                     return;
                 }
+
                 preview.hide();
             });
+
             document.body.appendChild(floater);
         },
 
@@ -46,6 +50,7 @@
                     this.createFloater();
                 }
             }
+
             return floater;
         },
 
@@ -56,6 +61,7 @@
             if (floater) {
                 var width = window.event ? floater.clientWidth : floater.offsetWidth;
                 var height = window.event ? floater.clientHeight : floater.offsetHeight;
+
                 if (width && height) {
                     // add CSS padding
                     floaterWidth = 10 + width;
@@ -71,6 +77,7 @@
             if (!floater || !note) {
                 return false;
             }
+
             // get the note HTML
             var html = note.innerHTML;
             // prefix ids on any elements to ensure they remain unique
@@ -100,6 +107,7 @@
                 floater.style.visibility = 'visible';
                 floater.style.display = '';
             }
+
             shown = true;
         },
 
@@ -109,6 +117,7 @@
                 floater.style.display = 'none';
                 floater.style.width = '';
             }
+
             floaterWidth = 0;
             floaterHeight = 0;
             shown = false;
@@ -119,19 +128,24 @@
             if (!floater) {
                 return;
             }
+
             var windowWidth = canvas.clientWidth + canvas.scrollLeft;
             var windowHeight = canvas.clientHeight + canvas.scrollTop;
+
             if (!floaterWidth || !floaterHeight) {
                 this.measureFloater();
             }
+
             x += dx;
             if ((x + floaterWidth) > windowWidth) {
                 x -= dx + 2 + floaterWidth;
             }
+
             y += dy;
             if ((y + floaterHeight) > windowHeight ) {
                 y -= dy + 2 + floaterHeight;
             }
+
             floater.style.left = x + 'px';
             floater.style.top = y + 'px';
         }
@@ -198,11 +212,13 @@ addInitEvent(function(){
     for (var i = 0; i < elems.length; i++) {
         addEvent(elems[i], 'mouseover', function(e) { plugin_refnotes.popup.show(e); });
     }
+
     elems = getElementsByClass('refnotes-ref note-tooltip', null, 'a');
     for (var i = 0; i < elems.length; i++) {
         addEvent(elems[i], 'mouseover', function(e) { plugin_refnotes.tooltip.show(e); });
         addEvent(elems[i], 'mouseout', function(e) { plugin_refnotes.tooltip.hide(e); });
     }
+
     addEvent(document, 'mousemove', function(e) { plugin_refnotes.tooltip.track(e); });
     addEvent(window, 'scroll', function(e) { plugin_refnotes.tooltip.hide(e); });
 });

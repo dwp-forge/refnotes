@@ -16,10 +16,12 @@ function refnotes_getInfo($component = '') {
         'desc'   => 'Extended syntax for footnotes and references.',
         'url'    => 'http://code.google.com/p/dwp-forge/',
     );
+
     if ($component != '') {
         if (($_REQUEST['do'] == 'admin') && !empty($_REQUEST['page']) && ($_REQUEST['page'] == 'plugin')) {
             $info['name'] .= ' (' . $component . ')';
         }
     }
+
     return $info;
 }

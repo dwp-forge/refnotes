@@ -49,10 +49,12 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      */
     function processCallList(&$event, $param) {
         $this->_extractStyles($event);
+
         if (count($this->style) > 0) {
             $this->_sortStyles();
             $this->_insertStyles($event);
         }
+
         if (count($this->scopeStart) > 0) {
             $this->_renderLeftovers($event);
         }
@@ -122,10 +124,12 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
             else {
                 $index = $this->_getStyleIndex($namespace);
             }
+
             $this->style[] = array('idx' => $index, 'ns' => $namespace, 'data' => $callData[2]);
             $callData[0] = 'render';
             unset($callData[2]);
         }
+
         $this->_markScopeEnd($namespace, $callIndex);
     }
 
@@ -137,10 +141,13 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
             /* Default inheritance for the first scope */
             $parent = refnotes_getParentNamespace($namespace);
         }
+
         $index = end($this->scopeEnd[$namespace]) + 1;
+
         if ($parent != '') {
             $start = end($this->scopeStart[$namespace]);
             $end = end($this->scopeEnd[$namespace]);
+
             while ($parent != '') {
                 if (array_key_exists($parent, $this->scopeEnd)) {
                     for ($i = count($this->scopeEnd[$parent]) - 1; $i >= 0; $i--) {
@@ -151,9 +158,11 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
                         }
                     }
                 }
+
                 $parent = refnotes_getParentNamespace($parent);
             }
         }
+
         return $index;
     }
 
@@ -168,11 +177,14 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
             $namespace[$key] = $style['ns'];
         }
         array_multisort($index, SORT_ASC, $namespace, SORT_ASC, $this->style);
+
         /* Sort to ensure explicit enheritance */
         foreach ($this->style as $style) {
             $bucket[$style['idx']][] = $style;
         }
+
         $this->style = array();
+
         foreach ($bucket as $b) {
             $inherit = array();
             foreach ($b as $style) {
@@ -183,16 +195,19 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
                     $this->style[] = $style;
                 }
             }
+
             $inherits = count($inherit);
             if ($inherits > 0) {
                 if ($inherits > 1) {
                     /* Perform simplified topological sorting */
                     $target = array();
                     $source = array();
+
                     for ($i = 0; $i < $inherits; $i++) {
                         $target[$i] = $inherit[$i]['ns'];
                         $source[$i] = $inherit[$i]['data']['inherit'];
                     }
+
                     for ($i = 0; $i < $inherits; $i++) {
                         foreach ($source as $index => $s) {
                             if (!in_array($s, $target)) {
@@ -218,6 +233,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $calls = count($event->data->calls);
         $styles = count($this->style);
         $call = array();
+
         for ($c = 0, $s = 0; $c < $calls; $c++) {
             while (($s < $styles) && ($this->style[$s]['idx'] == $c)) {
                 $attribute['ns'] = $this->style[$s]['ns'];
@@ -227,8 +243,10 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
                 $call[] = $this->_getInstruction($data, $event->data->calls[$c][2]);
                 $s++;
             }
+
             $call[] = $event->data->calls[$c];
         }
+
         $event->data->calls = $call;
     }
 
@@ -241,6 +259,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $data[1] = $attribute;
         $lastCall = end($event->data->calls);
         $call = $this->_getInstruction($data, $lastCall[2]);
+
         $event->data->calls[] = $call;
     }
 
@@ -249,6 +268,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      */
     function _getInstruction($data, $offset) {
         $parameters = array('refnotes_notes', $data, 5, 'refnotes_action');
+
         return array('plugin', $parameters, $offset);
     }
 }

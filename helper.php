@@ -56,10 +56,12 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      */
     function styleNotes($namespaceName, $style) {
         $namespace = $this->_findNamespace($namespaceName, true);
+
         if (array_key_exists('inherit', $style)) {
             $source = $this->_findNamespace($style['inherit'], true);
             $namespace->inheritStyle($source);
         }
+
         $namespace->style($style);
     }
 
@@ -79,6 +81,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
                 $html = $namespace->renderNotes($limit);
             }
         }
+
         return $html;
     }
 
@@ -90,6 +93,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
         if (array_key_exists($name, $this->namespace)) {
             $result = $this->namespace[$name];
         }
+
         if (($result == NULL) && $create) {
             if ($name != ':') {
                 $parentName = refnotes_getParentNamespace($name);
@@ -99,11 +103,14 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
             else {
                 $this->namespace[$name] = new refnotes_namespace($name);
             }
+
             if (array_key_exists($name, $this->namespaceStyle)) {
                 $this->namespace[$name]->style($this->namespaceStyle[$name]);
             }
+
             $result = $this->namespace[$name];
         }
+
         return $result;
     }
 }
@@ -123,6 +130,7 @@ class refnotes_namespace {
         $this->style = array();
         $this->scope = array();
         $this->newScope = true;
+
         if ($parent != NULL) {
             $this->style = $parent->style;
         }
@@ -156,9 +164,11 @@ class refnotes_namespace {
      */
     function getStyle($property) {
         $result = '';
+
         if (array_key_exists($property, $this->style)) {
             $result = $this->style[$property];
         }
+
         return $result;
     }
 
@@ -171,7 +181,9 @@ class refnotes_namespace {
             $this->scope[] = new refnotes_scope($this, $id);
             $this->newScope = false;
         }
+
         $scope = end($this->scope);
+
         return $scope->addReference($name, $hidden);
     }
 
@@ -186,6 +198,7 @@ class refnotes_namespace {
             $limit = $this->_getRenderLimit($limit);
             $html = $scope->renderNotes($limit);
         }
+
         return $html;
     }
 
@@ -219,6 +232,7 @@ class refnotes_namespace {
         else {
             $result = 0;
         }
+
         return $result;
     }
 }
@@ -259,6 +273,7 @@ class refnotes_scope {
                 ++$result;
             }
         }
+
         return $result;
     }
 
@@ -277,15 +292,18 @@ class refnotes_scope {
             if ($name != '') {
                 $note = $this->_findNote($name);
             }
+
             if ($note == NULL) {
                 $id = ++$this->notes;
                 $note = new refnotes_note($this, $id, $name);
                 $this->note[$id] = $note;
             }
         }
+
         if (($note != NULL) && !$hidden) {
             $note->addReference(++$this->references);
         }
+
         return $note;
     }
 
@@ -303,11 +321,13 @@ class refnotes_scope {
                 }
             }
         }
+
         if ($html != '') {
             $open = $this->_renderSeparator() . '<div class="notes">' . DOKU_LF;
             $close = '</div>' . DOKU_LF;
             $html = $open . $html . $close;
         }
+
         return $html;
     }
 
@@ -316,12 +336,14 @@ class refnotes_scope {
      */
     function _findNote($name) {
         $result = NULL;
+
         foreach ($this->note as $note) {
             if ($note->name == $name) {
                 $result = $note;
                 break;
             }
         }
+
         return $result;
     }
 
@@ -337,6 +359,7 @@ class refnotes_scope {
             }
             $html = '<hr' . $style . '>' . DOKU_LF;
         }
+
         return $html;
     }
 }
@@ -357,12 +380,14 @@ class refnotes_note {
     function refnotes_note($scope, $id, $name) {
         $this->scope = $scope;
         $this->id = $id;
+
         if ($name != '') {
             $this->name = $name;
         }
         else {
             $this->name = '#' . $id;
         }
+
         $this->reference = array();
         $this->references = 0;
         $this->text = '';
@@ -397,6 +422,7 @@ class refnotes_note {
         $noteName = $this->_renderAnchorName();
         $referenceName = $this->_renderAnchorName($this->references);
         $class = $this->_renderReferenceClass();
+
         list($baseOpen, $baseClose) = $this->_renderReferenceBase();
         list($fontOpen, $fontClose) = $this->_renderReferenceFont();
         list($formatOpen, $formatClose) = $this->_renderReferenceFormat();
@@ -469,10 +495,13 @@ class refnotes_note {
                 if ($r < $this->references) {
                     $html .= $separator . DOKU_LF;
                 }
+
                 $nameAttribute = '';
             }
+
             $html .= $baseClose . DOKU_LF;
         }
+
         return $html;
     }
 
@@ -483,9 +512,11 @@ class refnotes_note {
         $result = 'refnotes';
         $result .= $this->scope->getName();
         $result .= ':note' . $this->id;
+
         if ($reference > 0) {
             $result .= ':ref' . $reference;
         }
+
         return $result;
     }
 
@@ -506,6 +537,7 @@ class refnotes_note {
                 $result = 'refnotes-ref note-popup';
                 break;
         }
+
         return $result;
     }
 
@@ -550,6 +582,7 @@ class refnotes_note {
             }
             $html = $this->_convertToStyle($id, $idStyle);
         }
+
         return $html;
     }
 
@@ -566,6 +599,7 @@ class refnotes_note {
                 $result = 'note';
                 break;
         }
+
         return $result;
     }
 
@@ -597,6 +631,7 @@ class refnotes_note {
                 $result = $this->_renderFormat($style);
                 break;
         }
+
         return $result;
     }
 
@@ -617,6 +652,7 @@ class refnotes_note {
             }
             $html = $this->_convertToStyle($id, $idStyle);
         }
+
         return $html;
     }
 
@@ -637,6 +673,7 @@ class refnotes_note {
                 $result = '';
                 break;
         }
+
         return $result;
     }
 
@@ -659,10 +696,12 @@ class refnotes_note {
      */
     function _renderBackRefSeparator() {
         static $html = array('' => ',', 'none' => '');
+
         $style = $this->_getStyle('back-ref-separator');
         if (!array_key_exists($style, $html)) {
             $style = '';
         }
+
         return $html[$style];
     }
 
@@ -691,9 +730,11 @@ class refnotes_note {
                 $result = $this->_renderNoteId($reference);
                 break;
         }
+
         if (($this->references == 1) && ($this->_getStyle('back-ref-caret') == 'merge')) {
             $result = '^';
         }
+
         return $result;
     }
 
@@ -705,9 +746,11 @@ class refnotes_note {
             '' => array('<sup>', '</sup>'),
             'text' => array('', '')
         );
+
         if (!array_key_exists($style, $html)) {
             $style = '';
         }
+
         return $html[$style];
     }
 
@@ -717,6 +760,7 @@ class refnotes_note {
     function _renderFont($weight, $defaultWeight, $style) {
         list($weightOpen, $weightClose) = $this->_renderFontWeight($this->_getStyle($weight), $defaultWeight);
         list($styleOpen, $styleClose) = $this->_renderFontStyle($this->_getStyle($style));
+
         return array($weightOpen . $styleOpen, $styleClose . $weightClose);
     }
 
@@ -728,9 +772,11 @@ class refnotes_note {
             'normal' => array('', ''),
             'bold' => array('<b>', '</b>')
         );
+
         if (!array_key_exists($style, $html)) {
             $style = $default;
         }
+
         return $html[$style];
     }
 
@@ -742,9 +788,11 @@ class refnotes_note {
             '' => array('', ''),
             'italic' => array('<i>', '</i>')
         );
+
         if (!array_key_exists($style, $html)) {
             $style = '';
         }
+
         return $html[$style];
     }
 
@@ -759,9 +807,11 @@ class refnotes_note {
             '[]' => array('[', ']'),
             'none' => array('', '')
         );
+
         if (!array_key_exists($style, $html)) {
             $style = '';
         }
+
         return $html[$style];
     }
 
@@ -795,6 +845,7 @@ class refnotes_note {
                 $result = $id;
                 break;
         }
+
         return $result;
     }
 
@@ -812,9 +863,11 @@ class refnotes_note {
             $result = $alpha{$digit} . $result;
             $number = intval($number / 26);
         }
+
         if ($case == 'a') {
             $result = strtolower($result);
         }
+
         return $result;
     }
 
@@ -826,7 +879,8 @@ class refnotes_note {
         static $lookup = array(
             'M' => 1000, 'CM' => 900, 'D' => 500, 'CD' => 400,
             'C' => 100, 'XC' => 90, 'L' => 50, 'XL' => 40,
-            'X' => 10, 'IX' => 9, 'V' => 5, 'IV' => 4, 'I' => 1);
+            'X' => 10, 'IX' => 9, 'V' => 5, 'IV' => 4, 'I' => 1
+        );
 
         $result = '';
         foreach ($lookup as $roman => $value) {
@@ -836,9 +890,11 @@ class refnotes_note {
                 $number = $number % $value;
             }
         }
+
         if ($case == 'i') {
             $result = strtolower($result);
         }
+
         return $result;
     }
 }

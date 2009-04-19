@@ -10,17 +10,20 @@
 function refnotes_loadConfigFile($name) {
     $pluginRoot = DOKU_PLUGIN . 'refnotes/';
     $fileName = $pluginRoot . $name . '.local.dat';
+
     if (!file_exists($fileName)) {
         $fileName = $pluginRoot . $name . '.dat';
         if (!file_exists($fileName)) {
             $fileName = '';
         }
     }
+
     if ($fileName != '') {
         $result = unserialize(io_readFile($fileName, false));
     }
     else {
         $result = array();
     }
+
     return $result;
 }
