@@ -268,7 +268,13 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     function _renderEnter(&$renderer, $info) {
         $core = $this->_getCore();
-        $note = $core->addReference($info['ns'], $info['name'], $info['hidden']);
+
+        $inline = false;
+        if (array_key_exists('inline', $info)) {
+            $inline = $info['inline'];
+        }
+
+        $note = $core->addReference($info['ns'], $info['name'], $info['hidden'], $inline);
         if (($note != NULL) && !$info['hidden']) {
             $renderer->doc .= $note->renderReference();
         }

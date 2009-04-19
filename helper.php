@@ -46,9 +46,10 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      * Adds a reference to the notes array. Returns a note
      */
-    function addReference($namespaceName, $noteName, $hidden) {
+    function addReference($namespaceName, $noteName, $hidden, $inline) {
         $namespace = $this->_findNamespace($namespaceName, true);
-        return $namespace->addReference($noteName, $hidden);
+
+        return $namespace->addReference($noteName, $hidden, $inline);
     }
 
     /**
@@ -175,7 +176,7 @@ class refnotes_namespace {
     /**
      * Adds a reference to the current scope. Returns a note
      */
-    function addReference($name, $hidden) {
+    function addReference($name, $hidden, $inline) {
         if ($this->newScope) {
             $id = count($this->scope) + 1;
             $this->scope[] = new refnotes_scope($this, $id);
@@ -184,7 +185,7 @@ class refnotes_namespace {
 
         $scope = end($this->scope);
 
-        return $scope->addReference($name, $hidden);
+        return $scope->addReference($name, $hidden, $inline);
     }
 
     /**
@@ -243,6 +244,7 @@ class refnotes_scope {
     var $id;
     var $note;
     var $notes;
+    var $inlineNotes;
     var $references;
 
     /**
@@ -253,6 +255,7 @@ class refnotes_scope {
         $this->id = $id;
         $this->note = array();
         $this->notes = 0;
+        $this->inlineNotes = 0;
         $this->references = 0;
     }
 
@@ -280,7 +283,7 @@ class refnotes_scope {
     /**
      * Adds a reference to the notes array. Returns a note
      */
-    function addReference($name, $hidden) {
+    function addReference($name, $hidden, $inline) {
         $note = NULL;
         if (preg_match('/#(\d+)/', $name, $match) == 1) {
             $id = intval($match[1]);
@@ -294,13 +297,19 @@ class refnotes_scope {
             }
 
             if ($note == NULL) {
-                $id = ++$this->notes;
-                $note = new refnotes_note($this, $id, $name);
+                if ($inline) {
+                    $id = --$this->inlineNotes;
+                }
+                else {
+                    $id = ++$this->notes;
+                }
+
+                $note = new refnotes_note($this, $id, $name, $inline);
                 $this->note[$id] = $note;
             }
         }
 
-        if (($note != NULL) && !$hidden) {
+        if (($note != NULL) && !$hidden && !$note->isInline()) {
             $note->addReference(++$this->references);
         }
 
@@ -369,6 +378,7 @@ class refnotes_note {
     var $scope;
     var $id;
     var $name;
+    var $inline;
     var $reference;
     var $references;
     var $text;
@@ -377,7 +387,7 @@ class refnotes_note {
     /**
      * Constructor
      */
-    function refnotes_note($scope, $id, $name) {
+    function refnotes_note($scope, $id, $name, $inline) {
         $this->scope = $scope;
         $this->id = $id;
 
@@ -388,6 +398,7 @@ class refnotes_note {
             $this->name = '#' . $id;
         }
 
+        $this->inline = $inline;
         $this->reference = array();
         $this->references = 0;
         $this->text = '';
@@ -405,7 +416,16 @@ class refnotes_note {
      *
      */
     function setText($text) {
-        $this->text = $text;
+        if (($this->text == '') || !$this->inline) {
+            $this->text = $text;
+        }
+    }
+
+    /**
+     *
+     */
+    function isInline() {
+        return $this->inline;
     }
 
     /**
@@ -419,19 +439,24 @@ class refnotes_note {
      *
      */
     function renderReference() {
-        $noteName = $this->_renderAnchorName();
-        $referenceName = $this->_renderAnchorName($this->references);
-        $class = $this->_renderReferenceClass();
-
-        list($baseOpen, $baseClose) = $this->_renderReferenceBase();
-        list($fontOpen, $fontClose) = $this->_renderReferenceFont();
-        list($formatOpen, $formatClose) = $this->_renderReferenceFormat();
-
-        $html = $baseOpen . $fontOpen;
-        $html .= '<a href="#' . $noteName . '" name="' . $referenceName . '" class="' . $class . '">';
-        $html .= $formatOpen . $this->_renderReferenceId() . $formatClose;
-        $html .= '</a>';
-        $html .= $fontClose . $baseClose;
+        if ($this->inline) {
+            $html = '<sup>' . $this->text . '</sup>';
+        }
+        else {
+            $noteName = $this->_renderAnchorName();
+            $referenceName = $this->_renderAnchorName($this->references);
+            $class = $this->_renderReferenceClass();
+    
+            list($baseOpen, $baseClose) = $this->_renderReferenceBase();
+            list($fontOpen, $fontClose) = $this->_renderReferenceFont();
+            list($formatOpen, $formatClose) = $this->_renderReferenceFormat();
+    
+            $html = $baseOpen . $fontOpen;
+            $html .= '<a href="#' . $noteName . '" name="' . $referenceName . '" class="' . $class . '">';
+            $html .= $formatOpen . $this->_renderReferenceId() . $formatClose;
+            $html .= '</a>';
+            $html .= $fontClose . $baseClose;
+        }
 
         return $html;
     }
