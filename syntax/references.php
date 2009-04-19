@@ -27,6 +27,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     var $core;
     var $note;
     var $handling;
+    var $embedding;
     var $lastHiddenExit;
     var $capturedNote;
     var $docBackup;
@@ -64,6 +65,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->core = NULL;
         $this->note = refnotes_loadConfigFile('notes');
         $this->handling = false;
+        $this->embedding = false;
         $this->lastHiddenExit = -1;
         $this->capturedNote = NULL;
         $this->docBackup = '';
@@ -170,9 +172,11 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             return false;
         }
         list($namespace, $name) = refnotes_parseName($match[2]);
-        $fullName = $namespace . $name;
-        if (array_key_exists($fullName, $this->note)) {
-            $this->_embedPredefinedNote($fullName, $pos, $handler);
+        if (!$this->embedding) {
+            $fullName = $namespace . $name;
+            if (array_key_exists($fullName, $this->note)) {
+                $this->_embedPredefinedNote($fullName, $pos, $handler);
+            }
         }
         $this->handling = true;
         $info['ns'] = $namespace;
@@ -187,13 +191,13 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     function _embedPredefinedNote($name, $pos, &$handler) {
         $text = $this->entrySyntax . $name . '>' . $this->note[$name]['text'] . $this->exitSyntax;
-        $inline = $this->note[$name]['inline'];
-        unset($this->note[$name]);
         $lastHiddenExit = $this->lastHiddenExit;
         $this->lastHiddenExit = 0;
+        $this->embedding = true;
         $this->_parseNestedText($text, $pos, $handler);
+        $this->embedding = false;
         $this->lastHiddenExit = $lastHiddenExit;
-        if ($inline) {
+        if ($this->note[$name]['inline']) {
             $handler->calls[count($handler->calls) - 1][1][0][0][1][1][1]['inline'] = true;
         }
     }
