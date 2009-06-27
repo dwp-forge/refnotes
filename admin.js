@@ -15,6 +15,12 @@
             //TODO: fetch data from server
             var namespace = new Hash();
 
+            namespace.setItem('reference-font-weight', 'bold');
+
+            namespaces.setItem(':', namespace);
+
+            namespace = new Hash();
+
             namespace.setItem('refnote-id', 'latin-lower');
 
             namespaces.setItem(':cite:', namespace);
@@ -25,30 +31,105 @@
         function updateList() {
             var html = '';
 
-            for (var i in namespaces.items) {
-                html += '<option value="' + i + '">' + i + '</option>';
+            for (var namespaceName in namespaces.items) {
+                html += '<option value="' + namespaceName + '">' + namespaceName + '</option>';
             }
 
             $('select-namespaces').innerHTML = html;
         }
 
         function updateSetings() {
-            var namespace = namespaces.getItem(current);
+            for (var styleName in setting.items) {
+                var combo = $('field-' + styleName);
 
-            for (var i in namespace.items) {
-                setComboSelection('field-' + i, namespace.getItem(i));
+                if (!combo) {
+                    continue;
+                }
+
+                var style = getStyleEx(current, styleName);
+
+                setInheretanceClass(combo.parentNode.parentNode, style.inherited);
+                setComboSelection(combo, style.value);
             }
         }
 
-        function setComboSelection(id, value) {
-            var combo = $(id);
-            if (combo) {
-                for (var o = 0; o < combo.options.length; o++) {
-                    if (combo.options[o].value == value) {
-                         combo.options[o].selected = true;
-                    }
+        function getStyleEx(namespaceName, styleName) {
+            var style = {
+                inherited : 0,
+                value     : ''
+            };
+
+            style.value = getStyle(namespaceName, styleName);
+
+            if (style.value == '') {
+                style.inherited = 1;
+                style.value = getStyle(getParentName(namespaceName), styleName, true);
+
+                if (style.value == '') {
+                    style.inherited = 2;
+                    style.value = setting.getItem(styleName);
                 }
             }
+
+            return style;
+        }
+
+        function getStyle(namespaceName, styleName, recursive) {
+            var result = '';
+
+            if (namespaceName != '') {
+                if (namespaces.hasItem(namespaceName)) {
+                    var namespace = namespaces.getItem(namespaceName);
+
+                    if (namespace.hasItem(styleName)) {
+                        result = namespace.getItem(styleName);
+                    }
+                }
+
+                if (recursive && (result == '')) {
+                    result = getStyle(getParentName(namespaceName), styleName);
+                }
+            }
+
+            return result;
+        }
+
+        function getParentName(namespaceName) {
+            return namespaceName.replace(/\w*:$/, '');
+        }
+
+        function setInheretanceClass(cell, inherited) {
+            removeClass(cell, 'default');
+            removeClass(cell, 'inherited');
+
+            switch (inherited) {
+                case 2:
+                    addClass(cell, 'default');
+                    break;
+                case 1:
+                    addClass(cell, 'inherited');
+                    break;
+            }
+        }
+
+        function setComboSelection(combo, value) {
+            for (var o = 0; o < combo.options.length; o++) {
+                if (combo.options[o].value == value) {
+                     combo.options[o].selected = true;
+                }
+            }
+        }
+
+        function addClass(element, className) {
+            var regexp = new RegExp('\\b' + className + '\\b', '');
+            if (!element.className.match(regexp)) {
+                element.className = (element.className + ' ' + className).replace(/^\s$/, '');
+            }
+        }
+
+        function removeClass(element, className) {
+            var regexp = new RegExp('\\b' + className + '\\b', '');
+            element.className = element.className.replace(regexp, '').replace(/^\s|(\s)\s|\s$/g, '$1');
         }
 
         return {

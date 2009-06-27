@@ -41,3 +41,11 @@ div#refnotes-config div#config__manager td.default select {
   background-color: #ccddff;
   color: #000;
 }
+
+div#refnotes-config div#config__manager td.inherited .input,
+div#refnotes-config div#config__manager td.inherited input,
+div#refnotes-config div#config__manager td.inherited textarea,
+div#refnotes-config div#config__manager td.inherited select {
+  background-color: #ddeedd;
+  color: #000;
+}
