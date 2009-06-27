@@ -41,14 +41,14 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Register callbacks
      */
     function register(&$controller) {
-        $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'addAdminScript');
+        $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'addAdminIncludes');
         $controller->register_hook('PARSER_HANDLER_DONE', 'AFTER', $this, 'processCallList');
     }
 
     /**
      *
      */
-    function addAdminScript(&$event, $param) {
+    function addAdminIncludes(&$event, $param) {
         if (($_REQUEST['do'] == 'admin') && !empty($_REQUEST['page']) && ($_REQUEST['page'] == 'refnotes')) {
             $event->data['script'][] = array (
                 'type' => 'text/javascript',
@@ -56,7 +56,11 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
                 'src' => DOKU_BASE . 'lib/plugins/refnotes/admin.js',
                 '_data' => ''
             );
-            error_log(print_r($event->data, true));
+            $event->data['link'][] = array (
+                'type' => 'text/css',
+                'rel' => 'stylesheet',
+                'href' => DOKU_BASE . 'lib/plugins/refnotes/admin.css',
+            );
         }
     }
 

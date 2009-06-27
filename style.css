@@ -28,39 +28,3 @@ div.dokuwiki div.refnotes a.nolink {
 
 div.dokuwiki div.refnotes a.backref {
 }
-
-div#refnotes-config div#config__manager fieldset td.list {
-    width: 15em;
-    vertical-align: top;
-}
-
-div#refnotes-config div#config__manager fieldset select.list {
-    width: 100%;
-}
-
-div#refnotes-config div#config__manager fieldset td.lean-label {
-    padding: 0.6em 0 0.6em 1em;
-    vertical-align: top;
-}
-
-div#refnotes-config div#config__manager fieldset td.value {
-    width: 20em;
-}
-
-div#refnotes-config div#config__manager fieldset td.value select {
-    width: 99%;
-}
-
-div#refnotes-config div#config__manager fieldset td.value textarea {
-    width: 99%;
-    height: auto;
-}
-
-div#refnotes-config div#config__manager fieldset div.list-controls {
-    text-align: left;
-    margin-bottom: 1em;
-}
-
-div#refnotes-config div#config__manager fieldset div.list-controls input.edit {
-    width: 14em;
-}
