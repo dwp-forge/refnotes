@@ -1,50 +1,4 @@
 (function() {
-    /*var namespaceSetting = new Hash(
-        'refnote-id'           , 'numeric',
-        'reference-base'       , 'super',
-        'reference-font-weight', 'normal',
-        'reference-font-style' , 'normal'
-    );
-
-    var namespaces = new Hash();
-    var currentNamespace = '';
-
-
-
-    function loadNamespaces() {
-        //TODO: fetch data from server
-        var namespace = new Hash();
-
-        namespace.setItem('refnote-id', 'latin-lower');
-
-        namespaces.setItem(':cite:', namespace);
-
-        currentNamespace = ':cite:';
-    }
-
-
-
-    function updateNamespaceList() {
-        var html = '';
-
-        for (var i in namespaces.items) {
-            html += '<option value="' + i + '">' + i + '</option>';
-        }
-
-        $('select-namespaces').innerHTML = html;
-    }
-
-
-    function updateNamespaceSetings() {
-        var html = '';
-
-        for (var i in namespaces.items) {
-            html += '<option value="' + i + '">' + i + '</option>';
-        }
-
-        $('select-namespaces').innerHTML = html;
-    }*/
-
 
     var namespaces = (function() {
         var setting = new Hash(
@@ -79,7 +33,22 @@
         }
 
         function updateSetings() {
-            //alert(current);
+            var namespace = namespaces.getItem(current);
+
+            for (var i in namespace.items) {
+                setComboSelection('field-' + i, namespace.getItem(i));
+            }
+        }
+
+        function setComboSelection(id, value) {
+            var combo = $(id);
+            if (combo) {
+                for (var o = 0; o < combo.options.length; o++) {
+                    if (combo.options[o].value == value) {
+                         combo.options[o].selected = true;
+                    }
+                }
+            }
         }
 
         return {
