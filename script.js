@@ -18,22 +18,22 @@
             floater.style.top = '-100px';
 
             // autoclose on mouseout - ignoring bubbled up events
-            addEvent(floater, 'mouseout', function(e) {
-                if (e.target != floater) {
-                    e.stopPropagation();
+            addEvent(floater, 'mouseout', function(event) {
+                if (event.target != floater) {
+                    event.stopPropagation();
                     return;
                 }
 
                 // check if the element was really left
-                var offsetX = e.pageX ? e.pageX - findPosX(floater) : e.offsetX;
-                var offsetY = e.pageY ? e.pageY - findPosY(floater) : e.offsetY;
-                var msieDelta = e.pageX ? 0 : 1;
+                var offsetX = event.pageX ? event.pageX - findPosX(floater) : event.offsetX;
+                var offsetY = event.pageY ? event.pageY - findPosY(floater) : event.offsetY;
+                var msieDelta = event.pageX ? 0 : 1;
                 var width = floater.offsetWidth - msieDelta;
                 var height = floater.offsetHeight - msieDelta;
 
                 if ((offsetX > 0) && (offsetX < width) && (offsetY > 0) && (offsetY < height)) {
                     // we're still inside boundaries
-                    e.stopPropagation();
+                    event.stopPropagation();
                     return;
                 }
 
@@ -151,35 +151,35 @@
         }
     };
 
-    function getNoteId(e) {
-        return e.target.href.replace(/^.*?#([\w:]+)$/gi, '$1');
+    function getNoteId(event) {
+        return event.target.href.replace(/^.*?#([\w:]+)$/gi, '$1');
     }
 
-    function getEventX(e) {
-        return e.pageX ? e.pageX : e.offsetX;
+    function getEventX(event) {
+        return event.pageX ? event.pageX : event.offsetX;
     }
 
-    function getEventY(e) {
-        return e.pageY ? e.pageY : e.offsetY;
+    function getEventY(event) {
+        return event.pageY ? event.pageY : event.offsetY;
     }
 
     plugin_refnotes = {
         popup: {
-            show: function(e) {
-                plugin_refnotes.tooltip.hide(e);
-                if (!preview.setNoteId(getNoteId(e))) {
+            show: function(event) {
+                plugin_refnotes.tooltip.hide(event);
+                if (!preview.setNoteId(getNoteId(event))) {
                     return;
                 }
                 // position the floater and make it visible
-                preview.move(getEventX(e), getEventY(e), 2, 2);
+                preview.move(getEventX(event), getEventY(event), 2, 2);
                 preview.show();
             }
         },
 
         tooltip: {
-            show: function(e) {
-                plugin_refnotes.tooltip.hide(e);
-                if (!preview.setNoteId(getNoteId(e))) {
+            show: function(event) {
+                plugin_refnotes.tooltip.hide(event);
+                if (!preview.setNoteId(getNoteId(event))) {
                     return;
                 }
                 // start tooltip timeout
@@ -187,7 +187,7 @@
                 tracking = true;
             },
 
-            hide: function(e) {
+            hide: function(event) {
                 if (tracking) {
                     clearTimeout(timer);
                     tracking = false;
@@ -195,9 +195,9 @@
                 preview.hide();
             },
 
-            track: function(e) {
+            track: function(event) {
                 if (tracking) {
-                    preview.move(getEventX(e), getEventY(e), 10, 12);
+                    preview.move(getEventX(event), getEventY(event), 10, 12);
                 }
             }
         }
@@ -210,15 +210,15 @@
 addInitEvent(function(){
     var elems = getElementsByClass('refnotes-ref note-popup', null, 'a');
     for (var i = 0; i < elems.length; i++) {
-        addEvent(elems[i], 'mouseover', function(e) { plugin_refnotes.popup.show(e); });
+        addEvent(elems[i], 'mouseover', plugin_refnotes.popup.show);
     }
 
     elems = getElementsByClass('refnotes-ref note-tooltip', null, 'a');
     for (var i = 0; i < elems.length; i++) {
-        addEvent(elems[i], 'mouseover', function(e) { plugin_refnotes.tooltip.show(e); });
-        addEvent(elems[i], 'mouseout', function(e) { plugin_refnotes.tooltip.hide(e); });
+        addEvent(elems[i], 'mouseover', plugin_refnotes.tooltip.show);
+        addEvent(elems[i], 'mouseout', plugin_refnotes.tooltip.hide);
     }
 
-    addEvent(document, 'mousemove', function(e) { plugin_refnotes.tooltip.track(e); });
-    addEvent(window, 'scroll', function(e) { plugin_refnotes.tooltip.hide(e); });
+    addEvent(document, 'mousemove', plugin_refnotes.tooltip.track);
+    addEvent(window, 'scroll', plugin_refnotes.tooltip.hide);
 });
