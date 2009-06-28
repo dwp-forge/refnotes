@@ -23,6 +23,7 @@ $lang['lbl_refnote-id'] = 'Reference/note identifier style';
 $lang['lbl_reference-base'] = 'Reference baseline';
 $lang['lbl_reference-font-weight'] = 'Reference font weight';
 $lang['lbl_reference-font-style'] = 'Reference font style';
+$lang['lbl_reference-format'] = 'Reference formatting';
 
 $lang['lbl_inline'] = 'Inline';
 
@@ -40,6 +41,10 @@ $lang['opt_super'] = 'Superscript';
 $lang['opt_normal-text'] = 'Normal text';
 $lang['opt_bold'] = 'Bold';
 $lang['opt_italic'] = 'Italic';
+$lang['opt_right-parent'] = 'Right parenthesis';
+$lang['opt_parents'] = 'Parentheses';
+$lang['opt_right-bracket'] = 'Right bracket';
+$lang['opt_brackes'] = 'Brackets';
 
 $lang['btn_add'] = 'Add';
 $lang['btn_delete'] = 'Delete';

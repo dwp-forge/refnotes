@@ -90,7 +90,8 @@
             'refnote-id'           , 'numeric',
             'reference-base'       , 'super',
             'reference-font-weight', 'normal',
-            'reference-font-style' , 'normal'
+            'reference-font-style' , 'normal',
+            'reference-format'     , 'right-parent'
         );
 
         var namespaces = new Hash();

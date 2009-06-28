@@ -208,11 +208,15 @@ class refnotes_config_section {
 
 class refnotes_config_list_section extends refnotes_config_section {
 
+    var $listRows;
+
     /**
      * Constructor
      */
-    function refnotes_config_list_section($id) {
+    function refnotes_config_list_section($id, $listRows) {
         parent::refnotes_config_section($id);
+
+        $this->listRows = $listRows;
     }
 
     /**
@@ -278,7 +282,7 @@ class refnotes_config_list_section extends refnotes_config_section {
         $this->html->ptln('<tr>');
         $this->html->indent();
         $this->html->ptln('<td class="list" rowspan="' . $fields . '">');
-        $this->html->ptln('<select class="list" id="select-' . $this->id . '" size="7"></select>');
+        $this->html->ptln('<select class="list" id="select-' . $this->id . '" size="' . $this->listRows . '"></select>');
         $this->html->ptln('</td>');
 
         $this->_printFieldRow($field[0], false);
@@ -319,7 +323,7 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
      * Constructor
      */
     function refnotes_config_namespaces() {
-        parent::refnotes_config_list_section('namespaces');
+        parent::refnotes_config_list_section('namespaces', 10);
     }
 
     /**
@@ -343,6 +347,10 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
                 'class' => 'select',
                 'option' => array('normal', 'italic', 'inherit')
             ),
+            'reference-format' => array(
+                'class' => 'select',
+                'option' => array('right-parent', 'parents', 'right-bracket', 'brackes', 'none', 'inherit')
+            )
         );
 
         return $field;
@@ -355,7 +363,7 @@ class refnotes_config_notes extends refnotes_config_list_section {
      * Constructor
      */
     function refnotes_config_notes() {
-        parent::refnotes_config_list_section('notes');
+        parent::refnotes_config_list_section('notes', 7);
     }
 
     /**
