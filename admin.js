@@ -1,7 +1,7 @@
 (function() {
 
     var namespaces = (function() {
-        var setting = new Hash(
+        var settings = new Hash(
             'refnote-id'           , 'numeric',
             'reference-base'       , 'super',
             'reference-font-weight', 'normal',
@@ -10,6 +10,34 @@
 
         var namespaces = new Hash();
         var current = '';
+
+        function initialize() {
+            for (var styleName in settings.items) {
+                addEvent($('field-' + styleName), 'change', onSettingChange);
+            }
+        }
+
+        function onSettingChange(event) {
+            var combo = event.target;
+            var styleName = combo.id.replace(/^field-/, '');
+            var value = combo.options[combo.selectedIndex].value;
+            var namespace = namespaces.getItem(current);
+
+            if (value == 'inherit') {
+                namespace.removeItem(styleName);
+            }
+            else {
+                namespace.setItem(styleName, value);
+            }
+
+            var style = getStyleEx(current, styleName);
+
+            setInheretanceClass(combo, style.inherited);
+
+            if (value == 'inherit') {
+                setComboSelection(combo, style.value);
+            }
+        }
 
         function load() {
             //TODO: fetch data from server
@@ -39,16 +67,11 @@
         }
 
         function updateSetings() {
-            for (var styleName in setting.items) {
+            for (var styleName in settings.items) {
                 var combo = $('field-' + styleName);
-
-                if (!combo) {
-                    continue;
-                }
-
                 var style = getStyleEx(current, styleName);
 
-                setInheretanceClass(combo.parentNode.parentNode, style.inherited);
+                setInheretanceClass(combo, style.inherited);
                 setComboSelection(combo, style.value);
             }
         }
@@ -56,18 +79,18 @@
         function getStyleEx(namespaceName, styleName) {
             var style = {
                 inherited : 0,
-                value     : ''
+                value     : null
             };
 
             style.value = getStyle(namespaceName, styleName);
 
-            if (style.value == '') {
+            if (style.value == null) {
                 style.inherited = 1;
                 style.value = getStyle(getParentName(namespaceName), styleName, true);
 
-                if (style.value == '') {
+                if (style.value == null) {
                     style.inherited = 2;
-                    style.value = setting.getItem(styleName);
+                    style.value = settings.getItem(styleName);
                 }
             }
 
@@ -75,9 +98,9 @@
         }
 
         function getStyle(namespaceName, styleName, recursive) {
-            var result = '';
+            var result = null;
 
-            if (namespaceName != '') {
+            if (namespaceName != null) {
                 if (namespaces.hasItem(namespaceName)) {
                     var namespace = namespaces.getItem(namespaceName);
 
@@ -86,7 +109,7 @@
                     }
                 }
 
-                if (recursive && (result == '')) {
+                if (recursive && (result == null)) {
                     result = getStyle(getParentName(namespaceName), styleName);
                 }
             }
@@ -98,7 +121,9 @@
             return namespaceName.replace(/\w*:$/, '');
         }
 
-        function setInheretanceClass(cell, inherited) {
+        function setInheretanceClass(combo, inherited) {
+            var cell = combo.parentNode.parentNode;
+
             removeClass(cell, 'default');
             removeClass(cell, 'inherited');
 
@@ -120,19 +145,8 @@
             }
         }
 
-        function addClass(element, className) {
-            var regexp = new RegExp('\\b' + className + '\\b', '');
-            if (!element.className.match(regexp)) {
-                element.className = (element.className + ' ' + className).replace(/^\s$/, '');
-            }
-        }
-
-        function removeClass(element, className) {
-            var regexp = new RegExp('\\b' + className + '\\b', '');
-            element.className = element.className.replace(regexp, '').replace(/^\s|(\s)\s|\s$/g, '$1');
-        }
-
         return {
+            initialize    : initialize,
             load          : load,
             updateList    : updateList,
             updateSetings : updateSetings
@@ -144,12 +158,27 @@
     admin_refnotes = {
         initialize: function() {
             if ($('general') != null) {
+                namespaces.initialize();
                 namespaces.load();
                 namespaces.updateList();
                 namespaces.updateSetings();
             }
         }
     };
+
+
+
+    function addClass(element, className) {
+        var regexp = new RegExp('\\b' + className + '\\b', '');
+        if (!element.className.match(regexp)) {
+            element.className = (element.className + ' ' + className).replace(/^\s$/, '');
+        }
+    }
+
+    function removeClass(element, className) {
+        var regexp = new RegExp('\\b' + className + '\\b', '');
+        element.className = element.className.replace(regexp, '').replace(/^\s|(\s)\s|\s$/g, '$1');
+    }
 
 
 
@@ -165,7 +194,7 @@
                 this.length++;
             }
         }
-   
+
         this.removeItem = function(key) {
             if (typeof(this.items[key]) != 'undefined') {
                 this.length--;
