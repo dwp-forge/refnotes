@@ -1,6 +1,91 @@
 (function() {
 
     var namespaces = (function() {
+
+        function DefaultNamespace() {
+            this.getName = function() {
+                return '';
+            }
+
+            this.getOptionHtml = function() {
+                return '';
+            }
+
+            this.getStyle = function(name) {
+                return settings.getItem(name);
+            }
+
+            this.getStyleInheritance = function(name) {
+                return 2;
+            }
+        }
+
+        function Namespace(namespaceName) {
+            var style = new Hash();
+            var name  = namespaceName;
+
+            function getName() {
+                return name;
+            }
+
+            function getOptionHtml() {
+                return '<option value="' + name + '">' + name + '</option>';
+            }
+
+            function getParent() {
+                var parent = name.replace(/\w*:$/, '');
+
+                while (!namespaces.hasItem(parent)) {
+                    parent = parent.replace(/\w*:$/, '');
+                }
+
+                return namespaces.getItem(parent);
+            }
+
+            function setStyle(name, value) {
+                if (value == 'inherit') {
+                    style.removeItem(name);
+                }
+                else {
+                    style.setItem(name, value);
+                }
+            }
+
+            function getStyle(name) {
+                var result = null;
+
+                if (style.hasItem(name)) {
+                    result = style.getItem(name);
+                }
+                else {
+                    result = getParent().getStyle(name);
+                }
+
+                return result;
+            }
+
+            function getStyleInheritance(name) {
+                var result = 0;
+
+                if (!style.hasItem(name)) {
+                    result = (getParent().getStyleInheritance(name) == 2) ? 2 : 1;
+                }
+
+                return result;
+            }
+
+            function removeStyle(name) {
+                style.removeItem(name);
+            }
+
+            this.getName             = getName;
+            this.getOptionHtml       = getOptionHtml;
+            this.setStyle            = setStyle;
+            this.getStyle            = getStyle;
+            this.getStyleInheritance = getStyleInheritance;
+            this.removeStyle         = removeStyle;
+        }
+
         var settings = new Hash(
             'refnote-id'           , 'numeric',
             'reference-base'       , 'super',
@@ -21,46 +106,42 @@
             var combo = event.target;
             var styleName = combo.id.replace(/^field-/, '');
             var value = combo.options[combo.selectedIndex].value;
-            var namespace = namespaces.getItem(current);
+
+            current.setStyle(styleName, value);
+
+            setInheretanceClass(combo, current.getStyleInheritance(styleName));
 
             if (value == 'inherit') {
-                namespace.removeItem(styleName);
-            }
-            else {
-                namespace.setItem(styleName, value);
-            }
-
-            var style = getStyleEx(current, styleName);
-
-            setInheretanceClass(combo, style.inherited);
-
-            if (value == 'inherit') {
-                setComboSelection(combo, style.value);
+                setComboSelection(combo, current.getStyle(styleName));
             }
         }
 
         function load() {
             //TODO: fetch data from server
-            var namespace = new Hash();
+            var namespace = new DefaultNamespace();
 
-            namespace.setItem('reference-font-weight', 'bold');
+            namespaces.setItem(namespace.getName(), namespace);
 
-            namespaces.setItem(':', namespace);
+            namespace = new Namespace(':');
 
-            namespace = new Hash();
+            namespace.setStyle('reference-font-weight', 'bold');
 
-            namespace.setItem('refnote-id', 'latin-lower');
+            namespaces.setItem(namespace.getName(), namespace);
 
-            namespaces.setItem(':cite:', namespace);
+            namespace = new Namespace(':cite:');
 
-            current = ':cite:';
+            namespace.setStyle('refnote-id', 'latin-lower');
+
+            namespaces.setItem(namespace.getName(), namespace);
+
+            current = namespace;
         }
 
         function updateList() {
             var html = '';
 
             for (var namespaceName in namespaces.items) {
-                html += '<option value="' + namespaceName + '">' + namespaceName + '</option>';
+                html += namespaces.getItem(namespaceName).getOptionHtml();
             }
 
             $('select-namespaces').innerHTML = html;
@@ -69,56 +150,10 @@
         function updateSetings() {
             for (var styleName in settings.items) {
                 var combo = $('field-' + styleName);
-                var style = getStyleEx(current, styleName);
 
-                setInheretanceClass(combo, style.inherited);
-                setComboSelection(combo, style.value);
+                setInheretanceClass(combo, current.getStyleInheritance(styleName));
+                setComboSelection(combo, current.getStyle(styleName));
             }
-        }
-
-        function getStyleEx(namespaceName, styleName) {
-            var style = {
-                inherited : 0,
-                value     : null
-            };
-
-            style.value = getStyle(namespaceName, styleName);
-
-            if (style.value == null) {
-                style.inherited = 1;
-                style.value = getStyle(getParentName(namespaceName), styleName, true);
-
-                if (style.value == null) {
-                    style.inherited = 2;
-                    style.value = settings.getItem(styleName);
-                }
-            }
-
-            return style;
-        }
-
-        function getStyle(namespaceName, styleName, recursive) {
-            var result = null;
-
-            if (namespaceName != null) {
-                if (namespaces.hasItem(namespaceName)) {
-                    var namespace = namespaces.getItem(namespaceName);
-
-                    if (namespace.hasItem(styleName)) {
-                        result = namespace.getItem(styleName);
-                    }
-                }
-
-                if (recursive && (result == null)) {
-                    result = getStyle(getParentName(namespaceName), styleName);
-                }
-            }
-
-            return result;
-        }
-
-        function getParentName(namespaceName) {
-            return namespaceName.replace(/\w*:$/, '');
         }
 
         function setInheretanceClass(combo, inherited) {
