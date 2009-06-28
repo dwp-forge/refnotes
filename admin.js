@@ -94,12 +94,21 @@
         );
 
         var namespaces = new Hash();
-        var current = '';
+        var current = null;
 
         function initialize() {
+            addEvent($('select-namespaces'), 'change', onNamespaceChange);
             for (var styleName in settings.items) {
                 addEvent($('field-' + styleName), 'change', onSettingChange);
             }
+        }
+
+        function onNamespaceChange(event) {
+            var list = event.target;
+
+            current = namespaces.getItem(list.options[list.selectedIndex].value);
+
+            updateSetings();
         }
 
         function onSettingChange(event) {
@@ -144,7 +153,10 @@
                 html += namespaces.getItem(namespaceName).getOptionHtml();
             }
 
-            $('select-namespaces').innerHTML = html;
+            var list = $('select-namespaces');
+
+            list.innerHTML     = html;
+            list.selectedIndex = 1;
         }
 
         function updateSetings() {
