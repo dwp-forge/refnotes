@@ -46,6 +46,9 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      */
     function html() {
         $this->html->ptln('<!-- refnotes -->');
+
+        $this->_printLanguageStrings();
+
         $this->html->ptln('<div id="refnotes-config"><div id="config__manager">');
         $this->html->ptln('<form action="" method="post">');
         $this->html->indent();
@@ -59,6 +62,25 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
         $this->html->unindent();
         $this->html->ptln('</form></div></div>');
         $this->html->ptln('<!-- /refnotes -->');
+    }
+
+    /**
+     * Built-in JS localization stores all language strings in the common script (produced by js.php).
+     * The strings used by administration plugin seem to be unnecessary in that script. Instead we print
+     * them as part of the page and then load them into the LANG array on the client side.
+     */
+    function _printLanguageStrings() {
+        $this->html->ptln('<div id="refnotes-lang" style="display: none;">');
+
+        $this->setupLocale();
+
+        foreach ($this->lang as $key => $value) {
+            if (preg_match('/^js_(.+)$/', $key, $match) == 1) {
+                ptln($match[1] . ' : ' . $value . ':eos:');
+            }
+        }
+
+        $this->html->ptln('</div>');
     }
 
     /**

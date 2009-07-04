@@ -49,3 +49,11 @@ $lang['opt_brackes'] = 'Brackets';
 $lang['btn_add'] = 'Add';
 $lang['btn_delete'] = 'Delete';
 $lang['btn_save'] = 'Save';
+
+$lang['js_status'] = 'Server comunication status.';
+$lang['js_loading'] = 'Loading configuration settings from the server...';
+$lang['js_loaded'] = 'Configuration settings are successfully loaded from the server.';
+$lang['js_loading_failed'] = 'Failed to load configuration settings from the server.';
+$lang['js_saving'] = 'Saving configuration settings on the server...';
+$lang['js_saved'] = 'Configuration settings are successfully saved on the server.';
+$lang['js_saving_failed'] = 'Failed to save configuration settings on the server.';

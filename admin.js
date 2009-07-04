@@ -260,6 +260,7 @@
 
     admin_refnotes = {
         initialize: function() {
+            loadLanguageStrings();
             if ($('general') != null) {
                 namespaces.initialize();
                 namespaces.load();
@@ -269,7 +270,32 @@
         }
     };
 
+    function loadLanguageStrings() {
+        var element = $('refnotes-lang');
+        if (element != null) {
+            if (typeof(LANG.plugin) == 'undefined') {
+                LANG.plugin = {};
+            }
 
+            if (typeof(LANG.plugin.refnotes) == 'undefined') {
+                LANG.plugin.refnotes = {};
+            }
+
+            var strings = element.innerHTML.split(/:eos:\n/);
+
+            for (var i = 0; i < strings.length; i++) {
+                var match = strings[i].match(/^\s*(\w+) : (.+)/);
+
+                if (match != null) {
+                    LANG.plugin.refnotes[match[1]] = match[2];
+                }
+            }
+        }
+    }
+
+    function getLang(key) {
+        return LANG.plugin.refnotes[key];
+    }
 
     function addClass(element, className) {
         var regexp = new RegExp('\\b' + className + '\\b', '');
