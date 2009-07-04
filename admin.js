@@ -2,11 +2,15 @@
 
     var server = (function() {
         var ajax = new sack(DOKU_BASE + '/lib/exe/ajax.php');
+        var timer = null;
+        var transaction = null;
+        var onCompletion = null;
 
         ajax.encodeURIString = false;
 
         ajax.onLoading = function() {
             $('field-note-text').value += 'Sending data...\n';
+            setStatus(transaction, 'info');
         }
 
         ajax.onLoaded = function() {
@@ -18,34 +22,79 @@
         }
 
         ajax.afterCompletion = function() {
+            printResponse();
+
+            if (ajax.responseStatus[0] == '200') {
+                onCompletion();
+            }
+            else {
+                setStatus(transaction + '_failed', 'error');
+            }
+
+            transaction = null;
+            onCompletion = null;
+        }
+
+        function printResponse() {
             var e = $('field-note-text');
 
             e.value += 'Completed.\n';
             e.value += 'URLString sent: ' + ajax.URLString + '\n';
 
-            if (ajax.responseStatus){
-                e.value += 'Status code: ' + ajax.responseStatus[0] + '\n';
-                e.value += 'Status message: ' + ajax.responseStatus[1] + '\n';
-            }
+            e.value += 'Status code: ' + ajax.responseStatus[0] + '\n';
+            e.value += 'Status message: ' + ajax.responseStatus[1] + '\n';
+
             e.value += 'Response: "' + ajax.response + '"\n';
         }
 
+        function onLoaded() {
+            setStatus('loaded', 'success', 3000);
+        }
+
+        function onSaved() {
+            setStatus('saved', 'success', 10000);
+        }
+
         function loadSettings() {
-            $('field-note-text').value += '> loadSettings\n';
+            if (!ajax.failed && (transaction == null)) {
+                transaction = 'loading';
+                onCompletion = onLoaded;
 
-            ajax.setVar('call', 'refnotes-admin');
-            ajax.setVar('action', 'load-settings');
-            ajax.runAJAX();
-
-            $('field-note-text').value += '< loadSettings\n';
-
-            return null;
+                ajax.setVar('call', 'refnotes-admin');
+                ajax.setVar('action', 'load-settings');
+                ajax.runAJAX();
+            }
+            else {
+                setStatus('loading_failed', 'error');
+            }
         }
 
         function saveSettings(settings) {
-            ajax.setVar('action', 'save-settings');
+            if (!ajax.failed && (transaction == null)) {
+                transaction = 'saving';
+                onCompletion = onSaved;
 
-            //ajax.runAJAX();
+                ajax.setVar('call', 'refnotes-admin');
+                ajax.setVar('action', 'save-settings');
+                ajax.runAJAX();
+            }
+            else {
+                setStatus('saving_failed', 'error');
+            }
+        }
+
+        function setStatus(textId, styleId, timeout) {
+            var status = $('server-status');
+            status.className   = styleId;
+            status.textContent = getLang(textId);
+
+            if (typeof(timeout) != 'undefined') {
+                timer = window.setTimeout(clearStatus, timeout);
+            }
+        }
+
+        function clearStatus() {
+            setStatus('status', 'cleared');
         }
 
         return {

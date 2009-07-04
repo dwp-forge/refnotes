@@ -50,6 +50,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
         $this->_printLanguageStrings();
 
         $this->html->ptln('<div id="refnotes-config"><div id="config__manager">');
+        $this->html->ptln('<div id="server-status" class="info">&nbsp;</div>');
         $this->html->ptln('<form action="" method="post">');
         $this->html->indent();
 
