@@ -107,12 +107,19 @@
     var namespaces = (function() {
 
         function DefaultNamespace() {
+            this.isReadOnly = function() {
+                return true;
+            }
+
             this.getName = function() {
                 return '';
             }
 
             this.getOptionHtml = function() {
                 return '';
+            }
+
+            this.setStyle = function(name, value) {
             }
 
             this.getStyle = function(name) {
@@ -127,6 +134,10 @@
         function Namespace(namespaceName) {
             var style = new Hash();
             var name  = namespaceName;
+
+            function isReadOnly() {
+                return false;
+            }
 
             function getName() {
                 return name;
@@ -182,6 +193,7 @@
                 style.removeItem(name);
             }
 
+            this.isReadOnly          = isReadOnly;
             this.getName             = getName;
             this.getOptionHtml       = getOptionHtml;
             this.setStyle            = setStyle;
@@ -210,10 +222,16 @@
 
         function onNamespaceChange(event) {
             var list = event.target;
+            var name = list.options[list.selectedIndex].value;
 
-            current = namespaces.getItem(list.options[list.selectedIndex].value);
+            if (namespaces.hasItem(name)) {
+                current = namespaces.getItem(name);
+            }
+            else {
+                current = namespaces.getItem('');
+            }
 
-            updateSetings();
+            updateSettings();
         }
 
         function onSettingChange(event) {
@@ -225,7 +243,7 @@
 
             setInheretanceClass(combo, current.getStyleInheritance(styleName));
 
-            if (value == 'inherit') {
+            if ((value == 'inherit') || current.isReadOnly()) {
                 setComboSelection(combo, current.getStyle(styleName));
             }
         }
@@ -248,7 +266,7 @@
 
             namespaces.setItem(namespace.getName(), namespace);
 
-            current = namespace;
+            current = namespaces.getItem(':cite:');
         }
 
         function updateList() {
@@ -264,12 +282,13 @@
             list.selectedIndex = 1;
         }
 
-        function updateSetings() {
+        function updateSettings() {
             for (var styleName in settings.items) {
                 var combo = $('field-' + styleName);
 
                 setInheretanceClass(combo, current.getStyleInheritance(styleName));
                 setComboSelection(combo, current.getStyle(styleName));
+                combo.disabled = current.isReadOnly();
             }
         }
 
@@ -298,10 +317,10 @@
         }
 
         return {
-            initialize    : initialize,
-            load          : load,
-            updateList    : updateList,
-            updateSetings : updateSetings
+            initialize     : initialize,
+            load           : load,
+            updateList     : updateList,
+            updateSettings : updateSettings
         };
     })();
 
