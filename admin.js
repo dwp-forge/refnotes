@@ -1,4 +1,4 @@
-(function() {
+var admin_refnotes = (function() {
 
     function Hash() {
         // copy-pasted from http://www.mojavelinux.com/articles/javascript_hashes.html
@@ -116,6 +116,11 @@
 
         function onLoaded() {
             setStatus('loaded', 'success', 3000);
+
+            //TODO: parse JSON
+            var settings = null;
+
+            reloadSettings(settings);
         }
 
         function onSaved() {
@@ -315,8 +320,7 @@
             }
         }
 
-        function load() {
-            //TODO: fetch data from server
+        function reload(settings) {
             var namespace = new DefaultNamespace();
 
             namespaces.setItem(namespace.getName(), namespace);
@@ -334,6 +338,9 @@
             namespaces.setItem(namespace.getName(), namespace);
 
             current = namespaces.getItem(':cite:');
+
+            updateList();
+            updateSettings();
         }
 
         function updateList() {
@@ -384,26 +391,22 @@
         }
 
         return {
-            initialize     : initialize,
-            load           : load,
-            updateList     : updateList,
-            updateSettings : updateSettings
+            initialize : initialize,
+            reload     : reload
         };
     })();
 
 
+    function initialize() {
+        locale.initialize();
+        namespaces.initialize();
 
-    admin_refnotes = {
-        initialize: function() {
-            locale.initialize();
-            if ($('general') != null) {
-                namespaces.initialize();
-                namespaces.load();
-                namespaces.updateList();
-                namespaces.updateSetings();
-            }
-        }
-    };
+        server.loadSettings();
+    }
+
+    function reloadSettings(settings) {
+        namespaces.reload();
+    }
 
     function addClass(element, className) {
         var regexp = new RegExp('\\b' + className + '\\b', '');
@@ -417,9 +420,9 @@
         element.className = element.className.replace(regexp, '').replace(/^\s|(\s)\s|\s$/g, '$1');
     }
 
-
-
-
+    return {
+        initialize : initialize
+    };
 })();
 
 
