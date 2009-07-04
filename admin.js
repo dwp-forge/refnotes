@@ -322,12 +322,8 @@
     function loadLanguageStrings() {
         var element = $('refnotes-lang');
         if (element != null) {
-            if (typeof(LANG.plugin) == 'undefined') {
-                LANG.plugin = {};
-            }
-
-            if (typeof(LANG.plugin.refnotes) == 'undefined') {
-                LANG.plugin.refnotes = {};
+            if (typeof(LANG.plugins.refnotes) == 'undefined') {
+                LANG.plugins.refnotes = {};
             }
 
             var strings = element.innerHTML.split(/:eos:\n/);
@@ -336,14 +332,14 @@
                 var match = strings[i].match(/^\s*(\w+) : (.+)/);
 
                 if (match != null) {
-                    LANG.plugin.refnotes[match[1]] = match[2];
+                    LANG.plugins.refnotes[match[1]] = match[2];
                 }
             }
         }
     }
 
     function getLang(key) {
-        return LANG.plugin.refnotes[key];
+        return LANG.plugins.refnotes[key];
     }
 
     function addClass(element, className) {
