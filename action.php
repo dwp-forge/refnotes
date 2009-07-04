@@ -41,8 +41,24 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Register callbacks
      */
     function register(&$controller) {
+        $controller->register_hook('AJAX_CALL_UNKNOWN', 'BEFORE', $this, 'ajaxHandler');
         $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'addAdminIncludes');
         $controller->register_hook('PARSER_HANDLER_DONE', 'AFTER', $this, 'processCallList');
+    }
+
+    /**
+     *
+     */
+    function ajaxHandler(&$event, $param) {
+        if ($event->data == 'refnotes-admin') {
+            $event->preventDefault();
+            $event->stopPropagation();
+
+            //TODO: check admin rights
+
+            header('Content-Type: application/x-suggestions+json');
+            print('{"some" : "data"}');
+        }
     }
 
     /**

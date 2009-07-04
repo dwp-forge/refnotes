@@ -1,5 +1,60 @@
 (function() {
 
+    var server = (function() {
+        var ajax = new sack(DOKU_BASE + '/lib/exe/ajax.php');
+
+        ajax.encodeURIString = false;
+
+        ajax.onLoading = function() {
+            $('field-note-text').value += 'Sending data...\n';
+        }
+
+        ajax.onLoaded = function() {
+            $('field-note-text').value += 'Data sent.\n';
+        }
+
+        ajax.onInteractive = function() {
+            $('field-note-text').value += 'Getting data...\n';
+        }
+
+        ajax.afterCompletion = function() {
+            var e = $('field-note-text');
+
+            e.value += 'Completed.\n';
+            e.value += 'URLString sent: ' + ajax.URLString + '\n';
+
+            if (ajax.responseStatus){
+                e.value += 'Status code: ' + ajax.responseStatus[0] + '\n';
+                e.value += 'Status message: ' + ajax.responseStatus[1] + '\n';
+            }
+            e.value += 'Response: "' + ajax.response + '"\n';
+        }
+
+        function loadSettings() {
+            $('field-note-text').value += '> loadSettings\n';
+
+            ajax.setVar('call', 'refnotes-admin');
+            ajax.setVar('action', 'load-settings');
+            ajax.runAJAX();
+
+            $('field-note-text').value += '< loadSettings\n';
+
+            return null;
+        }
+
+        function saveSettings(settings) {
+            ajax.setVar('action', 'save-settings');
+
+            //ajax.runAJAX();
+        }
+
+        return {
+            loadSettings : loadSettings,
+            saveSettings : saveSettings
+        };
+    })();
+
+
     var namespaces = (function() {
 
         function DefaultNamespace() {
