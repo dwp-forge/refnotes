@@ -1,5 +1,72 @@
 (function() {
 
+    function Hash() {
+        // copy-pasted from http://www.mojavelinux.com/articles/javascript_hashes.html
+        this.length = 0;
+        this.items = new Array();
+
+        for (var i = 0; i < arguments.length; i += 2) {
+            if (typeof(arguments[i + 1]) != 'undefined') {
+                this.items[arguments[i]] = arguments[i + 1];
+                this.length++;
+            }
+        }
+
+        this.removeItem = function(key) {
+            if (typeof(this.items[key]) != 'undefined') {
+                this.length--;
+                delete this.items[key];
+            }
+        }
+
+        this.getItem = function(key) {
+            return this.items[key];
+        }
+
+        this.setItem = function(key, value) {
+            if (typeof(value) != 'undefined') {
+                if (typeof(this.items[key]) == 'undefined') {
+                    this.length++;
+                }
+                this.items[key] = value;
+            }
+        }
+
+        this.hasItem = function(key) {
+            return typeof(this.items[key]) != 'undefined';
+        }
+    }
+
+
+    var locale = (function() {
+        var lang = new Hash();
+
+        function initialize() {
+            var element = $('refnotes-lang');
+            if (element != null) {
+                var strings = element.innerHTML.split(/:eos:\n/);
+
+                for (var i = 0; i < strings.length; i++) {
+                    var match = strings[i].match(/^\s*(\w+) : (.+)/);
+
+                    if (match != null) {
+                        lang.setItem(match[1], match[2]);
+                    }
+                }
+            }
+        }
+
+        function getString(key) {
+            return lang.getItem(key);
+        }
+
+        return {
+            initialize : initialize,
+            getString  : getString
+        };
+    })();
+
+
     var server = (function() {
         var ajax = new sack(DOKU_BASE + '/lib/exe/ajax.php');
         var timer = null;
@@ -86,7 +153,7 @@
         function setStatus(textId, styleId, timeout) {
             var status = $('server-status');
             status.className   = styleId;
-            status.textContent = getLang(textId);
+            status.textContent = locale.getString(textId);
 
             if (typeof(timeout) != 'undefined') {
                 timer = window.setTimeout(clearStatus, timeout);
@@ -328,7 +395,7 @@
 
     admin_refnotes = {
         initialize: function() {
-            loadLanguageStrings();
+            locale.initialize();
             if ($('general') != null) {
                 namespaces.initialize();
                 namespaces.load();
@@ -337,29 +404,6 @@
             }
         }
     };
-
-    function loadLanguageStrings() {
-        var element = $('refnotes-lang');
-        if (element != null) {
-            if (typeof(LANG.plugins.refnotes) == 'undefined') {
-                LANG.plugins.refnotes = {};
-            }
-
-            var strings = element.innerHTML.split(/:eos:\n/);
-
-            for (var i = 0; i < strings.length; i++) {
-                var match = strings[i].match(/^\s*(\w+) : (.+)/);
-
-                if (match != null) {
-                    LANG.plugins.refnotes[match[1]] = match[2];
-                }
-            }
-        }
-    }
-
-    function getLang(key) {
-        return LANG.plugins.refnotes[key];
-    }
 
     function addClass(element, className) {
         var regexp = new RegExp('\\b' + className + '\\b', '');
@@ -372,55 +416,6 @@
         var regexp = new RegExp('\\b' + className + '\\b', '');
         element.className = element.className.replace(regexp, '').replace(/^\s|(\s)\s|\s$/g, '$1');
     }
-
-
-
-
-    function Hash() {
-        // copy-pasted from http://www.mojavelinux.com/articles/javascript_hashes.html
-        this.length = 0;
-        this.items = new Array();
-
-        for (var i = 0; i < arguments.length; i += 2) {
-            if (typeof(arguments[i + 1]) != 'undefined') {
-                this.items[arguments[i]] = arguments[i + 1];
-                this.length++;
-            }
-        }
-
-        this.removeItem = function(key) {
-            if (typeof(this.items[key]) != 'undefined') {
-                this.length--;
-                delete this.items[key];
-            }
-        }
-
-        this.getItem = function(key) {
-            return this.items[key];
-        }
-
-        this.setItem = function(key, value) {
-            if (typeof(value) != 'undefined') {
-                if (typeof(this.items[key]) == 'undefined') {
-                    this.length++;
-                }
-                this.items[key] = value;
-            }
-        }
-
-        this.hasItem = function(key) {
-            return typeof(this.items[key]) != 'undefined';
-        }
-    }
-
-
-
-
-
-
-
-
-
 
 
 
