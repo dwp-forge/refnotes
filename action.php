@@ -11,8 +11,10 @@
 if(!defined('DOKU_INC')) die();
 
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
+require_once(DOKU_INC . 'inc/JSON.php');
 require_once(DOKU_PLUGIN . 'action.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
@@ -56,9 +58,99 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
 
             //TODO: check admin rights
 
-            header('Content-Type: application/x-suggestions+json');
-            print('{"some" : "data"}');
+            switch ($_POST['action']) {
+                case 'load-settings':
+                    $this->_sendConfig();
+                    break;
+
+                case 'save-settings':
+                    $this->_parseConfig($_POST['settings']);
+                    break;
+            }
         }
+    }
+
+    /**
+     *
+     */
+    function _sendConfig() {
+        $namespace = refnotes_loadConfigFile('namespaces');
+
+        foreach ($namespace as &$ns) {
+            foreach ($ns as $styleName => &$style) {
+                $style = $this->_translateStyle($styleName, $style, 'dw', 'js');
+            }
+        }
+
+        $config['general'] = array();
+        $config['namespaces'] = $namespace;
+        $config['notes'] = refnotes_loadConfigFile('notes');
+
+        $json = new JSON();
+
+        header('Content-Type: application/x-suggestions+json');
+        print($json->encode($config));
+    }
+
+    /**
+     *
+     */
+    function _parseConfig($config) {
+        print('saved');
+    }
+
+    /**
+     *
+     */
+    function _translateStyle($styleName, $style, $from, $to) {
+        static $dictionary = array(
+            'refnote-id' => array(
+                'dw' => array('1'      , 'a'          , 'A'          , 'i'          , 'I'          , '*'    , 'name'     ),
+                'js' => array('numeric', 'latin-lower', 'latin-upper', 'roman-lower', 'roman-upper', 'stars', 'note-name')
+            ),
+            'reference-base' => array(
+                'dw' => array('sup'  , 'text'       ),
+                'js' => array('super', 'normal-text')
+            ),
+            'reference-format' => array(
+                'dw' => array(')'           , '()'     , ']'            , '[]'      ),
+                'js' => array('right-parent', 'parents', 'right-bracket', 'brackets')
+            ),
+            'multi-ref-id' => array(
+                'dw' => array('ref'        , 'note'   ),
+                'js' => array('ref-counter', 'note-counter')
+            ),
+            'note-id-base' => array(
+                'dw' => array('sup'  , 'text'       ),
+                'js' => array('super', 'normal-text')
+            ),
+            'note-id-format' => array(
+                'dw' => array(')'           , '()'     , ']'            , '[]'      , '.'  ),
+                'js' => array('right-parent', 'parents', 'right-bracket', 'brackets', 'dot')
+            ),
+            'back-ref-base' => array(
+                'dw' => array('sup'  , 'text'       ),
+                'js' => array('super', 'normal-text')
+            ),
+            'back-ref-format' => array(
+                'dw' => array('1'      , 'a'          , 'note'   ),
+                'js' => array('numeric', 'latin-lower', 'note-id')
+            ),
+            'back-ref-separator' => array(
+                'dw' => array(','    ),
+                'js' => array('comma')
+            )
+        );
+
+        if (array_key_exists($styleName, $dictionary)) {
+            $key = array_search($style, $dictionary[$styleName][$from]);
+
+            if ($key !== false) {
+                $style = $dictionary[$styleName][$to][$key];
+            }
+        }
+
+        return $style;
     }
 
     /**
@@ -66,13 +158,19 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      */
     function addAdminIncludes(&$event, $param) {
         if (($_REQUEST['do'] == 'admin') && !empty($_REQUEST['page']) && ($_REQUEST['page'] == 'refnotes')) {
-            $event->data['script'][] = array (
+            $event->data['script'][] = array(
                 'type' => 'text/javascript',
                 'charset' => 'utf-8',
                 'src' => DOKU_BASE . 'lib/plugins/refnotes/admin.js',
                 '_data' => ''
             );
-            $event->data['link'][] = array (
+            $event->data['script'][] = array(
+                'type' => 'text/javascript',
+                'charset' => 'utf-8',
+                'src' => DOKU_BASE . 'lib/plugins/refnotes/json2.js',
+                '_data' => ''
+            );
+            $event->data['link'][] = array(
                 'type' => 'text/css',
                 'rel' => 'stylesheet',
                 'href' => DOKU_BASE . 'lib/plugins/refnotes/admin.css',
@@ -127,7 +225,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     }
 
     /**
-     * Mark start of a scope instruction
+     * Mark instruction that starts a scope
      */
     function _markScopeStart($namespace, $callIndex) {
         if (array_key_exists($namespace, $this->scopeStart)) {
@@ -142,7 +240,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     }
 
     /**
-     * Mark end of a scope instruction
+     * Mark instruction that ends a scope
      */
     function _markScopeEnd($namespace, $callIndex) {
         $this->scopeEnd[$namespace][] = $callIndex;
