@@ -372,7 +372,7 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
             ),
             'reference-format' => array(
                 'class' => 'select',
-                'option' => array('right-parent', 'parents', 'right-bracket', 'brackes', 'none', 'inherit')
+                'option' => array('right-parent', 'parents', 'right-bracket', 'brackets', 'none', 'inherit')
             )
         );
 
