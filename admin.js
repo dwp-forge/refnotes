@@ -117,8 +117,7 @@ var admin_refnotes = (function() {
         function onLoaded() {
             setStatus('loaded', 'success', 3000);
 
-            //TODO: parse JSON
-            var settings = null;
+            var settings = JSON.parse(ajax.response);
 
             reloadSettings(settings);
         }
@@ -285,8 +284,8 @@ var admin_refnotes = (function() {
             'reference-format'     , 'right-parent'
         );
 
-        var namespaces = new Hash();
-        var current = null;
+        var namespaces = new Hash('', new DefaultNamespace());
+        var current = namespaces.getItem('');
 
         function initialize() {
             addEvent($('select-namespaces'), 'change', onNamespaceChange);
@@ -327,23 +326,24 @@ var admin_refnotes = (function() {
         }
 
         function reload(settings) {
-            var namespace = new DefaultNamespace();
+            namespaces = new Hash('', new DefaultNamespace());
+            current = namespaces.getItem('');
 
-            namespaces.setItem(namespace.getName(), namespace);
+            for (var name in settings) {
+                if (name.match(/^:$|^:.+?:$/) != null) {
+                    namespace = new Namespace(name);
 
-            namespace = new Namespace(':');
+                    for (var style in settings[name]) {
+                        namespace.setStyle(style, settings[name][style]);
+                    }
 
-            namespace.setStyle('reference-font-weight', 'bold');
+                    namespaces.setItem(name, namespace);
 
-            namespaces.setItem(namespace.getName(), namespace);
-
-            namespace = new Namespace(':cite:');
-
-            namespace.setStyle('refnote-id', 'latin-lower');
-
-            namespaces.setItem(namespace.getName(), namespace);
-
-            current = namespaces.getItem(':cite:');
+                    if (current.getName() == '') {
+                        current = namespace;
+                    }
+                }
+            }
 
             updateList();
             updateSettings();
@@ -352,14 +352,19 @@ var admin_refnotes = (function() {
         function updateList() {
             var html = '';
 
-            for (var namespaceName in namespaces.items) {
-                html += namespaces.getItem(namespaceName).getOptionHtml();
+            for (var name in namespaces.items) {
+                html += namespaces.getItem(name).getOptionHtml();
             }
 
             var list = $('select-namespaces');
 
-            list.innerHTML     = html;
-            list.selectedIndex = 1;
+            list.innerHTML = html;
+
+            for (var i = 0; i < list.options.length; i++) {
+                if (list.options[i].value == current.getName()) {
+                    list.options[i].selected = true;
+                }
+            }
         }
 
         function updateSettings() {
@@ -411,7 +416,7 @@ var admin_refnotes = (function() {
     }
 
     function reloadSettings(settings) {
-        namespaces.reload();
+        namespaces.reload(settings['namespaces']);
     }
 
     function addClass(element, className) {
