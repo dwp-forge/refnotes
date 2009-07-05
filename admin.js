@@ -148,6 +148,9 @@ var admin_refnotes = (function() {
 
                 ajax.setVar('call', 'refnotes-admin');
                 ajax.setVar('action', 'save-settings');
+
+                //TODO: serialize settings
+
                 ajax.runAJAX();
             }
             else {
@@ -294,14 +297,17 @@ var admin_refnotes = (function() {
 
         function onNamespaceChange(event) {
             var list = event.target;
-            var name = list.options[list.selectedIndex].value;
+            var name = '';
 
-            if (namespaces.hasItem(name)) {
-                current = namespaces.getItem(name);
+            if (list.selectedIndex != -1) {
+                name = list.options[list.selectedIndex].value;
+
+                if (!namespaces.hasItem(name)) {
+                    name = '';
+                }
             }
-            else {
-                current = namespaces.getItem('');
-            }
+
+            current = namespaces.getItem(name);
 
             updateSettings();
         }
