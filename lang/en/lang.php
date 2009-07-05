@@ -44,7 +44,7 @@ $lang['opt_italic'] = 'Italic';
 $lang['opt_right-parent'] = 'Right parenthesis';
 $lang['opt_parents'] = 'Parentheses';
 $lang['opt_right-bracket'] = 'Right bracket';
-$lang['opt_brackes'] = 'Brackets';
+$lang['opt_brackets'] = 'Brackets';
 
 $lang['btn_add'] = 'Add';
 $lang['btn_delete'] = 'Delete';
