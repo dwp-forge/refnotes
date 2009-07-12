@@ -180,6 +180,15 @@ var admin_refnotes = (function() {
 
     var namespaces = (function() {
 
+        var defaults = new Hash(
+            'refnote-id'           , 'numeric',
+            'reference-base'       , 'super',
+            'reference-font-weight', 'normal',
+            'reference-font-style' , 'normal',
+            'reference-format'     , 'right-parent',
+            'notes-separator'      , '100%'
+        );
+
         function DefaultNamespace() {
             this.isReadOnly = function() {
                 return true;
@@ -197,11 +206,11 @@ var admin_refnotes = (function() {
             }
 
             this.getStyle = function(name) {
-                return settings.getItem(name);
+                return defaults.getItem(name);
             }
 
             this.getStyleInheritance = function(name) {
-                return 2;
+                return 'default';
             }
         }
 
@@ -253,10 +262,10 @@ var admin_refnotes = (function() {
             }
 
             function getStyleInheritance(name) {
-                var result = 0;
+                var result = '';
 
                 if (!style.hasItem(name)) {
-                    result = (getParent().getStyleInheritance(name) == 2) ? 2 : 1;
+                    result = getParent().getStyleInheritance(name) || 'inherited';
                 }
 
                 return result;
@@ -275,102 +284,114 @@ var admin_refnotes = (function() {
             this.removeStyle         = removeStyle;
         }
 
-        function Field(element) {
-            this.setInheretanceClass = function(inheritance) {
-                var cell = element.parentNode.parentNode;
+        function Field(styleName) {
+            this.element = $('field-' + styleName);
+
+            this.updateInheretance = function(inheritance) {
+                var cell = this.element.parentNode.parentNode;
 
                 removeClass(cell, 'default');
                 removeClass(cell, 'inherited');
 
-                switch (inheritance) {
-                    case 2:
-                        addClass(cell, 'default');
-                        break;
-                    case 1:
-                        addClass(cell, 'inherited');
-                        break;
-                }
+                addClass(cell, current.getStyleInheritance(styleName));
             }
 
         }
 
-        function SelectField(element, styleName) {
+        function SelectField(styleName) {
             this.baseClass = Field;
-            this.baseClass(element);
+            this.baseClass(styleName);
+
+            var combo = this.element;
+            var self  = this;
+
+            addEvent(combo, 'change', function() {
+                self.onChange();
+            });
 
             function setSelection(value) {
-                for (var o = 0; o < element.options.length; o++) {
-                    if (element.options[o].value == value) {
-                        element.options[o].selected = true;
+                for (var o = 0; o < combo.options.length; o++) {
+                    if (combo.options[o].value == value) {
+                        combo.options[o].selected = true;
                     }
                 }
             }
 
-            this.onChange = function(namespace) {
-                var value = element.options[element.selectedIndex].value;
+            this.onChange = function() {
+                var value = combo.options[combo.selectedIndex].value;
 
-                namespace.setStyle(styleName, value);
+                current.setStyle(styleName, value);
 
-                this.setInheretanceClass(namespace.getStyleInheritance(styleName));
+                this.updateInheretance();
 
-                if ((value == 'inherit') || namespace.isReadOnly()) {
-                    setSelection(namespace.getStyle(styleName));
+                if ((value == 'inherit') || current.isReadOnly()) {
+                    setSelection(current.getStyle(styleName));
                 }
             };
 
-            this.update = function(namespace) {
-                this.setInheretanceClass(namespace.getStyleInheritance(styleName));
-                setSelection(namespace.getStyle(styleName));
-                element.disabled = namespace.isReadOnly();
+            this.update = function() {
+                this.updateInheretance();
+                setSelection(current.getStyle(styleName));
+                combo.disabled = current.isReadOnly();
             };
         }
 
-        function TextField(element, styleName) {
+        function TextField(styleName, validate) {
             this.baseClass = Field;
-            this.baseClass(element);
+            this.baseClass(styleName);
 
-            this.onChange = function(namespace) {
-                /* Field-spacific validation. So far there is only one text field, so it can stay here */
-                if (element.value.match(/(?:\d+\.?|\d*\.\d+)(?:%|em|px)|none/) == null) {
-                    element.value = 'none';
+            var edit   = this.element;
+            var button = $(this.element.id + '-inherit');
+            var self   = this;
+
+            addEvent(edit, 'change', function() {
+                self.setValue(validate(edit.value));
+            });
+
+            addEvent(button, 'click', function() {
+                self.setValue('inherit');
+            });
+
+            this.setValue = function(value) {
+                current.setStyle(styleName, value);
+
+                this.updateInheretance();
+
+                if ((edit.value != value) || (value == 'inherit') || current.isReadOnly()) {
+                    edit.value = current.getStyle(styleName);
                 }
-
-                namespace.setStyle(styleName, element.value);
-
-                this.setInheretanceClass(namespace.getStyleInheritance(styleName));
             };
 
-            this.update = function(namespace) {
-                this.setInheretanceClass(namespace.getStyleInheritance(styleName));
-                element.value = namespace.getStyle(styleName);
-                element.disabled = namespace.isReadOnly();
+            this.update = function() {
+                this.updateInheretance();
 
-                var button = $(element.id + '-inherit');
-
-                if (button != null) {
-                    button.disabled = namespace.isReadOnly();
-                }
+                edit.value      = current.getStyle(styleName);
+                edit.disabled   = current.isReadOnly();
+                button.disabled = current.isReadOnly();
             };
         }
 
 
-        var settings = new Hash(
-            'refnote-id'           , 'numeric',
-            'reference-base'       , 'super',
-            'reference-font-weight', 'normal',
-            'reference-font-style' , 'normal',
-            'reference-format'     , 'right-parent',
-            'notes-separator'      , '100%'
-        );
-
+        var fields     = new Array();
         var namespaces = new Hash('', new DefaultNamespace());
-        var current = namespaces.getItem('');
+        var current    = namespaces.getItem('');
 
         function initialize() {
+            fields.push(new SelectField('refnote-id'));
+            fields.push(new SelectField('reference-base'));
+            fields.push(new SelectField('reference-font-weight'));
+            fields.push(new SelectField('reference-font-style'));
+            fields.push(new SelectField('reference-format'));
+            fields.push(new TextField('notes-separator', function(value){
+                if (value.match(/(?:\d+\.?|\d*\.\d+)(?:%|em|px)|none/) == null) {
+                    value = 'none';
+                }
+                return value;
+            }));
+
             addEvent($('select-namespaces'), 'change', onNamespaceChange);
-            for (var styleName in settings.items) {
-                addEvent($('field-' + styleName), 'change', onSettingChange);
-            }
+
+            updateFields();
         }
 
         function onNamespaceChange(event) {
@@ -387,44 +408,12 @@ var admin_refnotes = (function() {
 
             current = namespaces.getItem(name);
 
-            updateSettings();
-        }
-
-        function onSettingChange(event) {
-            getField(event.target).onChange(current);
-        }
-
-        function getField(data) {
-            var style, element, field;
-
-            switch (typeof(data)) {
-                case 'string':
-                    style = data;
-                    element = $('field-' + style);
-                    break;
-
-                case 'object':
-                    element = data;
-                    style = element.id.replace(/^field-/, '');
-                    break;
-            }
-
-            switch (element.type) {
-                case 'select-one':
-                    field = new SelectField(element, style);
-                    break;
-
-                case 'text':
-                    field = new TextField(element, style);
-                    break;
-            }
-
-            return field;
+            updateFields();
         }
 
         function reload(settings) {
             namespaces = new Hash('', new DefaultNamespace());
-            current = namespaces.getItem('');
+            current    = namespaces.getItem('');
 
             for (var name in settings) {
                 if (name.match(/^:$|^:.+?:$/) != null) {
@@ -443,7 +432,7 @@ var admin_refnotes = (function() {
             }
 
             updateList();
-            updateSettings();
+            updateFields();
         }
 
         function updateList() {
@@ -464,9 +453,9 @@ var admin_refnotes = (function() {
             }
         }
 
-        function updateSettings() {
-            for (var styleName in settings.items) {
-                getField(styleName).update(current);
+        function updateFields() {
+            for (var i = 0; i < fields.length; i++) {
+                fields[i].update();
             }
         }
 
@@ -489,9 +478,11 @@ var admin_refnotes = (function() {
     }
 
     function addClass(element, className) {
-        var regexp = new RegExp('\\b' + className + '\\b', '');
-        if (!element.className.match(regexp)) {
-            element.className = (element.className + ' ' + className).replace(/^\s$/, '');
+        if (className != '') {
+            var regexp = new RegExp('\\b' + className + '\\b', '');
+            if (!element.className.match(regexp)) {
+                element.className = (element.className + ' ' + className).replace(/^\s/, '');
+            }
         }
     }
 
