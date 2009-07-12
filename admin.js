@@ -205,9 +205,8 @@ var admin_refnotes = (function() {
             }
         }
 
-        function Namespace(namespaceName) {
+        function Namespace(name) {
             var style = new Hash();
-            var name  = namespaceName;
 
             function isReadOnly() {
                 return false;
@@ -241,7 +240,7 @@ var admin_refnotes = (function() {
             }
 
             function getStyle(name) {
-                var result = null;
+                var result;
 
                 if (style.hasItem(name)) {
                     result = style.getItem(name);
@@ -275,6 +274,57 @@ var admin_refnotes = (function() {
             this.getStyleInheritance = getStyleInheritance;
             this.removeStyle         = removeStyle;
         }
+
+        function Field(element) {
+            this.setInheretanceClass = function(inheritance) {
+                var cell = element.parentNode.parentNode;
+
+                removeClass(cell, 'default');
+                removeClass(cell, 'inherited');
+
+                switch (inheritance) {
+                    case 2:
+                        addClass(cell, 'default');
+                        break;
+                    case 1:
+                        addClass(cell, 'inherited');
+                        break;
+                }
+            }
+
+        }
+
+        function SelectField(element, styleName) {
+            this.baseClass = Field;
+            this.baseClass(element);
+
+            function setSelection(value) {
+                for (var o = 0; o < element.options.length; o++) {
+                    if (element.options[o].value == value) {
+                        element.options[o].selected = true;
+                    }
+                }
+            }
+
+            this.onChange = function(namespace) {
+                var value = element.options[element.selectedIndex].value;
+
+                namespace.setStyle(styleName, value);
+
+                this.setInheretanceClass(namespace.getStyleInheritance(styleName));
+
+                if ((value == 'inherit') || namespace.isReadOnly()) {
+                    setSelection(namespace.getStyle(styleName));
+                }
+            };
+
+            this.update = function(namespace) {
+                this.setInheretanceClass(namespace.getStyleInheritance(styleName));
+                setSelection(namespace.getStyle(styleName));
+                element.disabled = namespace.isReadOnly();
+            };
+        }
+
 
         var settings = new Hash(
             'refnote-id'           , 'numeric',
@@ -312,17 +362,25 @@ var admin_refnotes = (function() {
         }
 
         function onSettingChange(event) {
-            var combo = event.target;
-            var styleName = combo.id.replace(/^field-/, '');
-            var value = combo.options[combo.selectedIndex].value;
+            getField(event.target).onChange(current);
+        }
 
-            current.setStyle(styleName, value);
+        function getField(data) {
+            var style, element;
 
-            setInheretanceClass(combo, current.getStyleInheritance(styleName));
+            switch (typeof(data)) {
+                case 'string':
+                    style = data;
+                    element = $('field-' + style);
+                    break;
 
-            if ((value == 'inherit') || current.isReadOnly()) {
-                setComboSelection(combo, current.getStyle(styleName));
+                case 'object':
+                    element = data;
+                    style = element.id.replace(/^field-/, '');
+                    break;
             }
+
+            return new SelectField(element, style);
         }
 
         function reload(settings) {
@@ -369,35 +427,7 @@ var admin_refnotes = (function() {
 
         function updateSettings() {
             for (var styleName in settings.items) {
-                var combo = $('field-' + styleName);
-
-                setInheretanceClass(combo, current.getStyleInheritance(styleName));
-                setComboSelection(combo, current.getStyle(styleName));
-                combo.disabled = current.isReadOnly();
-            }
-        }
-
-        function setInheretanceClass(combo, inherited) {
-            var cell = combo.parentNode.parentNode;
-
-            removeClass(cell, 'default');
-            removeClass(cell, 'inherited');
-
-            switch (inherited) {
-                case 2:
-                    addClass(cell, 'default');
-                    break;
-                case 1:
-                    addClass(cell, 'inherited');
-                    break;
-            }
-        }
-
-        function setComboSelection(combo, value) {
-            for (var o = 0; o < combo.options.length; o++) {
-                if (combo.options[o].value == value) {
-                     combo.options[o].selected = true;
-                }
+                getField(styleName).update(current);
             }
         }
 
