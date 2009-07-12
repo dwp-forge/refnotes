@@ -198,10 +198,6 @@ var admin_refnotes = (function() {
                 return '';
             }
 
-            this.getOptionHtml = function() {
-                return '';
-            }
-
             this.setStyle = function(name, value) {
             }
 
@@ -217,18 +213,6 @@ var admin_refnotes = (function() {
         function Namespace(name) {
             var style = new Hash();
 
-            function isReadOnly() {
-                return false;
-            }
-
-            function getName() {
-                return name;
-            }
-
-            function getOptionHtml() {
-                return '<option value="' + name + '">' + name + '</option>';
-            }
-
             function getParent() {
                 var parent = name.replace(/\w*:$/, '');
 
@@ -239,7 +223,15 @@ var admin_refnotes = (function() {
                 return namespaces.getItem(parent);
             }
 
-            function setStyle(name, value) {
+            this.isReadOnly = function() {
+                return false;
+            }
+
+             this.getName = function() {
+                return name;
+            }
+
+            this.setStyle = function(name, value) {
                 if (value == 'inherit') {
                     style.removeItem(name);
                 }
@@ -248,7 +240,7 @@ var admin_refnotes = (function() {
                 }
             }
 
-            function getStyle(name) {
+            this.getStyle = function(name) {
                 var result;
 
                 if (style.hasItem(name)) {
@@ -261,7 +253,7 @@ var admin_refnotes = (function() {
                 return result;
             }
 
-            function getStyleInheritance(name) {
+            this.getStyleInheritance = function(name) {
                 var result = '';
 
                 if (!style.hasItem(name)) {
@@ -270,18 +262,6 @@ var admin_refnotes = (function() {
 
                 return result;
             }
-
-            function removeStyle(name) {
-                style.removeItem(name);
-            }
-
-            this.isReadOnly          = isReadOnly;
-            this.getName             = getName;
-            this.getOptionHtml       = getOptionHtml;
-            this.setStyle            = setStyle;
-            this.getStyle            = getStyle;
-            this.getStyleInheritance = getStyleInheritance;
-            this.removeStyle         = removeStyle;
         }
 
         function Field(styleName) {
@@ -436,21 +416,27 @@ var admin_refnotes = (function() {
         }
 
         function updateList() {
-            var html = '';
-
-            for (var name in namespaces.items) {
-                html += namespaces.getItem(name).getOptionHtml();
-            }
-
             var list = $('select-namespaces');
 
-            list.innerHTML = html;
+            list.options.length = 0;
 
-            for (var i = 0; i < list.options.length; i++) {
-                if (list.options[i].value == current.getName()) {
-                    list.options[i].selected = true;
+            for (var name in namespaces.items) {
+                if (name != '') {
+                    list.appendChild(createOption(name), name == current.getName());
                 }
             }
+
+        }
+
+        function createOption(value, selected)
+        {
+            var option = document.createElement('option');
+
+            option.text     = value;
+            option.value    = value;
+            option.selected = selected;
+
+            return option;
         }
 
         function updateFields() {
