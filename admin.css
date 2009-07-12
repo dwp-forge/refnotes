@@ -1,4 +1,4 @@
-div#refnotes-config #config__manager div.cleared {
+div#refnotes-config div#config__manager div.cleared {
   background-color: #eee;
   color: #bbb;
   border: 1px solid #ccc;
@@ -8,51 +8,64 @@ div#refnotes-config #config__manager div.cleared {
   text-align: center;
 }
 
-div#refnotes-config #config__manager div.info {
+div#refnotes-config div#config__manager div.info {
   border: 1px solid #aaf;
 }
 
-div#refnotes-config #config__manager div.success {
+div#refnotes-config div#config__manager div.success {
   border: 1px solid #9e9;
 }
 
-div#refnotes-config #config__manager div.error {
+div#refnotes-config div#config__manager div.error {
   border: 1px solid #faa;
 }
 
-div#refnotes-config div#config__manager fieldset td.list {
+div#refnotes-config div#config__manager td.list {
     width: 15em;
     vertical-align: top;
 }
 
-div#refnotes-config div#config__manager fieldset select.list {
+div#refnotes-config div#config__manager select.list {
     width: 100%;
 }
 
-div#refnotes-config div#config__manager fieldset td.lean-label {
+div#refnotes-config div#config__manager td.lean-label {
     padding: 0.6em 0 0.6em 1em;
     vertical-align: top;
 }
 
-div#refnotes-config div#config__manager fieldset td.value {
+div#refnotes-config div#config__manager td.value {
     width: 20em;
 }
 
-div#refnotes-config div#config__manager fieldset td.value select {
+div#refnotes-config div#config__manager td.value select {
     width: 99%;
 }
 
-div#refnotes-config div#config__manager fieldset td.value textarea {
+div#refnotes-config div#config__manager td.value input.edit {
+    width: auto;
+}
+
+div#refnotes-config div#config__manager td.value input.button {
+    background-color: #fff;
+    color: #000;
+}
+
+div#refnotes-config div#config__manager td.value input.button[disabled] {
+    color: #666;
+}
+
+div#refnotes-config div#config__manager td.value textarea {
     width: 99%;
     height: auto;
 }
 
-div#refnotes-config div#config__manager fieldset div.list-controls {
+div#refnotes-config div#config__manager div.list-controls {
     text-align: left;
     margin-bottom: 1em;
 }
 
-div#refnotes-config div#config__manager fieldset div.list-controls input.edit {
+div#refnotes-config div#config__manager div.list-controls input.edit {
     width: 14em;
 }
 
@@ -60,14 +73,14 @@ div#refnotes-config div#config__manager td.default .input,
 div#refnotes-config div#config__manager td.default input,
 div#refnotes-config div#config__manager td.default textarea,
 div#refnotes-config div#config__manager td.default select {
-  background-color: #ccddff;
-  color: #000;
+    background-color: #ccddff;
+    color: #000;
 }
 
 div#refnotes-config div#config__manager td.inherited .input,
 div#refnotes-config div#config__manager td.inherited input,
 div#refnotes-config div#config__manager td.inherited textarea,
 div#refnotes-config div#config__manager td.inherited select {
-  background-color: #ddeedd;
-  color: #000;
+    background-color: #ddeedd;
+    color: #000;
 }
