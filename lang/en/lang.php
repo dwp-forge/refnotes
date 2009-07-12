@@ -24,6 +24,7 @@ $lang['lbl_reference-base'] = 'Reference baseline';
 $lang['lbl_reference-font-weight'] = 'Reference font weight';
 $lang['lbl_reference-font-style'] = 'Reference font style';
 $lang['lbl_reference-format'] = 'Reference formatting';
+$lang['lbl_notes-separator'] = 'Notes block separator';
 
 $lang['lbl_inline'] = 'Inline';
 

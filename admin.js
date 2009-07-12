@@ -325,13 +325,42 @@ var admin_refnotes = (function() {
             };
         }
 
+        function TextField(element, styleName) {
+            this.baseClass = Field;
+            this.baseClass(element);
+
+            this.onChange = function(namespace) {
+                /* Field-spacific validation. So far there is only one text field, so it can stay here */
+                if (element.value.match(/(?:\d+\.?|\d*\.\d+)(?:%|em|px)|none/) == null) {
+                    element.value = 'none';
+                }
+
+                namespace.setStyle(styleName, element.value);
+
+                this.setInheretanceClass(namespace.getStyleInheritance(styleName));
+            };
+
+            this.update = function(namespace) {
+                this.setInheretanceClass(namespace.getStyleInheritance(styleName));
+                element.value = namespace.getStyle(styleName);
+                element.disabled = namespace.isReadOnly();
+
+                var button = $(element.id + '-inherit');
+
+                if (button != null) {
+                    button.disabled = namespace.isReadOnly();
+                }
+            };
+        }
+
 
         var settings = new Hash(
             'refnote-id'           , 'numeric',
             'reference-base'       , 'super',
             'reference-font-weight', 'normal',
             'reference-font-style' , 'normal',
-            'reference-format'     , 'right-parent'
+            'reference-format'     , 'right-parent',
+            'notes-separator'      , '100%'
         );
 
         var namespaces = new Hash('', new DefaultNamespace());
@@ -366,7 +395,7 @@ var admin_refnotes = (function() {
         }
 
         function getField(data) {
-            var style, element;
+            var style, element, field;
 
             switch (typeof(data)) {
                 case 'string':
@@ -380,7 +409,17 @@ var admin_refnotes = (function() {
                     break;
             }
 
-            return new SelectField(element, style);
+            switch (element.type) {
+                case 'select-one':
+                    field = new SelectField(element, style);
+                    break;
+
+                case 'text':
+                    field = new TextField(element, style);
+                    break;
+            }
+
+            return field;
         }
 
         function reload(settings) {

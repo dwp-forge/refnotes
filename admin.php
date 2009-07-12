@@ -285,8 +285,8 @@ class refnotes_config_list_section extends refnotes_config_section {
      *
      */
     function _getButton($action) {
-        $html = '<input type="button" class="button"';
         $id = $action . '-' . $this->id;
+        $html = '<input type="button" class="button"';
         $html .= ' id="' . $id . '"';
         $html .= ' name="' . $id . '"';
         $html .= ' value="' . $this->locale->getLang('btn_' . $action) . '"';
@@ -373,6 +373,9 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
             'reference-format' => array(
                 'class' => 'select',
                 'option' => array('right-parent', 'parents', 'right-bracket', 'brackets', 'none', 'inherit')
+            ),
+            'notes-separator' => array(
+                'class' => 'edit_inherit'
             )
         );
 
@@ -502,6 +505,37 @@ class refnotes_config_select extends refnotes_config_field {
         }
 
         $html .= '</select>';
+        $html .= '</div>';
+
+        return $html;
+    }
+}
+
+class refnotes_config_edit_inherit extends refnotes_config_field {
+
+    /**
+     * Constructor
+     */
+    function refnotes_config_edit_inherit($id, $data) {
+        parent::refnotes_config_field($id, $data);
+    }
+
+    /**
+     *
+     */
+    function getControl($locale) {
+        $html = '<div class="input">';
+
+        $html .= '<input type="text" class="edit"';
+        $html .= ' id="' . $this->id . '"';
+        $html .= ' name="' . $this->id . '" />' . DOKU_LF;
+
+        $html .= '<input type="button" class="button"';
+        $html .= ' id="' . $this->id . '-inherit"';
+        $html .= ' name="' . $this->id . '-inherit"';
+        $html .= ' value="' . $locale->getLang('opt_inherit') . '"';
+        $html .= ' />';
+
         $html .= '</div>';
 
         return $html;
