@@ -57,7 +57,20 @@ var admin_refnotes = (function() {
         }
 
         function getString(key) {
-            return lang.getItem(key);
+            var string = '';
+
+            if (lang.hasItem(key)) {
+                string = lang.getItem(key);
+
+                if (arguments.length > 1) {
+                    for (var i = 1; i < arguments.length; i++) {
+                        var regexp = new RegExp('\\{' + i + '\\}');
+                        string = string.replace(regexp, arguments[i]);
+                    }
+                }
+            }
+
+            return string;
         }
 
         return {
@@ -465,7 +478,7 @@ var admin_refnotes = (function() {
 
     function addClass(element, className) {
         if (className != '') {
-            var regexp = new RegExp('\\b' + className + '\\b', '');
+            var regexp = new RegExp('\\b' + className + '\\b');
             if (!element.className.match(regexp)) {
                 element.className = (element.className + ' ' + className).replace(/^\s/, '');
             }
@@ -473,7 +486,7 @@ var admin_refnotes = (function() {
     }
 
     function removeClass(element, className) {
-        var regexp = new RegExp('\\b' + className + '\\b', '');
+        var regexp = new RegExp('\\b' + className + '\\b');
         element.className = element.className.replace(regexp, '').replace(/^\s|(\s)\s|\s$/g, '$1');
     }
 
