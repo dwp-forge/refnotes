@@ -410,7 +410,7 @@ var admin_refnotes = (function() {
 
             for (var name in settings) {
                 if (name.match(/^:$|^:.+?:$/) != null) {
-                    namespace = new Namespace(name);
+                    var namespace = new Namespace(name);
 
                     for (var style in settings[name]) {
                         namespace.setStyle(style, settings[name][style]);
