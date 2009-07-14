@@ -382,6 +382,8 @@ var admin_refnotes = (function() {
                 return value;
             }));
 
+            $('select-namespaces').insertSorted = insertOptionSorted;
+
             addEvent($('select-namespaces'), 'change', onNamespaceChange);
             addEvent($('add-namespaces'), 'click', onAddNamespace);
 
@@ -415,16 +417,8 @@ var admin_refnotes = (function() {
 
                 namespaces.setItem(name, new Namespace(name));
 
-                var list        = $('select-namespaces');
-                var sortingName = name.replace(/:/g, '!');
+                $('select-namespaces').insertSorted(createOption(name, true));
 
-                for (var i = 0; i < list.options.length; i++) {
-                    if (list.options[i].value.replace(/:/g, '!') > sortingName) {
-                        list.insertBefore(createOption(name, true), list.options[i]);
-                        break;
-                    }
-                }
-    
                 setCurrentNamespace(name);
             }
             catch (error) {
@@ -485,20 +479,9 @@ var admin_refnotes = (function() {
 
             for (var name in namespaces.items) {
                 if (name != '') {
-                    list.appendChild(createOption(name), name == current.getName());
+                    list.insertSorted(createOption(name, name == current.getName()));
                 }
             }
-        }
-
-        function createOption(value, selected)
-        {
-            var option = document.createElement('option');
-
-            option.text     = value;
-            option.value    = value;
-            option.selected = selected;
-
-            return option;
         }
 
         function updateFields() {
@@ -525,6 +508,36 @@ var admin_refnotes = (function() {
 
     function reloadSettings(settings) {
         namespaces.reload(settings['namespaces']);
+    }
+
+    function createOption(value, selected)
+    {
+        var option = document.createElement('option');
+
+        option.text     = value;
+        option.value    = value;
+        option.sorting  = value.replace(/:/g, '-');
+        option.selected = selected;
+
+        return option;
+    }
+
+    function insertOptionSorted(option) {
+        var nextOption = null;
+
+        for (var i = 0; i < this.options.length; i++) {
+            if (this.options[i].sorting > option.sorting) {
+                nextOption = this.options[i];
+                break;
+            }
+        }
+
+        if (nextOption != null) {
+            this.insertBefore(option, nextOption);
+        }
+        else {
+            this.appendChild(option);
+        }
     }
 
     function addClass(element, className) {
