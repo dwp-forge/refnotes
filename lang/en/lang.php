@@ -58,3 +58,5 @@ $lang['js_loading_failed'] = 'Failed to load configuration settings from the ser
 $lang['js_saving'] = 'Saving configuration settings on the server...';
 $lang['js_saved'] = 'Configuration settings are successfully saved on the server.';
 $lang['js_saving_failed'] = 'Failed to save configuration settings on the server.';
+$lang['js_invalid_ns_name'] = 'The specified namespace name is invalid.';
+$lang['js_ns_name_exists'] = 'The {1} namespace already exists.';

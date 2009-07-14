@@ -1,7 +1,7 @@
 var admin_refnotes = (function() {
 
     function Hash() {
-        // copy-pasted from http://www.mojavelinux.com/articles/javascript_hashes.html
+        /* Copy-pasted from http://www.mojavelinux.com/articles/javascript_hashes.html */
         this.length = 0;
         this.items = new Array();
 
@@ -383,6 +383,7 @@ var admin_refnotes = (function() {
             }));
 
             addEvent($('select-namespaces'), 'change', onNamespaceChange);
+            addEvent($('add-namespaces'), 'click', onAddNamespace);
 
             updateFields();
         }
@@ -393,15 +394,64 @@ var admin_refnotes = (function() {
 
             if (list.selectedIndex != -1) {
                 name = list.options[list.selectedIndex].value;
+            }
 
-                if (!namespaces.hasItem(name)) {
-                    name = '';
-                }
+            setCurrentNamespace(name);
+        }
+
+        function setCurrentNamespace(name) {
+            if (!namespaces.hasItem(name)) {
+                name = '';
             }
 
             current = namespaces.getItem(name);
 
             updateFields();
+        }
+
+        function onAddNamespace(event) {
+            try {
+                var name = validateName();
+
+                namespaces.setItem(name, new Namespace(name));
+
+                var list        = $('select-namespaces');
+                var sortingName = name.replace(/:/g, '!');
+
+                for (var i = 0; i < list.options.length; i++) {
+                    if (list.options[i].value.replace(/:/g, '!') > sortingName) {
+                        list.insertBefore(createOption(name, true), list.options[i]);
+                        break;
+                    }
+                }
+    
+                setCurrentNamespace(name);
+            }
+            catch (error) {
+                alert(error);
+            }
+        }
+
+        function validateName() {
+            var names = $('name-namespaces').value.split(':');
+            var name  = ':';
+
+            for (var i = 0; i < names.length; i++) {
+                if (names[i] != '') {
+                    /* ECMA regexp doesn't support POSIX character classes, so [a-zA-Z] is used instead of [[:alpha:]] */
+                    if (names[i].match(/^[a-zA-Z]\w*$/) == null) {
+                        throw locale.getString('invalid_ns_name');
+                    }
+
+                    name += names[i] + ':';
+                }
+            }
+
+            if ((name != '') && namespaces.hasItem(name)) {
+                throw locale.getString('ns_name_exists', name);
+            }
+
+            return name;
         }
 
         function reload(settings) {
@@ -438,7 +488,6 @@ var admin_refnotes = (function() {
                     list.appendChild(createOption(name), name == current.getName());
                 }
             }
-
         }
 
         function createOption(value, selected)
@@ -453,6 +502,8 @@ var admin_refnotes = (function() {
         }
 
         function updateFields() {
+            $('name-namespaces').value = current.getName();
+
             for (var i = 0; i < fields.length; i++) {
                 fields[i].update();
             }
