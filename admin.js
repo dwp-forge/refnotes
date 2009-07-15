@@ -38,6 +38,55 @@ var admin_refnotes = (function() {
     }
 
 
+    function List(list) {
+        function createOption(value, selected)
+        {
+            var option = document.createElement('option');
+
+            option.text     = value;
+            option.value    = value;
+            option.sorting  = value.replace(/:/g, '-');
+            option.selected = selected;
+
+            return option;
+        }
+
+        function insertSorted(option) {
+            var nextOption = null;
+
+            for (var i = 0; i < list.options.length; i++) {
+                if (list.options[i].sorting > option.sorting) {
+                    nextOption = list.options[i];
+                    break;
+                }
+            }
+
+            if (nextOption != null) {
+                list.insertBefore(option, nextOption);
+            }
+            else {
+                list.appendChild(option);
+            }
+        }
+
+        this.insertSorted = function() {
+            switch (arguments.length) {
+                case 1:
+                    insertSorted(arguments[0]);
+                    break;
+
+                case 2:
+                    insertSorted(createOption(arguments[0], arguments[0]));
+                    break;
+            }
+        };
+
+        this.getSelectedValue = function() {
+            return (list.selectedIndex != -1) ? list.options[list.selectedIndex].value : '';
+        };
+    }
+
+
     var locale = (function() {
         var lang = new Hash();
 
@@ -365,6 +414,24 @@ var admin_refnotes = (function() {
         }
 
 
+        function NamespaceList() {
+            var list = $('select-namespaces');
+
+            this.baseClass = List;
+            this.baseClass(list);
+
+            this.update = function() {
+                list.options.length = 0;
+
+                for (var name in namespaces.items) {
+                    if (name != '') {
+                        this.insertSorted(name, name == current.getName());
+                    }
+                }
+            };
+        }
+
+        var list       = null;
         var fields     = new Array();
         var namespaces = new Hash('', new DefaultNamespace());
         var current    = namespaces.getItem('');
@@ -382,7 +449,7 @@ var admin_refnotes = (function() {
                 return value;
             }));
 
-            $('select-namespaces').insertSorted = insertOptionSorted;
+            list = new NamespaceList();
 
             addEvent($('select-namespaces'), 'change', onNamespaceChange);
             addEvent($('add-namespaces'), 'click', onAddNamespace);
@@ -391,14 +458,7 @@ var admin_refnotes = (function() {
         }
 
         function onNamespaceChange(event) {
-            var list = event.target;
-            var name = '';
-
-            if (list.selectedIndex != -1) {
-                name = list.options[list.selectedIndex].value;
-            }
-
-            setCurrentNamespace(name);
+            setCurrentNamespace(list.getSelectedValue());
         }
 
         function setCurrentNamespace(name) {
@@ -417,7 +477,7 @@ var admin_refnotes = (function() {
 
                 namespaces.setItem(name, new Namespace(name));
 
-                $('select-namespaces').insertSorted(createOption(name, true));
+                list.insertSorted(name, true);
 
                 setCurrentNamespace(name);
             }
@@ -468,20 +528,8 @@ var admin_refnotes = (function() {
                 }
             }
 
-            updateList();
+            list.update();
             updateFields();
-        }
-
-        function updateList() {
-            var list = $('select-namespaces');
-
-            list.options.length = 0;
-
-            for (var name in namespaces.items) {
-                if (name != '') {
-                    list.insertSorted(createOption(name, name == current.getName()));
-                }
-            }
         }
 
         function updateFields() {
@@ -508,36 +556,6 @@ var admin_refnotes = (function() {
 
     function reloadSettings(settings) {
         namespaces.reload(settings['namespaces']);
-    }
-
-    function createOption(value, selected)
-    {
-        var option = document.createElement('option');
-
-        option.text     = value;
-        option.value    = value;
-        option.sorting  = value.replace(/:/g, '-');
-        option.selected = selected;
-
-        return option;
-    }
-
-    function insertOptionSorted(option) {
-        var nextOption = null;
-
-        for (var i = 0; i < this.options.length; i++) {
-            if (this.options[i].sorting > option.sorting) {
-                nextOption = this.options[i];
-                break;
-            }
-        }
-
-        if (nextOption != null) {
-            this.insertBefore(option, nextOption);
-        }
-        else {
-            this.appendChild(option);
-        }
     }
 
     function addClass(element, className) {
