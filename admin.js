@@ -228,7 +228,12 @@ var admin_refnotes = (function() {
         }
 
         function onSaved() {
-            setStatus('saved', 'success', 10000);
+            if (ajax.response == 'saved') {
+                setStatus('saved', 'success', 10000);
+            }
+            else {
+                setStatus('saving_failed', 'error');
+            }
         }
 
         function loadSettings() {
@@ -252,8 +257,7 @@ var admin_refnotes = (function() {
 
                 ajax.setVar('call', 'refnotes-admin');
                 ajax.setVar('action', 'save-settings');
-
-                //TODO: serialize settings
+                ajax.setVar('settings', JSON.stringify(settings));
 
                 ajax.runAJAX();
             }
@@ -356,9 +360,20 @@ var admin_refnotes = (function() {
             }
         }
 
+        function getSettings() {
+            var settings = {};
+
+            for (var name in fields.items) {
+                settings[name] = fields.getItem(name).getValue();
+            }
+
+            return settings;
+        }
+
         return {
-            initialize : initialize,
-            reload     : reload
+            initialize  : initialize,
+            reload      : reload,
+            getSettings : getSettings
         }
     })();
 
@@ -405,14 +420,18 @@ var admin_refnotes = (function() {
             this.getStyleInheritance = function(name) {
                 return 'default';
             }
+
+            this.getSettings = function() {
+                return {};
+            }
         }
 
         function Namespace(name, data) {
-            var style = new Hash();
+            var styles = new Hash();
 
             if (typeof(data) != 'undefined') {
                 for (var s in data) {
-                    style.setItem(s, data[s]);
+                    styles.setItem(s, data[s]);
                 }
             }
 
@@ -440,18 +459,18 @@ var admin_refnotes = (function() {
 
             this.setStyle = function(name, value) {
                 if (value == 'inherit') {
-                    style.removeItem(name);
+                    styles.removeItem(name);
                 }
                 else {
-                    style.setItem(name, value);
+                    styles.setItem(name, value);
                 }
             }
 
             this.getStyle = function(name) {
                 var result;
 
-                if (style.hasItem(name)) {
-                    result = style.getItem(name);
+                if (styles.hasItem(name)) {
+                    result = styles.getItem(name);
                 }
                 else {
                     result = getParent().getStyle(name);
@@ -463,11 +482,21 @@ var admin_refnotes = (function() {
             this.getStyleInheritance = function(name) {
                 var result = '';
 
-                if (!style.hasItem(name)) {
+                if (!styles.hasItem(name)) {
                     result = getParent().getStyleInheritance(name) || 'inherited';
                 }
 
                 return result;
+            }
+
+            this.getSettings = function() {
+                var settings = {};
+
+                for (var name in styles.items) {
+                    settings[name] = styles.getItem(name);
+                }
+
+                return settings;
             }
         }
 
@@ -664,9 +693,20 @@ var admin_refnotes = (function() {
             }
         }
 
+        function getSettings() {
+            var settings = {};
+
+            for (var name in namespaces.items) {
+                settings[name] = namespaces.getItem(name).getSettings();
+            }
+
+            return settings;
+        }
+
         return {
-            initialize : initialize,
-            reload     : reload
+            initialize  : initialize,
+            reload      : reload,
+            getSettings : getSettings
         }
     })();
 
@@ -700,6 +740,10 @@ var admin_refnotes = (function() {
 
             this.isInline = function() {
                 return false;
+            }
+
+            this.getSettings = function() {
+                return {};
             }
         }
 
@@ -738,6 +782,13 @@ var admin_refnotes = (function() {
 
             this.isInline = function() {
                 return this.inline;
+            }
+
+            this.getSettings = function() {
+                return {
+                    text   : this.text,
+                    inline : this.inline
+                };
             }
         }
 
@@ -844,9 +895,20 @@ var admin_refnotes = (function() {
             field.disabled = current.isReadOnly();
         }
 
+        function getSettings() {
+            var settings = {};
+
+            for (var name in notes.items) {
+                settings[name] = notes.getItem(name).getSettings();
+            }
+
+            return settings;
+        }
+
         return {
-            initialize : initialize,
-            reload     : reload
+            initialize  : initialize,
+            reload      : reload,
+            getSettings : getSettings
         }
     })();
 
@@ -857,6 +919,10 @@ var admin_refnotes = (function() {
         namespaces.initialize();
         notes.initialize();
 
+        addEvent($('save-config'), 'click', function(event) {
+            saveSettings();
+        });
+
         server.loadSettings();
     }
 
@@ -864,6 +930,16 @@ var admin_refnotes = (function() {
         general.reload(settings['general']);
         namespaces.reload(settings['namespaces']);
         notes.reload(settings['notes']);
+    }
+
+    function saveSettings() {
+        var settings = {};
+        
+        settings['general']    = general.getSettings();
+        settings['namespaces'] = namespaces.getSettings();
+        settings['notes']      = notes.getSettings();
+
+        server.saveSettings(settings);
     }
 
     function validateName(name, type, existing) {
