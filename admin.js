@@ -940,6 +940,8 @@ var admin_refnotes = (function() {
         settings['notes']      = notes.getSettings();
 
         server.saveSettings(settings);
+
+        scroll(0, 0);
     }
 
     function validateName(name, type, existing) {
