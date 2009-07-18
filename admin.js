@@ -45,6 +45,16 @@ var admin_refnotes = (function() {
         this.getItem = function(key) {
             return this.hasItem(key) ? this.items[key] : this.items[''];
         }
+
+        this.clear = function()
+        {
+            for (var i in this.items) {
+                if (i != '') {
+                    this.length--;
+                    delete this.items[i];
+                }
+            }
+        }
     }
 
 
@@ -57,7 +67,7 @@ var admin_refnotes = (function() {
 
             option.text     = value;
             option.value    = value;
-            option.sorting  = value.replace(/:/g, '-');
+            option.sorting  = value.replace(/:/g, '-').replace(/(-\w+)$/g, '-$1');
             option.selected = selected;
 
             return option;
@@ -485,7 +495,7 @@ var admin_refnotes = (function() {
 
         function onAddNamespace(event) {
             try {
-                var name = validateName();
+                var name = validateName($('name-namespaces').value, 'ns', namespaces);
 
                 namespaces.setItem(name, new Namespace(name));
 
@@ -504,30 +514,8 @@ var admin_refnotes = (function() {
             }
         }
 
-        function validateName() {
-            var names = $('name-namespaces').value.split(':');
-            var name  = ':';
-
-            for (var i = 0; i < names.length; i++) {
-                if (names[i] != '') {
-                    /* ECMA regexp doesn't support POSIX character classes, so [a-zA-Z] is used instead of [[:alpha:]] */
-                    if (names[i].match(/^[a-zA-Z]\w*$/) == null) {
-                        throw locale.getString('invalid_ns_name');
-                    }
-
-                    name += names[i] + ':';
-                }
-            }
-
-            if ((name != '') && namespaces.hasItem(name)) {
-                throw locale.getString('ns_name_exists', name);
-            }
-
-            return name;
-        }
-
         function reload(settings) {
-            namespaces = new NameHash(new DefaultNamespace());
+            namespaces.clear();
 
             for (var name in settings) {
                 if (name.match(/^:$|^:.+?:$/) != null) {
@@ -653,13 +641,28 @@ var admin_refnotes = (function() {
         }
 
         function onAddNote(event) {
+            try {
+                var name = validateName($('name-notes').value, 'note', notes);
+
+                notes.setItem(name, new Note(name));
+
+                setCurrent(list.insertSorted(name, true));
+            }
+            catch (error) {
+                alert(error);
+            }
         }
 
         function onDeleteNote(event) {
+            if (confirm(locale.getString('delete_note', current.getName()))) {
+                notes.removeItem(current.getName());
+
+                setCurrent(list.removeValue(current.getName()));
+            }
         }
 
         function reload(settings) {
-            notes = new NameHash(new EmptyNote());
+            notes.clear();
 
             for (var name in settings) {
                 if (name.match(/^:.+?\w$/) != null) {
@@ -712,6 +715,34 @@ var admin_refnotes = (function() {
     function reloadSettings(settings) {
         namespaces.reload(settings['namespaces']);
         notes.reload(settings['notes']);
+    }
+
+    function validateName(name, type, existing) {
+        var names = name.split(':');
+
+        name = (type == 'ns') ? ':' : '';
+
+        for (var i = 0; i < names.length; i++) {
+            if (names[i] != '') {
+                /* ECMA regexp doesn't support POSIX character classes, so [a-zA-Z] is used instead of [[:alpha:]] */
+                if (names[i].match(/^[a-zA-Z]\w*$/) == null) {
+                    name = '';
+                    break;
+                }
+
+                name += (type == 'ns') ? names[i] + ':' : ':' + names[i];
+            }
+        }
+
+        if (name == '') {
+            throw locale.getString('invalid_' + type + '_name');
+        }
+
+        if (existing.hasItem(name)) {
+            throw locale.getString(type + '_name_exists', name);
+        }
+
+        return name;
     }
 
     function addClass(element, className) {
