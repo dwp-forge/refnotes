@@ -48,6 +48,7 @@ $lang['opt_right-bracket'] = 'Right bracket';
 $lang['opt_brackets'] = 'Brackets';
 
 $lang['btn_add'] = 'Add';
+$lang['btn_rename'] = 'Rename';
 $lang['btn_delete'] = 'Delete';
 $lang['btn_save'] = 'Save';
 

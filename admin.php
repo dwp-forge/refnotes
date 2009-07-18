@@ -261,6 +261,7 @@ class refnotes_config_list_section extends refnotes_config_section {
 
         $this->html->ptln($this->_getEdit());
         $this->html->ptln($this->_getButton('add'));
+        $this->html->ptln($this->_getButton('rename'));
         $this->html->ptln($this->_getButton('delete'));
 
         $this->html->unindent();

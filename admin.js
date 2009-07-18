@@ -73,7 +73,25 @@ var admin_refnotes = (function() {
             return option;
         }
 
-        function insertSorted(option) {
+        function getOptionIndex(value) {
+            var index = -1;
+
+            for (var i = 0; i < list.options.length; i++) {
+                if (list.options[i].value == value) {
+                    index = i;
+                    break;
+                }
+            }
+
+            return index;
+        }
+
+        this.getSelectedValue = function() {
+            return (list.selectedIndex != -1) ? list.options[list.selectedIndex].value : '';
+        }
+
+        this.insertSorted = function(value, selected) {
+            var option     = createOption(value, selected);
             var nextOption = null;
 
             for (var i = 0; i < list.options.length; i++) {
@@ -89,32 +107,16 @@ var admin_refnotes = (function() {
             else {
                 list.appendChild(option);
             }
-        }
-
-        this.getSelectedValue = function() {
-            return (list.selectedIndex != -1) ? list.options[list.selectedIndex].value : '';
-        }
-
-        this.insertSorted = function() {
-            switch (arguments.length) {
-                case 1:
-                    insertSorted(arguments[0]);
-                    break;
-
-                case 2:
-                    insertSorted(createOption(arguments[0], arguments[1]));
-                    break;
-            }
 
             return this.getSelectedValue();
         }
 
-        this.update = function(values, selected) {
+        this.update = function(values) {
             list.options.length = 0;
 
             for (var value in values.items) {
                 if (value != '') {
-                    insertSorted(createOption(value, false));
+                    this.insertSorted(value, false);
                 }
             }
 
@@ -126,24 +128,24 @@ var admin_refnotes = (function() {
         }
 
         this.removeValue = function(value) {
-            var index = -1;
-
-            for (var i = 0; i < list.options.length; i++) {
-                if (list.options[i].value == value) {
-                    index = i;
-                    break;
-                }
-            }
+            var index = getOptionIndex(value);
 
             if (index != -1) {
-                if (index < (list.options.length - 1)) {
-                    list.selectedIndex = index + 1;
-                }
-                else {
-                    list.selectedIndex = index - 1;
-                }
+                list.selectedIndex = (index == (list.options.length - 1)) ? index - 1 : index + 1;
 
                 list.remove(index);
+            }
+
+            return this.getSelectedValue();
+        }
+
+        this.renameValue = function(oldValue, newValue) {
+            var index = getOptionIndex(oldValue);
+
+            if (index != -1) {
+                list.remove(index);
+
+                this.insertSorted(newValue, true);
             }
 
             return this.getSelectedValue();
@@ -300,6 +302,9 @@ var admin_refnotes = (function() {
                 return true;
             }
 
+            this.setName = function(newName) {
+            }
+
             this.getName = function() {
                 return '';
             }
@@ -339,7 +344,11 @@ var admin_refnotes = (function() {
                 return false;
             }
 
-             this.getName = function() {
+            this.setName = function(newName) {
+                name = newName;
+            }
+
+            this.getName = function() {
                 return name;
             }
 
@@ -480,10 +489,12 @@ var admin_refnotes = (function() {
 
             addEvent($('select-namespaces'), 'change', onNamespaceChange);
             addEvent($('add-namespaces'), 'click', onAddNamespace);
+            addEvent($('rename-namespaces'), 'click', onRenameNamespace);
             addEvent($('delete-namespaces'), 'click', onDeleteNamespace);
 
             $('name-namespaces').disabled   = true;
             $('add-namespaces').disabled    = true;
+            $('rename-namespaces').disabled = true;
             $('delete-namespaces').disabled = true;
 
             updateFields();
@@ -500,6 +511,23 @@ var admin_refnotes = (function() {
                 namespaces.setItem(name, new Namespace(name));
 
                 setCurrent(list.insertSorted(name, true));
+            }
+            catch (error) {
+                alert(error);
+            }
+        }
+
+        function onRenameNamespace(event) {
+            try {
+                var newName = validateName($('name-namespaces').value, 'ns', namespaces);
+                var oldName = current.getName();
+
+                current.setName(newName);
+
+                namespaces.removeItem(oldName);
+                namespaces.setItem(newName, current);
+
+                setCurrent(list.renameValue(oldName, newName));
             }
             catch (error) {
                 alert(error);
@@ -537,6 +565,7 @@ var admin_refnotes = (function() {
 
         function updateFields() {
             $('name-namespaces').value      = current.getName();
+            $('rename-namespaces').disabled = current.isReadOnly();
             $('delete-namespaces').disabled = current.isReadOnly();
 
             for (var i = 0; i < fields.length; i++) {
@@ -559,6 +588,9 @@ var admin_refnotes = (function() {
         function EmptyNote() {
             this.isReadOnly = function() {
                 return true;
+            }
+
+            this.setName = function(newName) {
             }
 
             this.getName = function() {
@@ -593,7 +625,11 @@ var admin_refnotes = (function() {
                 return false;
             }
 
-             this.getName = function() {
+            this.setName = function(newName) {
+                name = newName;
+            }
+
+            this.getName = function() {
                 return name;
             }
 
@@ -619,6 +655,7 @@ var admin_refnotes = (function() {
 
             addEvent($('select-notes'), 'change', onNoteChange);
             addEvent($('add-notes'), 'click', onAddNote);
+            addEvent($('rename-notes'), 'click', onRenameNote);
             addEvent($('delete-notes'), 'click', onDeleteNote);
 
             addEvent($('field-note-text'), 'change', function(event) {
@@ -631,6 +668,7 @@ var admin_refnotes = (function() {
 
             $('name-notes').disabled   = true;
             $('add-notes').disabled    = true;
+            $('rename-notes').disabled = true;
             $('delete-notes').disabled = true;
 
             updateFields();
@@ -647,6 +685,23 @@ var admin_refnotes = (function() {
                 notes.setItem(name, new Note(name));
 
                 setCurrent(list.insertSorted(name, true));
+            }
+            catch (error) {
+                alert(error);
+            }
+        }
+
+        function onRenameNote(event) {
+            try {
+                var newName = validateName($('name-notes').value, 'note', notes);
+                var oldName = current.getName();
+
+                current.setName(newName);
+
+                notes.removeItem(oldName);
+                notes.setItem(newName, current);
+
+                setCurrent(list.renameValue(oldName, newName));
             }
             catch (error) {
                 alert(error);
@@ -684,6 +739,7 @@ var admin_refnotes = (function() {
 
         function updateFields() {
             $('name-notes').value      = current.getName();
+            $('rename-notes').disabled = current.isReadOnly();
             $('delete-notes').disabled = current.isReadOnly();
 
             var field = $('field-note-text');
