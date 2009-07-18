@@ -448,6 +448,10 @@ var admin_refnotes = (function() {
             addEvent($('add-namespaces'), 'click', onAddNamespace);
             addEvent($('delete-namespaces'), 'click', onDeleteNamespace);
 
+            $('name-namespaces').disabled = true;
+            $('add-namespaces').disabled = true;
+            $('delete-namespaces').disabled = true;
+
             updateFields();
         }
 
@@ -530,12 +534,16 @@ var admin_refnotes = (function() {
                 }
             }
 
+            $('name-namespaces').disabled = false;
+            $('add-namespaces').disabled = false;
+
             list.update(namespaces, current.getName());
             updateFields();
         }
 
         function updateFields() {
             $('name-namespaces').value = current.getName();
+            $('delete-namespaces').disabled = current.isReadOnly();
 
             for (var i = 0; i < fields.length; i++) {
                 fields[i].update();

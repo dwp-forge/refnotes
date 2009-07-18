@@ -51,6 +51,7 @@ div#refnotes-config div#config__manager td.value input.button {
     color: #000;
 }
 
+div#refnotes-config div#config__manager input.button[disabled],
 div#refnotes-config div#config__manager td.value input.button[disabled] {
     color: #666;
 }
