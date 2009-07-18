@@ -76,7 +76,7 @@ var admin_refnotes = (function() {
                     break;
 
                 case 2:
-                    insertSorted(createOption(arguments[0], arguments[0]));
+                    insertSorted(createOption(arguments[0], arguments[1]));
                     break;
             }
         };
