@@ -563,15 +563,155 @@ var admin_refnotes = (function() {
     })();
 
 
+    var notes = (function() {
+        var list    = null;
+        var notes   = new NameHash(new EmptyNote());
+        var current = notes.getItem('');
+
+        function EmptyNote() {
+            this.isReadOnly = function() {
+                return true;
+            }
+
+            this.getName = function() {
+                return '';
+            }
+
+            this.setText = function(text) {
+            }
+
+            this.getText = function() {
+                return '';
+            }
+
+            this.setInline = function(inline) {
+            }
+
+            this.isInline = function() {
+                return false;
+            }
+        }
+
+        function Note(name, data) {
+            this.text   = '';
+            this.inline = false;
+
+            if (typeof(data) != 'undefined') {
+                this.text   = data.text;
+                this.inline = data.inline;
+            }
+
+            this.isReadOnly = function() {
+                return false;
+            }
+
+             this.getName = function() {
+                return name;
+            }
+
+            this.setText = function(text) {
+                this.text = text;
+            }
+
+            this.getText = function() {
+                return this.text;
+            }
+
+            this.setInline = function(inline) {
+                this.inline = inline;
+            }
+
+            this.isInline = function() {
+                return this.inline;
+            }
+        }
+
+        function initialize() {
+            list = new List('select-notes');
+
+            addEvent($('select-notes'), 'change', onNoteChange);
+            addEvent($('add-notes'), 'click', onAddNote);
+            addEvent($('delete-notes'), 'click', onDeleteNote);
+
+            addEvent($('field-note-text'), 'change', function(event) {
+                current.setText(event.target.value);
+            });
+
+            addEvent($('field-inline'), 'change', function(event) {
+                current.setInline(event.target.checked);
+            });
+
+            $('name-notes').disabled   = true;
+            $('add-notes').disabled    = true;
+            $('delete-notes').disabled = true;
+
+            updateFields();
+        }
+
+        function onNoteChange(event) {
+            setCurrent(list.getSelectedValue());
+        }
+
+        function onAddNote(event) {
+        }
+
+        function onDeleteNote(event) {
+        }
+
+        function reload(settings) {
+            notes = new NameHash(new EmptyNote());
+
+            for (var name in settings) {
+                if (name.match(/^:.+?\w$/) != null) {
+                    notes.setItem(name, new Note(name, settings[name]));
+                }
+            }
+
+            $('name-notes').disabled = false;
+            $('add-notes').disabled  = false;
+
+            setCurrent(list.update(notes));
+        }
+
+        function setCurrent(name) {
+            current = notes.getItem(name);
+
+            updateFields();
+        }
+
+        function updateFields() {
+            $('name-notes').value      = current.getName();
+            $('delete-notes').disabled = current.isReadOnly();
+
+            var field = $('field-note-text');
+
+            field.value    = current.getText();
+            field.disabled = current.isReadOnly();
+
+            field = $('field-inline');
+
+            field.checked  = current.isInline();
+            field.disabled = current.isReadOnly();
+        }
+
+        return {
+            initialize : initialize,
+            reload     : reload
+        }
+    })();
+
+
     function initialize() {
         locale.initialize();
         namespaces.initialize();
+        notes.initialize();
 
         server.loadSettings();
     }
 
     function reloadSettings(settings) {
         namespaces.reload(settings['namespaces']);
+        notes.reload(settings['notes']);
     }
 
     function addClass(element, className) {
