@@ -81,6 +81,10 @@ var admin_refnotes = (function() {
             }
         }
 
+        this.getSelectedValue = function() {
+            return (list.selectedIndex != -1) ? list.options[list.selectedIndex].value : '';
+        }
+
         this.insertSorted = function() {
             switch (arguments.length) {
                 case 1:
@@ -91,6 +95,8 @@ var admin_refnotes = (function() {
                     insertSorted(createOption(arguments[0], arguments[1]));
                     break;
             }
+
+            return this.getSelectedValue();
         }
 
         this.update = function(values, selected) {
@@ -107,10 +113,6 @@ var admin_refnotes = (function() {
             }
 
             return this.getSelectedValue();
-        }
-
-        this.getSelectedValue = function() {
-            return (list.selectedIndex != -1) ? list.options[list.selectedIndex].value : '';
         }
 
         this.removeValue = function(value) {
@@ -487,9 +489,7 @@ var admin_refnotes = (function() {
 
                 namespaces.setItem(name, new Namespace(name));
 
-                list.insertSorted(name, true);
-
-                setCurrent(name);
+                setCurrent(list.insertSorted(name, true));
             }
             catch (error) {
                 alert(error);
