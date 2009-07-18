@@ -283,6 +283,86 @@ var admin_refnotes = (function() {
     })();
 
 
+    var general = (function() {
+        var fields   = new Hash();
+        var defaults = new Hash(
+            'replace-footnotes', false
+        );
+
+        function Field(settingName) {
+            this.element = $('field-' + settingName);
+
+            this.updateDefault = function(value) {
+                var cell = this.element.parentNode.parentNode;
+
+                if (value == defaults.getItem(settingName)) {
+                    addClass(cell, 'default');
+                }
+                else {
+                    removeClass(cell, 'default');
+                }
+            }
+
+            this.enable = function(enable) {
+                this.element.disabled = !enable;
+            }
+        }
+
+        function CheckField(settingName) {
+            this.baseClass = Field;
+            this.baseClass(settingName);
+
+            var check = this.element;
+            var self  = this;
+
+            addEvent(check, 'change', function() {
+                self.onChange();
+            });
+
+            this.onChange = function() {
+                this.updateDefault(check.checked);
+            }
+
+            this.setValue = function(value) {
+                check.checked = value;
+                this.updateDefault(check.checked);
+            }
+
+            this.getValue = function() {
+                return check.checked;
+            }
+
+            this.setValue(defaults.getItem(settingName));
+            this.enable(false);
+        }
+
+        function initialize() {
+            addField('replace-footnotes', CheckField);
+        }
+
+        function addField(settingName, field) {
+            fields.setItem(settingName, new field(settingName));
+        }
+
+        function reload(settings) {
+            for (var name in settings) {
+                if (fields.hasItem(name)) {
+                    fields.getItem(name).setValue(settings[name]);
+                }
+            }
+
+            for (var name in fields.items) {
+                fields.getItem(name).enable(true);
+            }
+        }
+
+        return {
+            initialize : initialize,
+            reload     : reload
+        }
+    })();
+
+
     var namespaces = (function() {
         var list       = null;
         var fields     = new Array();
@@ -388,7 +468,7 @@ var admin_refnotes = (function() {
         function Field(styleName) {
             this.element = $('field-' + styleName);
 
-            this.updateInheretance = function(inheritance) {
+            this.updateInheretance = function() {
                 var cell = this.element.parentNode.parentNode;
 
                 removeClass(cell, 'default');
@@ -396,7 +476,6 @@ var admin_refnotes = (function() {
 
                 addClass(cell, current.getStyleInheritance(styleName));
             }
-
         }
 
         function SelectField(styleName) {
@@ -762,6 +841,7 @@ var admin_refnotes = (function() {
 
     function initialize() {
         locale.initialize();
+        general.initialize();
         namespaces.initialize();
         notes.initialize();
 
@@ -769,6 +849,7 @@ var admin_refnotes = (function() {
     }
 
     function reloadSettings(settings) {
+        general.reload(settings['general']);
         namespaces.reload(settings['namespaces']);
         notes.reload(settings['notes']);
     }

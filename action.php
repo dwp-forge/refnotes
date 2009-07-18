@@ -82,7 +82,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
             }
         }
 
-        $config['general'] = array();
+        $config['general'] = refnotes_loadConfigFile('general');
         $config['namespaces'] = $namespace;
         $config['notes'] = refnotes_loadConfigFile('notes');
 
