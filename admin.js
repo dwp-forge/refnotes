@@ -38,6 +38,16 @@ var admin_refnotes = (function() {
     }
 
 
+    function NameHash(sentinel) {
+        this.baseClass = Hash;
+        this.baseClass('', sentinel);
+
+        this.getItem = function(key) {
+            return this.hasItem(key) ? this.items[key] : this.items[''];
+        }
+    }
+
+
     function List(id) {
         var list = $(id);
 
@@ -81,21 +91,27 @@ var admin_refnotes = (function() {
                     insertSorted(createOption(arguments[0], arguments[1]));
                     break;
             }
-        };
+        }
 
         this.update = function(values, selected) {
             list.options.length = 0;
 
             for (var value in values.items) {
                 if (value != '') {
-                    insertSorted(createOption(value, value == selected));
+                    insertSorted(createOption(value, false));
                 }
             }
-        };
+
+            if (list.options.length > 0) {
+                list.options[0].selected = true;
+            }
+
+            return this.getSelectedValue();
+        }
 
         this.getSelectedValue = function() {
             return (list.selectedIndex != -1) ? list.options[list.selectedIndex].value : '';
-        };
+        }
 
         this.removeValue = function(value) {
             var index = -1;
@@ -119,7 +135,7 @@ var admin_refnotes = (function() {
             }
 
             return this.getSelectedValue();
-        };
+        }
     }
 
 
@@ -161,7 +177,7 @@ var admin_refnotes = (function() {
         return {
             initialize : initialize,
             getString  : getString
-        };
+        }
     })();
 
 
@@ -249,14 +265,14 @@ var admin_refnotes = (function() {
         return {
             loadSettings : loadSettings,
             saveSettings : saveSettings
-        };
+        }
     })();
 
 
     var namespaces = (function() {
         var list       = null;
         var fields     = new Array();
-        var namespaces = new Hash('', new DefaultNamespace());
+        var namespaces = new NameHash(new DefaultNamespace());
         var current    = namespaces.getItem('');
         var defaults   = new Hash(
             'refnote-id'           , 'numeric',
@@ -288,8 +304,14 @@ var admin_refnotes = (function() {
             }
         }
 
-        function Namespace(name) {
+        function Namespace(name, data) {
             var style = new Hash();
+
+            if (typeof(data) != 'undefined') {
+                for (var s in data) {
+                    style.setItem(s, data[s]);
+                }
+            }
 
             function getParent() {
                 var parent = name.replace(/\w*:$/, '');
@@ -385,13 +407,13 @@ var admin_refnotes = (function() {
                 if ((value == 'inherit') || current.isReadOnly()) {
                     setSelection(current.getStyle(styleName));
                 }
-            };
+            }
 
             this.update = function() {
                 this.updateInheretance();
                 setSelection(current.getStyle(styleName));
                 combo.disabled = current.isReadOnly();
-            };
+            }
         }
 
         function TextField(styleName, validate) {
@@ -418,7 +440,7 @@ var admin_refnotes = (function() {
                 if ((edit.value != value) || (value == 'inherit') || current.isReadOnly()) {
                     edit.value = current.getStyle(styleName);
                 }
-            };
+            }
 
             this.update = function() {
                 this.updateInheretance();
@@ -426,7 +448,7 @@ var admin_refnotes = (function() {
                 edit.value      = current.getStyle(styleName);
                 edit.disabled   = current.isReadOnly();
                 button.disabled = current.isReadOnly();
-            };
+            }
         }
 
         function initialize() {
@@ -448,25 +470,15 @@ var admin_refnotes = (function() {
             addEvent($('add-namespaces'), 'click', onAddNamespace);
             addEvent($('delete-namespaces'), 'click', onDeleteNamespace);
 
-            $('name-namespaces').disabled = true;
-            $('add-namespaces').disabled = true;
+            $('name-namespaces').disabled   = true;
+            $('add-namespaces').disabled    = true;
             $('delete-namespaces').disabled = true;
 
             updateFields();
         }
 
         function onNamespaceChange(event) {
-            setCurrentNamespace(list.getSelectedValue());
-        }
-
-        function setCurrentNamespace(name) {
-            if (!namespaces.hasItem(name)) {
-                name = '';
-            }
-
-            current = namespaces.getItem(name);
-
-            updateFields();
+            setCurrent(list.getSelectedValue());
         }
 
         function onAddNamespace(event) {
@@ -477,7 +489,7 @@ var admin_refnotes = (function() {
 
                 list.insertSorted(name, true);
 
-                setCurrentNamespace(name);
+                setCurrent(name);
             }
             catch (error) {
                 alert(error);
@@ -488,7 +500,7 @@ var admin_refnotes = (function() {
             if (confirm(locale.getString('delete_ns', current.getName()))) {
                 namespaces.removeItem(current.getName());
 
-                setCurrentNamespace(list.removeValue(current.getName()));
+                setCurrent(list.removeValue(current.getName()));
             }
         }
 
@@ -515,34 +527,28 @@ var admin_refnotes = (function() {
         }
 
         function reload(settings) {
-            namespaces = new Hash('', new DefaultNamespace());
-            current    = namespaces.getItem('');
+            namespaces = new NameHash(new DefaultNamespace());
 
             for (var name in settings) {
                 if (name.match(/^:$|^:.+?:$/) != null) {
-                    var namespace = new Namespace(name);
-
-                    for (var style in settings[name]) {
-                        namespace.setStyle(style, settings[name][style]);
-                    }
-
-                    namespaces.setItem(name, namespace);
-
-                    if (current.getName() == '') {
-                        current = namespace;
-                    }
+                    namespaces.setItem(name, new Namespace(name, settings[name]));
                 }
             }
 
             $('name-namespaces').disabled = false;
-            $('add-namespaces').disabled = false;
+            $('add-namespaces').disabled  = false;
 
-            list.update(namespaces, current.getName());
+            setCurrent(list.update(namespaces));
+        }
+
+        function setCurrent(name) {
+            current = namespaces.getItem(name);
+
             updateFields();
         }
 
         function updateFields() {
-            $('name-namespaces').value = current.getName();
+            $('name-namespaces').value      = current.getName();
             $('delete-namespaces').disabled = current.isReadOnly();
 
             for (var i = 0; i < fields.length; i++) {
@@ -553,7 +559,7 @@ var admin_refnotes = (function() {
         return {
             initialize : initialize,
             reload     : reload
-        };
+        }
     })();
 
 
@@ -584,7 +590,7 @@ var admin_refnotes = (function() {
 
     return {
         initialize : initialize
-    };
+    }
 })();
 
 
