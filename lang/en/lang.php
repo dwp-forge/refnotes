@@ -24,7 +24,13 @@ $lang['lbl_reference-base'] = 'Reference baseline';
 $lang['lbl_reference-font-weight'] = 'Reference font weight';
 $lang['lbl_reference-font-style'] = 'Reference font style';
 $lang['lbl_reference-format'] = 'Reference formatting';
+$lang['lbl_multi-ref-id'] = 'Multi-reference identifier';
+$lang['lbl_note-preview'] = 'Note preview';
 $lang['lbl_notes-separator'] = 'Notes block separator';
+$lang['lbl_note-font-size'] = 'Note font size';
+$lang['lbl_note-id-base'] = 'Note identifier baseline';
+$lang['lbl_note-id-font-weight'] = 'Note identifier font weight';
+$lang['lbl_note-id-font-style'] = 'Note identifier font style';
 
 $lang['lbl_inline'] = 'Inline';
 
@@ -46,6 +52,11 @@ $lang['opt_right-parent'] = 'Right parenthesis';
 $lang['opt_parents'] = 'Parentheses';
 $lang['opt_right-bracket'] = 'Right bracket';
 $lang['opt_brackets'] = 'Brackets';
+$lang['opt_ref-counter'] = 'Reference counter';
+$lang['opt_note-counter'] = 'Note counter';
+$lang['opt_popup'] = 'Static pop-up';
+$lang['opt_tooltip'] = 'Tooltip';
+$lang['opt_small'] = 'Small';
 
 $lang['btn_add'] = 'Add';
 $lang['btn_rename'] = 'Rename';

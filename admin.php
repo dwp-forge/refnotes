@@ -347,7 +347,7 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
      * Constructor
      */
     function refnotes_config_namespaces() {
-        parent::refnotes_config_list_section('namespaces', 10);
+        parent::refnotes_config_list_section('namespaces', 25);
     }
 
     /**
@@ -375,8 +375,32 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
                 'class' => 'select',
                 'option' => array('right-parent', 'parents', 'right-bracket', 'brackets', 'none', 'inherit')
             ),
+            'multi-ref-id' => array(
+                'class' => 'select',
+                'option' => array('ref-counter', 'note-counter', 'inherit')
+            ),
+            'note-preview' => array(
+                'class' => 'select',
+                'option' => array('popup', 'tooltip', 'none', 'inherit')
+            ),
             'notes-separator' => array(
                 'class' => 'edit_inherit'
+            ),
+            'note-font-size' => array(
+                'class' => 'select',
+                'option' => array('normal', 'small', 'inherit')
+            ),
+            'note-id-base' => array(
+                'class' => 'select',
+                'option' => array('super', 'normal-text', 'inherit')
+            ),
+            'note-id-font-weight' => array(
+                'class' => 'select',
+                'option' => array('normal', 'bold', 'inherit')
+            ),
+            'note-id-font-style' => array(
+                'class' => 'select',
+                'option' => array('normal', 'italic', 'inherit')
             )
         );
 

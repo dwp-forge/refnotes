@@ -374,7 +374,13 @@ var admin_refnotes = (function() {
             'reference-font-weight', 'normal',
             'reference-font-style' , 'normal',
             'reference-format'     , 'right-parent',
-            'notes-separator'      , '100%'
+            'multi-ref-id'         , 'ref-counter',
+            'note-preview'         , 'popup',
+            'notes-separator'      , '100%',
+            'note-font-size'       , 'normal',
+            'note-id-base'         , 'super',
+            'note-id-font-weight'  , 'normal',
+            'note-id-font-style'   , 'normal'
         );
 
         function DefaultNamespace() {
@@ -557,12 +563,18 @@ var admin_refnotes = (function() {
             fields.push(new SelectField('reference-font-weight'));
             fields.push(new SelectField('reference-font-style'));
             fields.push(new SelectField('reference-format'));
+            fields.push(new SelectField('multi-ref-id'));
+            fields.push(new SelectField('note-preview'));
             fields.push(new TextField('notes-separator', function(value){
                 if (value.match(/(?:\d+\.?|\d*\.\d+)(?:%|em|px)|none/) == null) {
                     value = 'none';
                 }
                 return value;
             }));
+            fields.push(new SelectField('note-font-size'));
+            fields.push(new SelectField('note-id-base'));
+            fields.push(new SelectField('note-id-font-weight'));
+            fields.push(new SelectField('note-id-font-style'));
 
             list = new List('select-namespaces');
 
