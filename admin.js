@@ -38,7 +38,9 @@ var admin_refnotes = (function() {
     }
 
 
-    function List(list) {
+    function List(id) {
+        var list = $(id);
+
         function createOption(value, selected)
         {
             var option = document.createElement('option');
@@ -78,6 +80,16 @@ var admin_refnotes = (function() {
                 case 2:
                     insertSorted(createOption(arguments[0], arguments[1]));
                     break;
+            }
+        };
+
+        this.update = function(values, selected) {
+            list.options.length = 0;
+
+            for (var value in values.items) {
+                if (value != '') {
+                    insertSorted(createOption(value, value == selected));
+                }
             }
         };
 
@@ -265,8 +277,11 @@ var admin_refnotes = (function() {
 
 
     var namespaces = (function() {
-
-        var defaults = new Hash(
+        var list       = null;
+        var fields     = new Array();
+        var namespaces = new Hash('', new DefaultNamespace());
+        var current    = namespaces.getItem('');
+        var defaults   = new Hash(
             'refnote-id'           , 'numeric',
             'reference-base'       , 'super',
             'reference-font-weight', 'normal',
@@ -437,29 +452,6 @@ var admin_refnotes = (function() {
             };
         }
 
-
-        function NamespaceList() {
-            var list = $('select-namespaces');
-
-            this.baseClass = List;
-            this.baseClass(list);
-
-            this.update = function() {
-                list.options.length = 0;
-
-                for (var name in namespaces.items) {
-                    if (name != '') {
-                        this.insertSorted(name, name == current.getName());
-                    }
-                }
-            };
-        }
-
-        var list       = null;
-        var fields     = new Array();
-        var namespaces = new Hash('', new DefaultNamespace());
-        var current    = namespaces.getItem('');
-
         function initialize() {
             fields.push(new SelectField('refnote-id'));
             fields.push(new SelectField('reference-base'));
@@ -473,7 +465,7 @@ var admin_refnotes = (function() {
                 return value;
             }));
 
-            list = new NamespaceList();
+            list = new List('select-namespaces');
 
             addEvent($('select-namespaces'), 'change', onNamespaceChange);
             addEvent($('add-namespaces'), 'click', onAddNamespace);
@@ -561,7 +553,7 @@ var admin_refnotes = (function() {
                 }
             }
 
-            list.update();
+            list.update(namespaces, current.getName());
             updateFields();
         }
 
