@@ -174,21 +174,10 @@ var admin_refnotes = (function() {
         ajax.encodeURIString = false;
 
         ajax.onLoading = function() {
-            $('field-note-text').value += 'Sending data...\n';
             setStatus(transaction, 'info');
         }
 
-        ajax.onLoaded = function() {
-            $('field-note-text').value += 'Data sent.\n';
-        }
-
-        ajax.onInteractive = function() {
-            $('field-note-text').value += 'Getting data...\n';
-        }
-
         ajax.afterCompletion = function() {
-            printResponse();
-
             if (ajax.responseStatus[0] == '200') {
                 onCompletion();
             }
@@ -198,18 +187,6 @@ var admin_refnotes = (function() {
 
             transaction = null;
             onCompletion = null;
-        }
-
-        function printResponse() {
-            var e = $('field-note-text');
-
-            e.value += 'Completed.\n';
-            e.value += 'URLString sent: ' + ajax.URLString + '\n';
-
-            e.value += 'Status code: ' + ajax.responseStatus[0] + '\n';
-            e.value += 'Status message: ' + ajax.responseStatus[1] + '\n';
-
-            e.value += 'Response: "' + ajax.response + '"\n';
         }
 
         function onLoaded() {
