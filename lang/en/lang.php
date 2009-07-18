@@ -60,3 +60,4 @@ $lang['js_saved'] = 'Configuration settings are successfully saved on the server
 $lang['js_saving_failed'] = 'Failed to save configuration settings on the server.';
 $lang['js_invalid_ns_name'] = 'The specified namespace name is invalid.';
 $lang['js_ns_name_exists'] = 'The {1} namespace already exists.';
+$lang['js_delete_ns'] = 'Are you sure you want to delete {1} namespace?';

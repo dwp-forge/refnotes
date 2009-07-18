@@ -84,6 +84,30 @@ var admin_refnotes = (function() {
         this.getSelectedValue = function() {
             return (list.selectedIndex != -1) ? list.options[list.selectedIndex].value : '';
         };
+
+        this.removeValue = function(value) {
+            var index = -1;
+
+            for (var i = 0; i < list.options.length; i++) {
+                if (list.options[i].value == value) {
+                    index = i;
+                    break;
+                }
+            }
+
+            if (index != -1) {
+                if (index < (list.options.length - 1)) {
+                    list.selectedIndex = index + 1;
+                }
+                else {
+                    list.selectedIndex = index - 1;
+                }
+
+                list.remove(index);
+            }
+
+            return this.getSelectedValue();
+        };
     }
 
 
@@ -453,6 +477,7 @@ var admin_refnotes = (function() {
 
             addEvent($('select-namespaces'), 'change', onNamespaceChange);
             addEvent($('add-namespaces'), 'click', onAddNamespace);
+            addEvent($('delete-namespaces'), 'click', onDeleteNamespace);
 
             updateFields();
         }
@@ -483,6 +508,14 @@ var admin_refnotes = (function() {
             }
             catch (error) {
                 alert(error);
+            }
+        }
+
+        function onDeleteNamespace(event) {
+            if (confirm(locale.getString('delete_ns', current.getName()))) {
+                namespaces.removeItem(current.getName());
+
+                setCurrentNamespace(list.removeValue(current.getName()));
             }
         }
 
