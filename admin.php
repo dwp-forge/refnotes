@@ -45,6 +45,8 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      * Output appropriate html
      */
     function html() {
+        print($this->locale_xhtml('intro'));
+
         $this->html->ptln('<!-- refnotes -->');
 
         $this->_printLanguageStrings();
