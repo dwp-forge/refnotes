@@ -347,7 +347,7 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
      * Constructor
      */
     function refnotes_config_namespaces() {
-        parent::refnotes_config_list_section('namespaces', 25);
+        parent::refnotes_config_list_section('namespaces', 43);
     }
 
     /**
@@ -401,6 +401,38 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
             'note-id-font-style' => array(
                 'class' => 'select',
                 'option' => array('normal', 'italic', 'inherit')
+            ),
+            'note-id-format' => array(
+                'class' => 'select',
+                'option' => array('right-parent', 'parents', 'right-bracket', 'brackets', 'dot', 'none', 'inherit')
+            ),
+            'back-ref-caret' => array(
+                'class' => 'select',
+                'option' => array('prefix', 'merge', 'none', 'inherit')
+            ),
+            'back-ref-base' => array(
+                'class' => 'select',
+                'option' => array('super', 'normal-text', 'inherit')
+            ),
+            'back-ref-font-weight' => array(
+                'class' => 'select',
+                'option' => array('normal', 'bold', 'inherit')
+            ),
+            'back-ref-font-style' => array(
+                'class' => 'select',
+                'option' => array('normal', 'italic', 'inherit')
+            ),
+            'back-ref-format' => array(
+                'class' => 'select',
+                'option' => array('note-id', 'latin', 'numeric', 'caret', 'arrow', 'none', 'inherit')
+            ),
+            'back-ref-separator' => array(
+                'class' => 'select',
+                'option' => array('comma', 'none', 'inherit')
+            ),
+            'scoping' => array(
+                'class' => 'select',
+                'option' => array('reset', 'single')
             )
         );
 

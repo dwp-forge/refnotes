@@ -156,8 +156,8 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
                 'js' => array('super', 'normal-text')
             ),
             'back-ref-format' => array(
-                'dw' => array('1'      , 'a'          , 'note'   ),
-                'js' => array('numeric', 'latin-lower', 'note-id')
+                'dw' => array('1'      , 'a'    , 'note'   ),
+                'js' => array('numeric', 'latin', 'note-id')
             ),
             'back-ref-separator' => array(
                 'dw' => array(','    ),

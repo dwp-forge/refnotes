@@ -400,7 +400,15 @@ var admin_refnotes = (function() {
             'note-font-size'       , 'normal',
             'note-id-base'         , 'super',
             'note-id-font-weight'  , 'normal',
-            'note-id-font-style'   , 'normal'
+            'note-id-font-style'   , 'normal',
+            'note-id-format'       , 'right-parent',
+            'back-ref-caret'       , 'none',
+            'back-ref-base'        , 'super',
+            'back-ref-font-weight' , 'bold',
+            'back-ref-font-style'  , 'normal',
+            'back-ref-format'      , 'none',
+            'back-ref-separator'   , 'comma',
+            'scoping'              , 'reset'
         );
 
         function DefaultNamespace() {
@@ -613,6 +621,14 @@ var admin_refnotes = (function() {
             fields.push(new SelectField('note-id-base'));
             fields.push(new SelectField('note-id-font-weight'));
             fields.push(new SelectField('note-id-font-style'));
+            fields.push(new SelectField('note-id-format'));
+            fields.push(new SelectField('back-ref-caret'));
+            fields.push(new SelectField('back-ref-base'));
+            fields.push(new SelectField('back-ref-font-weight'));
+            fields.push(new SelectField('back-ref-font-style'));
+            fields.push(new SelectField('back-ref-format'));
+            fields.push(new SelectField('back-ref-separator'));
+            fields.push(new SelectField('scoping'));
 
             list = new List('select-namespaces');
 
