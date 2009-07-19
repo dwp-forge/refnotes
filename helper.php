@@ -285,7 +285,7 @@ class refnotes_scope {
      */
     function addReference($name, $hidden, $inline) {
         $note = NULL;
-        if (preg_match('/#(\d+)/', $name, $match) == 1) {
+        if (preg_match('/(?:@@FNT|#)(\d+)/', $name, $match) == 1) {
             $id = intval($match[1]);
             if (array_key_exists($id, $this->note)) {
                 $note = $this->note[$id];

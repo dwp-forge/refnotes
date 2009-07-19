@@ -41,11 +41,26 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->entrySyntax = '[(';
         $this->exitSyntax = ')]';
 
+        $useFootnoteSyntax = false;
+        $config = refnotes_loadConfigFile('general');
+
+        if (array_key_exists('replace-footnotes', $config)) {
+            $useFootnoteSyntax = $config['replace-footnotes'];
+        }
+
+        if ($useFootnoteSyntax) {
+            $entry = '(?:\(\(|\[\()';
+            $exit = '(?:\)\)|\)\])';
+            $name ='(?:@@FNT\d+|#\d+|[[:alpha:]]\w*)';
+        }
+        else {
+            $entry = '\[\(';
+            $exit = '\)\]';
+            $name ='(?:#\d+|[[:alpha:]]\w*)';
+        }
+
         $newLine = '(?:\n?[ \t]*\n)?';
-        $entry = '\[\(';
-        $exit = '\)\]';
         $namespace ='(?:(?:[[:alpha:]]\w*)?:)*';
-        $name ='(?:#\d+|[[:alpha:]]\w*)';
         $text = '.*?';
 
         $nameMatch = '\s*' . $namespace . $name .'\s*';
@@ -109,7 +124,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Where to sort in?
      */
     function getSort() {
-        return 150;
+        return 145;
     }
 
     function connectTo($mode) {
