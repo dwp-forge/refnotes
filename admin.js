@@ -1,10 +1,10 @@
-var admin_refnotes = (function() {
+var admin_refnotes = (function () {
     var modified = false;
 
     function Hash() {
         /* Copy-pasted from http://www.mojavelinux.com/articles/javascript_hashes.html */
         this.length = 0;
-        this.items = new Array();
+        this.items = [];
 
         for (var i = 0; i < arguments.length; i += 2) {
             if (typeof(arguments[i + 1]) != 'undefined') {
@@ -13,27 +13,28 @@ var admin_refnotes = (function() {
             }
         }
 
-        this.removeItem = function(key) {
+        this.removeItem = function (key) {
             if (typeof(this.items[key]) != 'undefined') {
                 this.length--;
                 delete this.items[key];
             }
         }
 
-        this.getItem = function(key) {
+        this.getItem = function (key) {
             return this.items[key];
         }
 
-        this.setItem = function(key, value) {
+        this.setItem = function (key, value) {
             if (typeof(value) != 'undefined') {
                 if (typeof(this.items[key]) == 'undefined') {
                     this.length++;
                 }
+
                 this.items[key] = value;
             }
         }
 
-        this.hasItem = function(key) {
+        this.hasItem = function (key) {
             return typeof(this.items[key]) != 'undefined';
         }
     }
@@ -43,11 +44,11 @@ var admin_refnotes = (function() {
         this.baseClass = Hash;
         this.baseClass('', sentinel);
 
-        this.getItem = function(key) {
+        this.getItem = function (key) {
             return this.hasItem(key) ? this.items[key] : this.items[''];
         }
 
-        this.clear = function()
+        this.clear = function ()
         {
             for (var i in this.items) {
                 if (i != '') {
@@ -68,7 +69,7 @@ var admin_refnotes = (function() {
 
             option.text     = value;
             option.value    = value;
-            option.sorting  = value.replace(/:/g, '-').replace(/(-\w+)$/g, '-$1');
+            option.sorting  = value.replace(/:/g, '-').replace(/(-\w+)$/, '-$1');
             option.selected = selected;
 
             return option;
@@ -87,11 +88,11 @@ var admin_refnotes = (function() {
             return index;
         }
 
-        this.getSelectedValue = function() {
+        this.getSelectedValue = function () {
             return (list.selectedIndex != -1) ? list.options[list.selectedIndex].value : '';
         }
 
-        this.insertSorted = function(value, selected) {
+        this.insertSorted = function (value, selected) {
             var option     = createOption(value, selected);
             var nextOption = null;
 
@@ -112,7 +113,7 @@ var admin_refnotes = (function() {
             return this.getSelectedValue();
         }
 
-        this.update = function(values) {
+        this.update = function (values) {
             list.options.length = 0;
 
             for (var value in values.items) {
@@ -128,7 +129,7 @@ var admin_refnotes = (function() {
             return this.getSelectedValue();
         }
 
-        this.removeValue = function(value) {
+        this.removeValue = function (value) {
             var index = getOptionIndex(value);
 
             if (index != -1) {
@@ -140,7 +141,7 @@ var admin_refnotes = (function() {
             return this.getSelectedValue();
         }
 
-        this.renameValue = function(oldValue, newValue) {
+        this.renameValue = function (oldValue, newValue) {
             var index = getOptionIndex(oldValue);
 
             if (index != -1) {
@@ -154,7 +155,7 @@ var admin_refnotes = (function() {
     }
 
 
-    var locale = (function() {
+    var locale = (function () {
         var lang = new Hash();
 
         function initialize() {
@@ -196,7 +197,7 @@ var admin_refnotes = (function() {
     })();
 
 
-    var server = (function() {
+    var server = (function () {
         var ajax = new sack(DOKU_BASE + '/lib/exe/ajax.php');
         var timer = null;
         var transaction = null;
@@ -204,11 +205,11 @@ var admin_refnotes = (function() {
 
         ajax.encodeURIString = false;
 
-        ajax.onLoading = function() {
+        ajax.onLoading = function () {
             setStatus(transaction, 'info');
         }
 
-        ajax.afterCompletion = function() {
+        ajax.afterCompletion = function () {
             if (ajax.responseStatus[0] == '200') {
                 onCompletion();
             }
@@ -290,7 +291,7 @@ var admin_refnotes = (function() {
     })();
 
 
-    var general = (function() {
+    var general = (function () {
         var fields   = new Hash();
         var defaults = new Hash(
             'replace-footnotes', false
@@ -299,7 +300,7 @@ var admin_refnotes = (function() {
         function Field(settingName) {
             this.element = $('field-' + settingName);
 
-            this.updateDefault = function(value) {
+            this.updateDefault = function (value) {
                 var cell = this.element.parentNode.parentNode;
 
                 if (value == defaults.getItem(settingName)) {
@@ -310,7 +311,7 @@ var admin_refnotes = (function() {
                 }
             }
 
-            this.enable = function(enable) {
+            this.enable = function (enable) {
                 this.element.disabled = !enable;
             }
         }
@@ -322,22 +323,22 @@ var admin_refnotes = (function() {
             var check = this.element;
             var self  = this;
 
-            addEvent(check, 'change', function() {
+            addEvent(check, 'change', function () {
                 self.onChange();
             });
 
-            this.onChange = function() {
+            this.onChange = function () {
                 this.updateDefault(check.checked);
 
                 modified = true;
             }
 
-            this.setValue = function(value) {
+            this.setValue = function (value) {
                 check.checked = value;
                 this.updateDefault(check.checked);
             }
 
-            this.getValue = function() {
+            this.getValue = function () {
                 return check.checked;
             }
 
@@ -360,7 +361,7 @@ var admin_refnotes = (function() {
                 }
             }
 
-            for (var name in fields.items) {
+            for (name in fields.items) {
                 fields.getItem(name).enable(true);
             }
         }
@@ -383,9 +384,9 @@ var admin_refnotes = (function() {
     })();
 
 
-    var namespaces = (function() {
+    var namespaces = (function () {
         var list       = null;
-        var fields     = new Array();
+        var fields     = [];
         var namespaces = new NameHash(new DefaultNamespace());
         var current    = namespaces.getItem('');
         var defaults   = new Hash(
@@ -412,29 +413,29 @@ var admin_refnotes = (function() {
         );
 
         function DefaultNamespace() {
-            this.isReadOnly = function() {
+            this.isReadOnly = function () {
                 return true;
             }
 
-            this.setName = function(newName) {
+            this.setName = function (newName) {
             }
 
-            this.getName = function() {
+            this.getName = function () {
                 return '';
             }
 
-            this.setStyle = function(name, value) {
+            this.setStyle = function (name, value) {
             }
 
-            this.getStyle = function(name) {
+            this.getStyle = function (name) {
                 return defaults.getItem(name);
             }
 
-            this.getStyleInheritance = function(name) {
+            this.getStyleInheritance = function (name) {
                 return 'default';
             }
 
-            this.getSettings = function() {
+            this.getSettings = function () {
                 return {};
             }
         }
@@ -458,19 +459,19 @@ var admin_refnotes = (function() {
                 return namespaces.getItem(parent);
             }
 
-            this.isReadOnly = function() {
+            this.isReadOnly = function () {
                 return false;
             }
 
-            this.setName = function(newName) {
+            this.setName = function (newName) {
                 name = newName;
             }
 
-            this.getName = function() {
+            this.getName = function () {
                 return name;
             }
 
-            this.setStyle = function(name, value) {
+            this.setStyle = function (name, value) {
                 if (value == 'inherit') {
                     styles.removeItem(name);
                 }
@@ -479,7 +480,7 @@ var admin_refnotes = (function() {
                 }
             }
 
-            this.getStyle = function(name) {
+            this.getStyle = function (name) {
                 var result;
 
                 if (styles.hasItem(name)) {
@@ -492,7 +493,7 @@ var admin_refnotes = (function() {
                 return result;
             }
 
-            this.getStyleInheritance = function(name) {
+            this.getStyleInheritance = function (name) {
                 var result = '';
 
                 if (!styles.hasItem(name)) {
@@ -502,7 +503,7 @@ var admin_refnotes = (function() {
                 return result;
             }
 
-            this.getSettings = function() {
+            this.getSettings = function () {
                 var settings = {};
 
                 for (var name in styles.items) {
@@ -516,7 +517,7 @@ var admin_refnotes = (function() {
         function Field(styleName) {
             this.element = $('field-' + styleName);
 
-            this.updateInheretance = function() {
+            this.updateInheretance = function () {
                 var cell = this.element.parentNode.parentNode;
 
                 removeClass(cell, 'default');
@@ -533,7 +534,7 @@ var admin_refnotes = (function() {
             var combo = this.element;
             var self  = this;
 
-            addEvent(combo, 'change', function() {
+            addEvent(combo, 'change', function () {
                 self.onChange();
             });
 
@@ -545,7 +546,7 @@ var admin_refnotes = (function() {
                 }
             }
 
-            this.onChange = function() {
+            this.onChange = function () {
                 var value = combo.options[combo.selectedIndex].value;
 
                 current.setStyle(styleName, value);
@@ -559,7 +560,7 @@ var admin_refnotes = (function() {
                 modified = true;
             }
 
-            this.update = function() {
+            this.update = function () {
                 this.updateInheretance();
                 setSelection(current.getStyle(styleName));
                 combo.disabled = current.isReadOnly();
@@ -574,15 +575,15 @@ var admin_refnotes = (function() {
             var button = $(this.element.id + '-inherit');
             var self   = this;
 
-            addEvent(edit, 'change', function() {
+            addEvent(edit, 'change', function () {
                 self.setValue(validate(edit.value));
             });
 
-            addEvent(button, 'click', function() {
+            addEvent(button, 'click', function () {
                 self.setValue('inherit');
             });
 
-            this.setValue = function(value) {
+            this.setValue = function (value) {
                 current.setStyle(styleName, value);
 
                 this.updateInheretance();
@@ -594,7 +595,7 @@ var admin_refnotes = (function() {
                 modified = true;
             }
 
-            this.update = function() {
+            this.update = function () {
                 this.updateInheretance();
 
                 edit.value      = current.getStyle(styleName);
@@ -611,7 +612,7 @@ var admin_refnotes = (function() {
             fields.push(new SelectField('reference-format'));
             fields.push(new SelectField('multi-ref-id'));
             fields.push(new SelectField('note-preview'));
-            fields.push(new TextField('notes-separator', function(value){
+            fields.push(new TextField('notes-separator', function (value) {
                 if (value.match(/(?:\d+\.?|\d*\.\d+)(?:%|em|px)|none/) == null) {
                     value = 'none';
                 }
@@ -742,38 +743,38 @@ var admin_refnotes = (function() {
     })();
 
 
-    var notes = (function() {
+    var notes = (function () {
         var list    = null;
         var notes   = new NameHash(new EmptyNote());
         var current = notes.getItem('');
 
         function EmptyNote() {
-            this.isReadOnly = function() {
+            this.isReadOnly = function () {
                 return true;
             }
 
-            this.setName = function(newName) {
+            this.setName = function (newName) {
             }
 
-            this.getName = function() {
+            this.getName = function () {
                 return '';
             }
 
-            this.setText = function(text) {
+            this.setText = function (text) {
             }
 
-            this.getText = function() {
+            this.getText = function () {
                 return '';
             }
 
-            this.setInline = function(inline) {
+            this.setInline = function (inline) {
             }
 
-            this.isInline = function() {
+            this.isInline = function () {
                 return false;
             }
 
-            this.getSettings = function() {
+            this.getSettings = function () {
                 return {};
             }
         }
@@ -787,39 +788,39 @@ var admin_refnotes = (function() {
                 this.inline = data.inline;
             }
 
-            this.isReadOnly = function() {
+            this.isReadOnly = function () {
                 return false;
             }
 
-            this.setName = function(newName) {
+            this.setName = function (newName) {
                 name = newName;
             }
 
-            this.getName = function() {
+            this.getName = function () {
                 return name;
             }
 
-            this.setText = function(text) {
+            this.setText = function (text) {
                 this.text = text;
             }
 
-            this.getText = function() {
+            this.getText = function () {
                 return this.text;
             }
 
-            this.setInline = function(inline) {
+            this.setInline = function (inline) {
                 this.inline = inline;
             }
 
-            this.isInline = function() {
+            this.isInline = function () {
                 return this.inline;
             }
 
-            this.getSettings = function() {
+            this.getSettings = function () {
                 return {
                     text   : this.text,
                     inline : this.inline
-                };
+                }
             }
         }
 
@@ -963,7 +964,7 @@ var admin_refnotes = (function() {
         namespaces.initialize();
         notes.initialize();
 
-        addEvent($('save-config'), 'click', function(event) {
+        addEvent($('save-config'), 'click', function (event) {
             saveSettings();
         });
 
@@ -973,17 +974,17 @@ var admin_refnotes = (function() {
     }
 
     function reloadSettings(settings) {
-        general.reload(settings['general']);
-        namespaces.reload(settings['namespaces']);
-        notes.reload(settings['notes']);
+        general.reload(settings.general);
+        namespaces.reload(settings.namespaces);
+        notes.reload(settings.notes);
     }
 
     function saveSettings() {
         var settings = {};
         
-        settings['general']    = general.getSettings();
-        settings['namespaces'] = namespaces.getSettings();
-        settings['notes']      = notes.getSettings();
+        settings.general    = general.getSettings();
+        settings.namespaces = namespaces.getSettings();
+        settings.notes      = notes.getSettings();
 
         server.saveSettings(settings);
 
@@ -992,10 +993,9 @@ var admin_refnotes = (function() {
 
     function onBeforeUnload(event) {
         if (modified) {
-            var event   = event || window.event;
             var message = locale.getString('unsaved');
     
-            event.returnValue = message;
+            (event || window.event).returnValue = message;
     
             return message;
         }
@@ -1049,6 +1049,6 @@ var admin_refnotes = (function() {
 })();
 
 
-addInitEvent(function(){
+addInitEvent(function (){
     admin_refnotes.initialize();
 });
