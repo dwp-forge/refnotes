@@ -1,4 +1,5 @@
 var admin_refnotes = (function() {
+    var modified = false;
 
     function Hash() {
         /* Copy-pasted from http://www.mojavelinux.com/articles/javascript_hashes.html */
@@ -229,6 +230,8 @@ var admin_refnotes = (function() {
 
         function onSaved() {
             if (ajax.response == 'saved') {
+                modified = false;
+
                 setStatus('saved', 'success', 10000);
             }
             else {
@@ -325,6 +328,8 @@ var admin_refnotes = (function() {
 
             this.onChange = function() {
                 this.updateDefault(check.checked);
+
+                modified = true;
             }
 
             this.setValue = function(value) {
@@ -542,6 +547,8 @@ var admin_refnotes = (function() {
                 if ((value == 'inherit') || current.isReadOnly()) {
                     setSelection(current.getStyle(styleName));
                 }
+
+                modified = true;
             }
 
             this.update = function() {
@@ -575,6 +582,8 @@ var admin_refnotes = (function() {
                 if ((edit.value != value) || (value == 'inherit') || current.isReadOnly()) {
                     edit.value = current.getStyle(styleName);
                 }
+
+                modified = true;
             }
 
             this.update = function() {
@@ -631,6 +640,8 @@ var admin_refnotes = (function() {
                 namespaces.setItem(name, new Namespace(name));
 
                 setCurrent(list.insertSorted(name, true));
+
+                modified = true;
             }
             catch (error) {
                 alert(error);
@@ -648,6 +659,8 @@ var admin_refnotes = (function() {
                 namespaces.setItem(newName, current);
 
                 setCurrent(list.renameValue(oldName, newName));
+
+                modified = true;
             }
             catch (error) {
                 alert(error);
@@ -659,6 +672,8 @@ var admin_refnotes = (function() {
                 namespaces.removeItem(current.getName());
 
                 setCurrent(list.removeValue(current.getName()));
+
+                modified = true;
             }
         }
 
@@ -800,13 +815,8 @@ var admin_refnotes = (function() {
             addEvent($('rename-notes'), 'click', onRenameNote);
             addEvent($('delete-notes'), 'click', onDeleteNote);
 
-            addEvent($('field-note-text'), 'change', function(event) {
-                current.setText(event.target.value);
-            });
-
-            addEvent($('field-inline'), 'change', function(event) {
-                current.setInline(event.target.checked);
-            });
+            addEvent($('field-note-text'), 'change', onTextChange);
+            addEvent($('field-inline'), 'change', onInlineChange);
 
             $('name-notes').disabled   = true;
             $('add-notes').disabled    = true;
@@ -827,6 +837,8 @@ var admin_refnotes = (function() {
                 notes.setItem(name, new Note(name));
 
                 setCurrent(list.insertSorted(name, true));
+
+                modified = true;
             }
             catch (error) {
                 alert(error);
@@ -844,6 +856,8 @@ var admin_refnotes = (function() {
                 notes.setItem(newName, current);
 
                 setCurrent(list.renameValue(oldName, newName));
+
+                modified = true;
             }
             catch (error) {
                 alert(error);
@@ -855,7 +869,21 @@ var admin_refnotes = (function() {
                 notes.removeItem(current.getName());
 
                 setCurrent(list.removeValue(current.getName()));
+
+                modified = true;
             }
+        }
+
+        function onTextChange(event) {
+            current.setText(event.target.value);
+
+            modified = true;
+        }
+
+        function onInlineChange(event) {
+            current.setInline(event.target.checked);
+
+            modified = true;
         }
 
         function reload(settings) {
@@ -923,6 +951,8 @@ var admin_refnotes = (function() {
             saveSettings();
         });
 
+        window.onbeforeunload = onBeforeUnload;
+
         server.loadSettings();
     }
 
@@ -942,6 +972,17 @@ var admin_refnotes = (function() {
         server.saveSettings(settings);
 
         scroll(0, 0);
+    }
+
+    function onBeforeUnload(event) {
+        if (modified) {
+            var event   = event || window.event;
+            var message = locale.getString('unsaved');
+    
+            event.returnValue = message;
+    
+            return message;
+        }
     }
 
     function validateName(name, type, existing) {

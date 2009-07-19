@@ -76,3 +76,4 @@ $lang['js_delete_ns'] = 'Are you sure you want to delete {1} namespace?';
 $lang['js_invalid_note_name'] = 'The specified note name is invalid.';
 $lang['js_note_name_exists'] = 'The {1} note already exists.';
 $lang['js_delete_note'] = 'Are you sure you want to delete {1} note?';
+$lang['js_unsaved'] = 'Your changes to the configuration settings are not saved.';
