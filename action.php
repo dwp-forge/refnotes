@@ -56,7 +56,10 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
             $event->preventDefault();
             $event->stopPropagation();
 
-            //TODO: check admin rights
+            /* Check admin rights */
+            if (auth_quickaclcheck($conf['start']) < AUTH_ADMIN) {
+                die('access denied');
+            }
 
             switch ($_POST['action']) {
                 case 'load-settings':
