@@ -94,6 +94,8 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      *
      */
     function _saveConfig($config) {
+        global $config_cascade;
+
         $json = new JSON(JSON_LOOSE_TYPE);
 
         $config = $json->decode($config);
@@ -104,6 +106,9 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $saved = refnotes_saveConfigFile('general', $config['general']);
         $saved = $saved && refnotes_saveConfigFile('namespaces', $namespace);
         $saved = $saved && refnotes_saveConfigFile('notes', $config['notes']);
+
+        /* Touch local config file to expire the cache */
+        $saved = $saved && touch(reset($config_cascade['main']['local']));
 
         header('Content-Type: text/plain');
         print($saved ? 'saved' : 'failed');
