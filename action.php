@@ -67,7 +67,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
                     break;
 
                 case 'save-settings':
-                    $this->_parseConfig($_POST['settings']);
+                    $this->_saveConfig($_POST['settings']);
                     break;
             }
         }
@@ -78,12 +78,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      */
     function _sendConfig() {
         $namespace = refnotes_loadConfigFile('namespaces');
-
-        foreach ($namespace as &$ns) {
-            foreach ($ns as $styleName => &$style) {
-                $style = $this->_translateStyle($styleName, $style, 'dw', 'js');
-            }
-        }
+        $namespace = $this->_translateStyles($namespace, 'dw', 'js');
 
         $config['general'] = refnotes_loadConfigFile('general');
         $config['namespaces'] = $namespace;
@@ -98,8 +93,33 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      *
      */
-    function _parseConfig($config) {
-        print('saved');
+    function _saveConfig($config) {
+        $json = new JSON(JSON_LOOSE_TYPE);
+
+        $config = $json->decode($config);
+
+        $namespace = $config['namespaces'];
+        $namespace = $this->_translateStyles($namespace, 'js', 'dw');
+
+        $saved = refnotes_saveConfigFile('general', $config['general']);
+        $saved = $saved && refnotes_saveConfigFile('namespaces', $namespace);
+        $saved = $saved && refnotes_saveConfigFile('notes', $config['notes']);
+
+        header('Content-Type: text/plain');
+        print($saved ? 'saved' : 'failed');
+    }
+
+    /**
+     *
+     */
+    function _translateStyles($namespace, $from, $to) {
+        foreach ($namespace as &$ns) {
+            foreach ($ns as $styleName => &$style) {
+                $style = $this->_translateStyle($styleName, $style, $from, $to);
+            }
+        }
+
+        return $namespace;
     }
 
     /**

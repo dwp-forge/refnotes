@@ -27,3 +27,10 @@ function refnotes_loadConfigFile($name) {
 
     return $result;
 }
+
+function refnotes_saveConfigFile($name, $config) {
+    $pluginRoot = DOKU_PLUGIN . 'refnotes/';
+    $fileName = $pluginRoot . $name . '.local.dat';
+
+    return io_saveFile($fileName, serialize($config));
+}
