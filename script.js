@@ -1,4 +1,5 @@
 (function() {
+    /* Based on http://htmlcoder.visions.ru/JavaScript/?11 */
     var cssComp = document.compatMode && (document.compatMode == "CSS1Compat");
     var canvas = document.getElementsByTagName(cssComp ? "html" : "body")[0];
     var floater = null;
@@ -204,9 +205,6 @@
     };
 })();
 
-/**
- * Add the event handlers to footnotes
- */
 addInitEvent(function(){
     var elems = getElementsByClass('refnotes-ref note-popup', null, 'a');
     for (var i = 0; i < elems.length; i++) {
