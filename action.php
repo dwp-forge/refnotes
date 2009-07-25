@@ -19,14 +19,14 @@ require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
 
-    var $scopeStart;
-    var $scopeEnd;
-    var $style;
+    private $scopeStart;
+    private $scopeEnd;
+    private $style;
 
     /**
      * Constructor
      */
-    function action_plugin_refnotes() {
+    public function __construct() {
         $this->scopeStart = array();
         $this->scopeEnd = array();
         $this->style = array();
@@ -35,14 +35,14 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      * Return some info
      */
-    function getInfo() {
+    public function getInfo() {
         return refnotes_getInfo('default notes renderer');
     }
 
     /**
      * Register callbacks
      */
-    function register(&$controller) {
+    public function register($controller) {
         $controller->register_hook('AJAX_CALL_UNKNOWN', 'BEFORE', $this, 'ajaxHandler');
         $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'addAdminIncludes');
         $controller->register_hook('PARSER_HANDLER_DONE', 'AFTER', $this, 'processCallList');
@@ -51,7 +51,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      *
      */
-    function ajaxHandler(&$event, $param) {
+    public function ajaxHandler($event, $param) {
         if ($event->data == 'refnotes-admin') {
             $event->preventDefault();
             $event->stopPropagation();
@@ -63,11 +63,11 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
 
             switch ($_POST['action']) {
                 case 'load-settings':
-                    $this->_sendConfig();
+                    $this->sendConfig();
                     break;
 
                 case 'save-settings':
-                    $this->_saveConfig($_POST['settings']);
+                    $this->saveConfig($_POST['settings']);
                     break;
             }
         }
@@ -76,9 +76,9 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      *
      */
-    function _sendConfig() {
+    private function sendConfig() {
         $namespace = refnotes_loadConfigFile('namespaces');
-        $namespace = $this->_translateStyles($namespace, 'dw', 'js');
+        $namespace = $this->translateStyles($namespace, 'dw', 'js');
 
         $config['general'] = refnotes_loadConfigFile('general');
         $config['namespaces'] = $namespace;
@@ -93,7 +93,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      *
      */
-    function _saveConfig($config) {
+    private function saveConfig($config) {
         global $config_cascade;
 
         $json = new JSON(JSON_LOOSE_TYPE);
@@ -101,7 +101,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $config = $json->decode($config);
 
         $namespace = $config['namespaces'];
-        $namespace = $this->_translateStyles($namespace, 'js', 'dw');
+        $namespace = $this->translateStyles($namespace, 'js', 'dw');
 
         $saved = refnotes_saveConfigFile('general', $config['general']);
         $saved = $saved && refnotes_saveConfigFile('namespaces', $namespace);
@@ -117,10 +117,10 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      *
      */
-    function _translateStyles($namespace, $from, $to) {
+    private function translateStyles($namespace, $from, $to) {
         foreach ($namespace as &$ns) {
             foreach ($ns as $styleName => &$style) {
-                $style = $this->_translateStyle($styleName, $style, $from, $to);
+                $style = $this->translateStyle($styleName, $style, $from, $to);
             }
         }
 
@@ -130,7 +130,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      *
      */
-    function _translateStyle($styleName, $style, $from, $to) {
+    private function translateStyle($styleName, $style, $from, $to) {
         static $dictionary = array(
             'refnote-id' => array(
                 'dw' => array('1'      , 'a'          , 'A'          , 'i'          , 'I'          , '*'    , 'name'     ),
@@ -184,7 +184,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      *
      */
-    function addAdminIncludes(&$event, $param) {
+    public function addAdminIncludes($event, $param) {
         if (($_REQUEST['do'] == 'admin') && !empty($_REQUEST['page']) && ($_REQUEST['page'] == 'refnotes')) {
             $event->data['script'][] = array(
                 'type' => 'text/javascript',
@@ -209,34 +209,34 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      *
      */
-    function processCallList(&$event, $param) {
-        $this->_extractStyles($event);
+    public function processCallList($event, $param) {
+        $this->extractStyles($event);
 
         if (count($this->style) > 0) {
-            $this->_sortStyles();
-            $this->_insertStyles($event);
+            $this->sortStyles();
+            $this->insertStyles($event);
         }
 
         if (count($this->scopeStart) > 0) {
-            $this->_renderLeftovers($event);
+            $this->renderLeftovers($event);
         }
     }
 
     /**
      * Extract style data and replace "split" instructions by "render"
      */
-    function _extractStyles(&$event) {
+    private function extractStyles($event) {
         $count = count($event->data->calls);
         for ($i = 0; $i < $count; $i++) {
             $call =& $event->data->calls[$i];
             if ($call[0] == 'plugin') {
                 switch ($call[1][0]) {
                     case 'refnotes_references':
-                        $this->_handleReference($i, $call[1][1]);
+                        $this->handleReference($i, $call[1][1]);
                         break;
 
                     case 'refnotes_notes':
-                        $this->_handleNotes($i, $call[1][1]);
+                        $this->handleNotes($i, $call[1][1]);
                         break;
                 }
             }
@@ -246,23 +246,23 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      * Mark namespace creation instructions
      */
-    function _handleReference($callIndex, &$callData) {
+    private function handleReference($callIndex, &$callData) {
         if ($callData[0] == DOKU_LEXER_ENTER) {
-            $this->_markScopeStart($callData[1]['ns'], $callIndex);
+            $this->markScopeStart($callData[1]['ns'], $callIndex);
         }
     }
 
     /**
      * Mark instruction that starts a scope
      */
-    function _markScopeStart($namespace, $callIndex) {
+    private function markScopeStart($namespace, $callIndex) {
         if (array_key_exists($namespace, $this->scopeStart)) {
             if (count($this->scopeStart[$namespace]) < count($this->scopeEnd[$namespace])) {
                 $this->scopeStart[$namespace][] = $callIndex;
             }
         }
         else {
-            $this->_markScopeEnd($namespace, -1);
+            $this->markScopeEnd($namespace, -1);
             $this->scopeStart[$namespace][] = $callIndex;
         }
     }
@@ -270,21 +270,21 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      * Mark instruction that ends a scope
      */
-    function _markScopeEnd($namespace, $callIndex) {
+    private function markScopeEnd($namespace, $callIndex) {
         $this->scopeEnd[$namespace][] = $callIndex;
     }
 
     /**
      * Extract style data and replace "split" instructions with "render"
      */
-    function _handleNotes($callIndex, &$callData) {
+    private function handleNotes($callIndex, &$callData) {
         $namespace = $callData[1]['ns'];
         if ($callData[0] == 'split') {
             if (array_key_exists('inherit', $callData[2])) {
-                $index = $this->_getStyleIndex($namespace, $callData[2]['inherit']);
+                $index = $this->getStyleIndex($namespace, $callData[2]['inherit']);
             }
             else {
-                $index = $this->_getStyleIndex($namespace);
+                $index = $this->getStyleIndex($namespace);
             }
 
             $this->style[] = array('idx' => $index, 'ns' => $namespace, 'data' => $callData[2]);
@@ -292,13 +292,13 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
             unset($callData[2]);
         }
 
-        $this->_markScopeEnd($namespace, $callIndex);
+        $this->markScopeEnd($namespace, $callIndex);
     }
 
     /**
      * Returns instruction index where the style instruction has to be inserted
      */
-    function _getStyleIndex($namespace, $parent = '') {
+    private function getStyleIndex($namespace, $parent = '') {
         if (($parent == '') && (count($this->scopeStart[$namespace]) == 1)) {
             /* Default inheritance for the first scope */
             $parent = refnotes_getParentNamespace($namespace);
@@ -332,7 +332,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Sort the style blocks so that the namespaces with inherited style go after
      * the namespaces they inherit from
      */
-    function _sortStyles() {
+    private function sortStyles() {
         /* Sort in ascending order to ensure the default enheritance */
         foreach ($this->style as $key => $style) {
             $index[$key] = $style['idx'];
@@ -391,7 +391,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      * Insert style instructions
      */
-    function _insertStyles(&$event) {
+    private function insertStyles($event) {
         $calls = count($event->data->calls);
         $styles = count($this->style);
         $call = array();
@@ -402,7 +402,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
                 $data[0] = 'style';
                 $data[1] = $attribute;
                 $data[2] = $this->style[$s]['data'];
-                $call[] = $this->_getInstruction($data, $event->data->calls[$c][2]);
+                $call[] = $this->getInstruction($data, $event->data->calls[$c][2]);
                 $s++;
             }
 
@@ -415,12 +415,12 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      * Insert render call at the very bottom of the page
      */
-    function _renderLeftovers(&$event) {
+    private function renderLeftovers($event) {
         $attribute['ns'] = '*';
         $data[0] = 'render';
         $data[1] = $attribute;
         $lastCall = end($event->data->calls);
-        $call = $this->_getInstruction($data, $lastCall[2]);
+        $call = $this->getInstruction($data, $lastCall[2]);
 
         $event->data->calls[] = $call;
     }
@@ -428,7 +428,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      * Format data into plugin instruction
      */
-    function _getInstruction($data, $offset) {
+    private function getInstruction($data, $offset) {
         $parameters = array('refnotes_notes', $data, 5, 'refnotes_action');
 
         return array('plugin', $parameters, $offset);

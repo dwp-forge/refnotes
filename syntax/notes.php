@@ -17,13 +17,13 @@ require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
 
-    var $mode;
-    var $core;
+    private $mode;
+    private $core;
 
     /**
      * Constructor
      */
-    function syntax_plugin_refnotes_notes() {
+    public function __construct() {
         $this->mode = substr(get_class($this), 7);
         $this->core = NULL;
     }
@@ -31,29 +31,29 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      * Return some info
      */
-    function getInfo() {
+    public function getInfo() {
         return refnotes_getInfo('notes syntax');
     }
 
     /**
      * What kind of syntax are we?
      */
-    function getType() {
+    public function getType() {
         return 'substition';
     }
 
-    function getPType() {
+    public function getPType() {
         return 'block';
     }
 
     /**
      * Where to sort in?
      */
-    function getSort() {
+    public function getSort() {
         return 150;
     }
 
-    function connectTo($mode) {
+    public function connectTo($mode) {
         $this->Lexer->addSpecialPattern('~~REFNOTES.*?~~', $mode, $this->mode);
         $this->Lexer->addSpecialPattern('<refnotes.*?\/>', $mode, $this->mode);
         $this->Lexer->addSpecialPattern('<refnotes(?:.*?[^/])?>.*?<\/refnotes>', $mode, $this->mode);
@@ -62,13 +62,13 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      * Handle the match
      */
-    function handle($match, $state, $pos, &$handler) {
+    public function handle($match, $state, $pos, $handler) {
         switch ($match{0}) {
             case '~':
-                return $this->_handleBasic($match);
+                return $this->handleBasic($match);
 
             case '<':
-                return $this->_handleExtended($match);
+                return $this->handleExtended($match);
         }
 
         return false;
@@ -77,16 +77,16 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      * Create output
      */
-    function render($mode, &$renderer, $data) {
+    public function render($mode, $renderer, $data) {
         try {
             if($mode == 'xhtml') {
                 switch ($data[0]) {
                     case 'style':
-                        $this->_style($renderer, $data[1], $data[2]);
+                        $this->styleNamespace($renderer, $data[1], $data[2]);
                         break;
 
                     case 'render':
-                        $this->_render($renderer, $data[1]);
+                        $this->renderNotes($renderer, $data[1]);
                         break;
                 }
                 return true;
@@ -102,22 +102,22 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    function _handleBasic($syntax) {
+    private function handleBasic($syntax) {
         preg_match('/~~REFNOTES(.*?)~~/', $syntax, $match);
 
-        return array('render', $this->_parseAttributes($match[1]));
+        return array('render', $this->parseAttributes($match[1]));
     }
 
     /**
      *
      */
-    function _handleExtended($syntax) {
+    private function handleExtended($syntax) {
         preg_match('/<refnotes(.*?)(?:\/>|>(.*?)<\/refnotes>)/s', $syntax, $match);
-        $attribute = $this->_parseAttributes($match[1]);
+        $attribute = $this->parseAttributes($match[1]);
         $style = array();
 
         if ($match[2] != '') {
-            $style = $this->_parseStyles($match[2]);
+            $style = $this->parseStyles($match[2]);
         }
 
         if (count($style) > 0) {
@@ -131,7 +131,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    function _parseAttributes($syntax) {
+    private function parseAttributes($syntax) {
         static $propertyMatch = array(
             'ns' => '/^(:|:*([[:alpha:]]\w*:+)*?[[:alpha:]]\w*:*)$/',
             'limit' => '/^\/?\d+$/'
@@ -157,7 +157,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    function _parseStyles($syntax) {
+    private function parseStyles($syntax) {
         $style = array();
         preg_match_all('/([-\w]+)\s*:\s*(.+?)\s*?[\n;]/', $syntax, $match, PREG_SET_ORDER);
         foreach ($match as $m) {
@@ -185,16 +185,16 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    function _style(&$renderer, $attribute, $style) {
-        $this->_getCore()->styleNotes($attribute['ns'], $style);
+    private function styleNamespace($renderer, $attribute, $style) {
+        $this->getCore()->styleNamespace($attribute['ns'], $style);
     }
 
     /**
      *
      */
-    function _render(&$renderer, $attribute) {
+    private function renderNotes($renderer, $attribute) {
         $limit = array_key_exists('limit', $attribute) ? $attribute['limit'] : '';
-        $html = $this->_getCore()->renderNotes($attribute['ns'], $limit);
+        $html = $this->getCore()->renderNotes($attribute['ns'], $limit);
         if ($html != '') {
             $renderer->doc .= '<div class="refnotes">' . DOKU_LF;
             $renderer->doc .= $html;
@@ -205,9 +205,9 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    function _getCore() {
+    private function getCore() {
         if ($this->core == NULL) {
-            $this->core =& plugin_load('helper', 'refnotes');
+            $this->core = plugin_load('helper', 'refnotes');
             if ($this->core == NULL) {
                 throw new Exception('Helper plugin "refnotes" is not available or invalid.');
             }

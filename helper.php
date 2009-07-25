@@ -18,13 +18,13 @@ require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 class helper_plugin_refnotes extends DokuWiki_Plugin {
 
-    var $namespaceStyle;
-    var $namespace;
+    private $namespaceStyle;
+    private $namespace;
 
     /**
      * Constructor
      */
-    function helper_plugin_refnotes() {
+    public function __construct() {
         $this->namespaceStyle = refnotes_loadConfigFile('namespaces');
         $this->namespace = array();
     }
@@ -32,22 +32,22 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      * Return some info
      */
-    function getInfo() {
+    public function getInfo() {
         return refnotes_getInfo('notes collection');
     }
 
     /**
      * Don't publish any methods (it's not a public helper)
      */
-    function getMethods() {
+    public function getMethods() {
         return array();
     }
 
     /**
      * Adds a reference to the notes array. Returns a note
      */
-    function addReference($namespaceName, $noteName, $hidden, $inline) {
-        $namespace = $this->_findNamespace($namespaceName, true);
+    public function addReference($namespaceName, $noteName, $hidden, $inline) {
+        $namespace = $this->findNamespace($namespaceName, true);
 
         return $namespace->addReference($noteName, $hidden, $inline);
     }
@@ -55,11 +55,11 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      *
      */
-    function styleNotes($namespaceName, $style) {
-        $namespace = $this->_findNamespace($namespaceName, true);
+    public function styleNamespace($namespaceName, $style) {
+        $namespace = $this->findNamespace($namespaceName, true);
 
         if (array_key_exists('inherit', $style)) {
-            $source = $this->_findNamespace($style['inherit'], true);
+            $source = $this->findNamespace($style['inherit'], true);
             $namespace->inheritStyle($source);
         }
 
@@ -69,7 +69,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      *
      */
-    function renderNotes($namespaceName, $limit = '') {
+    public function renderNotes($namespaceName, $limit = '') {
         $html = '';
         if ($namespaceName == '*') {
             foreach ($this->namespace as $namespace) {
@@ -77,7 +77,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
             }
         }
         else {
-            $namespace = $this->_findNamespace($namespaceName);
+            $namespace = $this->findNamespace($namespaceName);
             if ($namespace != NULL) {
                 $html = $namespace->renderNotes($limit);
             }
@@ -89,7 +89,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      * Finds a namespace given it's name
      */
-    function _findNamespace($name, $create = false) {
+    private function findNamespace($name, $create = false) {
         $result = NULL;
         if (array_key_exists($name, $this->namespace)) {
             $result = $this->namespace[$name];
@@ -98,7 +98,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
         if (($result == NULL) && $create) {
             if ($name != ':') {
                 $parentName = refnotes_getParentNamespace($name);
-                $parent = $this->_findNamespace($parentName, true);
+                $parent = $this->findNamespace($parentName, true);
                 $this->namespace[$name] = new refnotes_namespace($name, $parent);
             }
             else {
@@ -118,15 +118,15 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
 
 class refnotes_namespace {
 
-    var $name;
-    var $style;
-    var $scope;
-    var $newScope;
+    private $name;
+    private $style;
+    private $scope;
+    private $newScope;
 
     /**
      * Constructor
      */
-    function refnotes_namespace($name, $parent = NULL) {
+    public function __construct($name, $parent = NULL) {
         $this->name = $name;
         $this->style = array();
         $this->scope = array();
@@ -140,14 +140,14 @@ class refnotes_namespace {
     /**
      *
      */
-    function getName() {
+    public function getName() {
         return $this->name;
     }
 
     /**
      *
      */
-    function style($style) {
+    public function style($style) {
         foreach ($style as $property => $value) {
             $this->style[$property] = $value;
         }
@@ -156,14 +156,14 @@ class refnotes_namespace {
     /**
      *
      */
-    function inheritStyle($source) {
+    public function inheritStyle($source) {
         $this->style = $source->style;
     }
 
     /**
      *
      */
-    function getStyle($property) {
+    public function getStyle($property) {
         $result = '';
 
         if (array_key_exists($property, $this->style)) {
@@ -176,7 +176,7 @@ class refnotes_namespace {
     /**
      * Adds a reference to the current scope. Returns a note
      */
-    function addReference($name, $hidden, $inline) {
+    public function addReference($name, $hidden, $inline) {
         if ($this->newScope) {
             $id = count($this->scope) + 1;
             $this->scope[] = new refnotes_scope($this, $id);
@@ -191,12 +191,12 @@ class refnotes_namespace {
     /**
      *
      */
-    function renderNotes($limit = '') {
-        $this->_resetScope();
+    public function renderNotes($limit = '') {
+        $this->resetScope();
         $html = '';
         if (count($this->scope) > 0) {
             $scope = end($this->scope);
-            $limit = $this->_getRenderLimit($limit);
+            $limit = $this->getRenderLimit($limit);
             $html = $scope->renderNotes($limit);
         }
 
@@ -206,7 +206,7 @@ class refnotes_namespace {
     /**
      *
      */
-    function _resetScope() {
+    private function resetScope() {
         switch ($this->getStyle('scoping')) {
             case 'single':
                 break;
@@ -220,7 +220,7 @@ class refnotes_namespace {
     /**
      *
      */
-    function _getRenderLimit($limit) {
+    private function getRenderLimit($limit) {
         if (preg_match('/(\/?)(\d+)/', $limit, $match) == 1) {
             if ($match[1] != '') {
                 $devider = intval($match[2]);
@@ -240,17 +240,17 @@ class refnotes_namespace {
 
 class refnotes_scope {
 
-    var $namespace;
-    var $id;
-    var $note;
-    var $notes;
-    var $inlineNotes;
-    var $references;
+    private $namespace;
+    private $id;
+    private $note;
+    private $notes;
+    private $inlineNotes;
+    private $references;
 
     /**
      * Constructor
      */
-    function refnotes_scope($namespace, $id) {
+    public function __construct($namespace, $id) {
         $this->namespace = $namespace;
         $this->id = $id;
         $this->note = array();
@@ -262,14 +262,21 @@ class refnotes_scope {
     /**
      *
      */
-    function getName() {
+    public function getName() {
         return $this->namespace->getName() . $this->id;
+    }
+
+    /**
+     *
+     */
+    public function getStyle($property) {
+        return $this->namespace->getStyle($property);
     }
 
     /**
      * Returns the number of renderable notes in the scope
      */
-    function getRenderableCount() {
+    public function getRenderableCount() {
         $result = 0;
         foreach ($this->note as $note) {
             if ($note->isRenderable()) {
@@ -283,7 +290,7 @@ class refnotes_scope {
     /**
      * Adds a reference to the notes array. Returns a note
      */
-    function addReference($name, $hidden, $inline) {
+    public function addReference($name, $hidden, $inline) {
         $note = NULL;
         if (preg_match('/(?:@@FNT|#)(\d+)/', $name, $match) == 1) {
             $id = intval($match[1]);
@@ -293,7 +300,7 @@ class refnotes_scope {
         }
         else {
             if ($name != '') {
-                $note = $this->_findNote($name);
+                $note = $this->findNote($name);
             }
 
             if ($note == NULL) {
@@ -319,7 +326,7 @@ class refnotes_scope {
     /**
      *
      */
-    function renderNotes($limit) {
+    public function renderNotes($limit) {
         $html = '';
         $count = 0;
         foreach ($this->note as $note) {
@@ -332,7 +339,7 @@ class refnotes_scope {
         }
 
         if ($html != '') {
-            $open = $this->_renderSeparator() . '<div class="notes">' . DOKU_LF;
+            $open = $this->renderSeparator() . '<div class="notes">' . DOKU_LF;
             $close = '</div>' . DOKU_LF;
             $html = $open . $html . $close;
         }
@@ -343,11 +350,11 @@ class refnotes_scope {
     /**
      * Finds a note given it's name
      */
-    function _findNote($name) {
+    private function findNote($name) {
         $result = NULL;
 
         foreach ($this->note as $note) {
-            if ($note->name == $name) {
+            if ($note->getName() == $name) {
                 $result = $note;
                 break;
             }
@@ -359,7 +366,7 @@ class refnotes_scope {
     /**
      *
      */
-    function _renderSeparator() {
+    private function renderSeparator() {
         $html = '';
         $style = $this->namespace->getStyle('notes-separator');
         if ($style != 'none') {
@@ -375,19 +382,19 @@ class refnotes_scope {
 
 class refnotes_note {
 
-    var $scope;
-    var $id;
-    var $name;
-    var $inline;
-    var $reference;
-    var $references;
-    var $text;
-    var $rendered;
+    private $scope;
+    private $id;
+    private $name;
+    private $inline;
+    private $reference;
+    private $references;
+    private $text;
+    private $rendered;
 
     /**
      * Constructor
      */
-    function refnotes_note($scope, $id, $name, $inline) {
+    public function __construct($scope, $id, $name, $inline) {
         $this->scope = $scope;
         $this->id = $id;
 
@@ -408,14 +415,21 @@ class refnotes_note {
     /**
      *
      */
-    function addReference($referenceId) {
+    public function getName() {
+        return $this->name;
+    }
+
+    /**
+     *
+     */
+    public function addReference($referenceId) {
         $this->reference[++$this->references] = $referenceId;
     }
 
     /**
      *
      */
-    function setText($text) {
+    public function setText($text) {
         if (($this->text == '') || !$this->inline) {
             $this->text = $text;
         }
@@ -424,36 +438,36 @@ class refnotes_note {
     /**
      *
      */
-    function isInline() {
+    public function isInline() {
         return $this->inline;
     }
 
     /**
      * Checks if the note should be rendered
      */
-    function isRenderable() {
+    public function isRenderable() {
         return !$this->rendered && ($this->references > 0) && ($this->text != '');
     }
 
     /**
      *
      */
-    function renderReference() {
+    public function renderReference() {
         if ($this->inline) {
             $html = '<sup>' . $this->text . '</sup>';
         }
         else {
-            $noteName = $this->_renderAnchorName();
-            $referenceName = $this->_renderAnchorName($this->references);
-            $class = $this->_renderReferenceClass();
+            $noteName = $this->renderAnchorName();
+            $referenceName = $this->renderAnchorName($this->references);
+            $class = $this->renderReferenceClass();
     
-            list($baseOpen, $baseClose) = $this->_renderReferenceBase();
-            list($fontOpen, $fontClose) = $this->_renderReferenceFont();
-            list($formatOpen, $formatClose) = $this->_renderReferenceFormat();
+            list($baseOpen, $baseClose) = $this->renderReferenceBase();
+            list($fontOpen, $fontClose) = $this->renderReferenceFont();
+            list($formatOpen, $formatClose) = $this->renderReferenceFormat();
     
             $html = $baseOpen . $fontOpen;
             $html .= '<a href="#' . $noteName . '" name="' . $referenceName . '" class="' . $class . '">';
-            $html .= $formatOpen . $this->_renderReferenceId() . $formatClose;
+            $html .= $formatOpen . $this->renderReferenceId() . $formatClose;
             $html .= '</a>';
             $html .= $fontClose . $baseClose;
         }
@@ -464,10 +478,10 @@ class refnotes_note {
     /**
      *
      */
-    function render() {
-        $html = '<div class="' . $this->_renderNoteClass() . '">' . DOKU_LF;
-        $html .= $this->_renderBackReferences();
-        $html .= '<span id="' . $this->_renderAnchorName() . ':text">' . DOKU_LF;
+    public function render() {
+        $html = '<div class="' . $this->renderNoteClass() . '">' . DOKU_LF;
+        $html .= $this->renderBackReferences();
+        $html .= '<span id="' . $this->renderAnchorName() . ':text">' . DOKU_LF;
         $html .= $this->text . DOKU_LF;
         $html .= '</span></div>' . DOKU_LF;
 
@@ -479,41 +493,41 @@ class refnotes_note {
     /**
      *
      */
-    function _renderBackReferences() {
-        $nameAttribute = ' name="' . $this->_renderAnchorName() .'"';
-        $backRefFormat = $this->_getStyle('back-ref-format');
+    private function renderBackReferences() {
+        $nameAttribute = ' name="' . $this->renderAnchorName() .'"';
+        $backRefFormat = $this->getStyle('back-ref-format');
         $backRefCaret = '';
-        list($formatOpen, $formatClose) = $this->_renderNoteIdFormat();
+        list($formatOpen, $formatClose) = $this->renderNoteIdFormat();
 
         if (($backRefFormat != 'note') && ($backRefFormat != '')) {
-            list($baseOpen, $baseClose) = $this->_renderNoteIdBase();
-            list($fontOpen, $fontClose) = $this->_renderNoteIdFont();
+            list($baseOpen, $baseClose) = $this->renderNoteIdBase();
+            list($fontOpen, $fontClose) = $this->renderNoteIdFont();
 
             $html .= $baseOpen . $fontOpen;
             $html .= '<a' . $nameAttribute .' class="nolink">';
-            $html .= $formatOpen . $this->_renderNoteId() . $formatClose;
+            $html .= $formatOpen . $this->renderNoteId() . $formatClose;
             $html .= '</a>';
             $html .= $fontClose . $baseClose . DOKU_LF;
 
             $nameAttribute = '';
             $formatOpen = '';
             $formatClose = '';
-            $backRefCaret = $this->_renderBackRefCaret();
+            $backRefCaret = $this->renderBackRefCaret();
         }
 
         if ($backRefFormat != 'none') {
-            $separator = $this->_renderBackRefSeparator();
-            list($baseOpen, $baseClose) = $this->_renderBackRefBase();
-            list($fontOpen, $fontClose) = $this->_renderBackRefFont();
+            $separator = $this->renderBackRefSeparator();
+            list($baseOpen, $baseClose) = $this->renderBackRefBase();
+            list($fontOpen, $fontClose) = $this->renderBackRefFont();
 
             $html .= $baseOpen . $backRefCaret;
 
             for ($r = 1; $r <= $this->references; $r++) {
-                $referenceName = $this->_renderAnchorName($r);
+                $referenceName = $this->renderAnchorName($r);
 
                 $html .= $fontOpen;
                 $html .= '<a href="#' . $referenceName . '"' . $nameAttribute .' class="backref">';
-                $html .= $formatOpen . $this->_renderBackRefId($r, $backRefFormat) . $formatClose;
+                $html .= $formatOpen . $this->renderBackRefId($r, $backRefFormat) . $formatClose;
                 $html .= '</a>';
                 $html .= $fontClose;
 
@@ -533,7 +547,7 @@ class refnotes_note {
     /**
      *
      */
-    function _renderAnchorName($reference = 0) {
+    private function renderAnchorName($reference = 0) {
         $result = 'refnotes';
         $result .= $this->scope->getName();
         $result .= ':note' . $this->id;
@@ -548,8 +562,8 @@ class refnotes_note {
     /**
      *
      */
-    function _renderReferenceClass() {
-        switch ($this->_getStyle('note-preview')) {
+    private function renderReferenceClass() {
+        switch ($this->getStyle('note-preview')) {
             case 'tooltip':
                 $result = 'refnotes-ref note-tooltip';
                 break;
@@ -569,34 +583,34 @@ class refnotes_note {
     /**
      *
      */
-    function _renderReferenceBase() {
-        return $this->_renderBase($this->_getStyle('reference-base'));
+    private function renderReferenceBase() {
+        return $this->renderBase($this->getStyle('reference-base'));
     }
 
     /**
      *
      */
-    function _renderReferenceFont() {
-        return $this->_renderFont('reference-font-weight', 'normal', 'reference-font-style');
+    private function renderReferenceFont() {
+        return $this->renderFont('reference-font-weight', 'normal', 'reference-font-style');
     }
 
     /**
      *
      */
-    function _renderReferenceFormat() {
-        return $this->_renderFormat($this->_getStyle('reference-format'));
+    private function renderReferenceFormat() {
+        return $this->renderFormat($this->getStyle('reference-format'));
     }
 
     /**
      *
      */
-    function _renderReferenceId() {
-        $idStyle = $this->_getStyle('refnote-id');
+    private function renderReferenceId() {
+        $idStyle = $this->getStyle('refnote-id');
         if ($idStyle == 'name') {
             $html = $this->name;
         }
         else {
-            switch ($this->_getStyle('multi-ref-id')) {
+            switch ($this->getStyle('multi-ref-id')) {
                 case 'note':
                     $id = $this->id;
                     break;
@@ -605,7 +619,7 @@ class refnotes_note {
                     $id = end($this->reference);
                     break;
             }
-            $html = $this->_convertToStyle($id, $idStyle);
+            $html = $this->convertToStyle($id, $idStyle);
         }
 
         return $html;
@@ -614,8 +628,8 @@ class refnotes_note {
     /**
      *
      */
-    function _renderNoteClass() {
-        switch ($this->_getStyle('note-font-size')) {
+    private function renderNoteClass() {
+        switch ($this->getStyle('note-font-size')) {
             case 'small':
                 $result = 'smallnote';
                 break;
@@ -631,29 +645,29 @@ class refnotes_note {
     /**
      *
      */
-    function _renderNoteIdBase() {
-        return $this->_renderBase($this->_getStyle('note-id-base'));
+    private function renderNoteIdBase() {
+        return $this->renderBase($this->getStyle('note-id-base'));
     }
 
     /**
      *
      */
-    function _renderNoteIdFont() {
-        return $this->_renderFont('note-id-font-weight', 'normal', 'note-id-font-style');
+    private function renderNoteIdFont() {
+        return $this->renderFont('note-id-font-weight', 'normal', 'note-id-font-style');
     }
 
     /**
      *
      */
-    function _renderNoteIdFormat() {
-        $style = $this->_getStyle('note-id-format');
+    private function renderNoteIdFormat() {
+        $style = $this->getStyle('note-id-format');
         switch ($style) {
             case '.':
                 $result = array('', '.');
                 break;
 
             default:
-                $result = $this->_renderFormat($style);
+                $result = $this->renderFormat($style);
                 break;
         }
 
@@ -663,8 +677,8 @@ class refnotes_note {
     /**
      *
      */
-    function _renderNoteId($reference = 0) {
-        $idStyle = $this->_getStyle('refnote-id');
+    private function renderNoteId($reference = 0) {
+        $idStyle = $this->getStyle('refnote-id');
         if ($idStyle == 'name') {
             $html = $this->name;
         }
@@ -675,7 +689,7 @@ class refnotes_note {
             else {
                 $id = $this->id;
             }
-            $html = $this->_convertToStyle($id, $idStyle);
+            $html = $this->convertToStyle($id, $idStyle);
         }
 
         return $html;
@@ -684,8 +698,8 @@ class refnotes_note {
     /**
      *
      */
-    function _renderBackRefCaret() {
-        switch ($this->_getStyle('back-ref-caret')) {
+    private function renderBackRefCaret() {
+        switch ($this->getStyle('back-ref-caret')) {
             case 'prefix':
                 $result = '^ ';
                 break;
@@ -705,24 +719,24 @@ class refnotes_note {
     /**
      *
      */
-    function _renderBackRefBase() {
-        return $this->_renderBase($this->_getStyle('back-ref-base'));
+    private function renderBackRefBase() {
+        return $this->renderBase($this->getStyle('back-ref-base'));
     }
 
     /**
      *
      */
-    function _renderBackRefFont() {
-        return $this->_renderFont('back-ref-font-weight', 'bold', 'back-ref-font-style');
+    private function renderBackRefFont() {
+        return $this->renderFont('back-ref-font-weight', 'bold', 'back-ref-font-style');
     }
 
     /**
      *
      */
-    function _renderBackRefSeparator() {
+    private function renderBackRefSeparator() {
         static $html = array('' => ',', 'none' => '');
 
-        $style = $this->_getStyle('back-ref-separator');
+        $style = $this->getStyle('back-ref-separator');
         if (!array_key_exists($style, $html)) {
             $style = '';
         }
@@ -733,10 +747,10 @@ class refnotes_note {
     /**
      *
      */
-    function _renderBackRefId($reference, $style) {
+    private function renderBackRefId($reference, $style) {
         switch ($style) {
             case 'a':
-                $result = $this->_convertToLatin($reference, $style);
+                $result = $this->_convertToStyle($reference, $style);
                 break;
 
             case '1':
@@ -752,11 +766,11 @@ class refnotes_note {
                 break;
 
             default:
-                $result = $this->_renderNoteId($reference);
+                $result = $this->renderNoteId($reference);
                 break;
         }
 
-        if (($this->references == 1) && ($this->_getStyle('back-ref-caret') == 'merge')) {
+        if (($this->references == 1) && ($this->getStyle('back-ref-caret') == 'merge')) {
             $result = '^';
         }
 
@@ -766,7 +780,7 @@ class refnotes_note {
     /**
      *
      */
-    function _renderBase($style) {
+    private function renderBase($style) {
         static $html = array(
             '' => array('<sup>', '</sup>'),
             'text' => array('', '')
@@ -782,9 +796,9 @@ class refnotes_note {
     /**
      *
      */
-    function _renderFont($weight, $defaultWeight, $style) {
-        list($weightOpen, $weightClose) = $this->_renderFontWeight($this->_getStyle($weight), $defaultWeight);
-        list($styleOpen, $styleClose) = $this->_renderFontStyle($this->_getStyle($style));
+    private function renderFont($weight, $defaultWeight, $style) {
+        list($weightOpen, $weightClose) = $this->renderFontWeight($this->getStyle($weight), $defaultWeight);
+        list($styleOpen, $styleClose) = $this->renderFontStyle($this->getStyle($style));
 
         return array($weightOpen . $styleOpen, $styleClose . $weightClose);
     }
@@ -792,7 +806,7 @@ class refnotes_note {
     /**
      *
      */
-    function _renderFontWeight($style, $default) {
+    private function renderFontWeight($style, $default) {
         static $html = array(
             'normal' => array('', ''),
             'bold' => array('<b>', '</b>')
@@ -808,7 +822,7 @@ class refnotes_note {
     /**
      *
      */
-    function _renderFontStyle($style) {
+    private function renderFontStyle($style) {
         static $html = array(
             '' => array('', ''),
             'italic' => array('<i>', '</i>')
@@ -824,7 +838,7 @@ class refnotes_note {
     /**
      *
      */
-    function _renderFormat($style) {
+    private function renderFormat($style) {
         static $html = array(
             '' => array('', ')'),
             '()' => array('(', ')'),
@@ -843,23 +857,23 @@ class refnotes_note {
     /**
      *
      */
-    function _getStyle($property) {
-        return $this->scope->namespace->getStyle($property);
+    private function getStyle($property) {
+        return $this->scope->getStyle($property);
     }
 
     /**
      *
      */
-    function _convertToStyle($id, $style) {
+    private function convertToStyle($id, $style) {
         switch ($style) {
             case 'a':
             case 'A':
-                $result = $this->_convertToLatin($id, $style);
+                $result = $this->_convertToStyle($id, $style);
                 break;
             
             case 'i':
             case 'I':
-                $result = $this->_convertToRoman($id, $style);
+                $result = $this->convertToRoman($id, $style);
                 break;
 
             case '*':
@@ -877,7 +891,7 @@ class refnotes_note {
     /**
      *
      */
-    function _convertToLatin($number, $case)
+    private function _convertToStyle($number, $case)
     {
         static $alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -899,7 +913,7 @@ class refnotes_note {
     /**
      *
      */
-    function _convertToRoman($number, $case)
+    private function convertToRoman($number, $case)
     {
         static $lookup = array(
             'M' => 1000, 'CM' => 900, 'D' => 500, 'CD' => 400,

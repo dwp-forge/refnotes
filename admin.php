@@ -16,13 +16,13 @@ require_once(DOKU_PLUGIN . 'refnotes/info.php');
 
 class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
 
-    var $html;
-    var $locale;
+    private $html;
+    private $locale;
 
     /**
      * Constructor
      */
-    function admin_plugin_refnotes() {
+    public function __construct() {
         $this->html = new refnotes_html_sink();
         $this->locale = new refnotes_localization($this);
     }
@@ -30,37 +30,37 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
     /**
      * Return some info
      */
-    function getInfo() {
+    public function getInfo() {
         return refnotes_getInfo('configuration interface');
     }
 
     /**
      * Handle user request
      */
-    function handle() {
-        // All handling is done using AJAX
+    public function handle() {
+        /* All handling is done using AJAX */
     }
 
     /**
      * Output appropriate html
      */
-    function html() {
+    public function html() {
         print($this->locale_xhtml('intro'));
 
         $this->html->ptln('<!-- refnotes -->');
 
-        $this->_printLanguageStrings();
+        $this->printLanguageStrings();
 
         $this->html->ptln('<div id="refnotes-config"><div id="config__manager">');
         $this->html->ptln('<div id="server-status" class="info">&nbsp;</div>');
         $this->html->ptln('<form action="" method="post">');
         $this->html->indent();
 
-        $this->_printGeneral();
-        $this->_printNamespaces();
-        $this->_printNotes();
+        $this->printGeneral();
+        $this->printNamespaces();
+        $this->printNotes();
 
-        $this->html->ptln($this->_getButton('save'));
+        $this->html->ptln($this->getButton('save'));
 
         $this->html->unindent();
         $this->html->ptln('</form></div></div>');
@@ -72,7 +72,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      * The strings used by administration plugin seem to be unnecessary in that script. Instead we print
      * them as part of the page and then load them into the LANG array on the client side.
      */
-    function _printLanguageStrings() {
+    private function printLanguageStrings() {
         $this->html->ptln('<div id="refnotes-lang" style="display: none;">');
 
         $this->setupLocale();
@@ -89,7 +89,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
     /**
      *
      */
-    function _printGeneral() {
+    private function printGeneral() {
         $section = new refnotes_config_general();
         $section->printHtml($this->html, $this->locale);
     }
@@ -97,7 +97,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
     /**
      *
      */
-    function _printNamespaces() {
+    private function printNamespaces() {
         $section = new refnotes_config_namespaces();
         $section->printHtml($this->html, $this->locale);
     }
@@ -105,7 +105,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
     /**
      *
      */
-    function _printNotes() {
+    private function printNotes() {
         $section = new refnotes_config_notes();
         $section->printHtml($this->html, $this->locale);
     }
@@ -113,7 +113,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
     /**
      *
      */
-    function _getButton($action) {
+    private function getButton($action) {
         $html = '<input type="button" class="button"';
         $id = $action . '-config';
         $html .= ' id="' . $id . '"';
@@ -127,15 +127,15 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
 
 class refnotes_config_section {
 
-    var $html;
-    var $locale;
-    var $id;
-    var $title;
+    protected $html;
+    protected $locale;
+    protected $id;
+    protected $title;
 
     /**
      * Constructor
      */
-    function refnotes_config_section($id) {
+    public function __construct($id) {
         $this->html = NULL;
         $this->locale = NULL;
         $this->id = $id;
@@ -145,18 +145,18 @@ class refnotes_config_section {
     /**
      *
      */
-    function printHtml($html, $locale) {
+    public function printHtml($html, $locale) {
         $this->html = $html;
         $this->locale = $locale;
-        $this->_open();
-        $this->_printFields();
-        $this->_close();
+        $this->open();
+        $this->printFields();
+        $this->close();
     }
 
     /**
      *
      */
-    function _open() {
+    protected function open() {
         $this->html->ptln('<fieldset id="' . $this->id . '">');
         $this->html->ptln('<legend>' . $this->locale->getLang($this->title) . '</legend>');
         $this->html->ptln('<table class="inline">');
@@ -166,7 +166,7 @@ class refnotes_config_section {
     /**
      *
      */
-    function _close() {
+    protected function close() {
         $this->html->unindent();
         $this->html->ptln('</table>');
         $this->html->ptln('</fieldset>');
@@ -175,18 +175,18 @@ class refnotes_config_section {
     /**
      *
      */
-    function _printFields() {
-        $field = $this->_getFields();
+    protected function printFields() {
+        $field = $this->getFields();
         foreach ($field as $f) {
-            $this->_printFieldRow($f);
+            $this->printFieldRow($f);
         }
     }
 
     /**
      *
      */
-    function _getFields() {
-        $fieldData = $this->_getFieldDefinitions();
+    protected function getFields() {
+        $fieldData = $this->getFieldDefinitions();
         $field = array();
 
         foreach ($fieldData as $id => $fd) {
@@ -200,7 +200,7 @@ class refnotes_config_section {
     /**
      *
      */
-    function _printFieldRow($field, $startRow = true) {
+    protected function printFieldRow($field, $startRow = true) {
         if ($startRow) {
             $this->html->ptln('<tr>');
             $this->html->indent();
@@ -233,13 +233,13 @@ class refnotes_config_section {
 
 class refnotes_config_list_section extends refnotes_config_section {
 
-    var $listRows;
+    private $listRows;
 
     /**
      * Constructor
      */
-    function refnotes_config_list_section($id, $listRows) {
-        parent::refnotes_config_section($id);
+    public function __construct($id, $listRows) {
+        parent::__construct($id);
 
         $this->listRows = $listRows;
     }
@@ -247,24 +247,24 @@ class refnotes_config_list_section extends refnotes_config_section {
     /**
      *
      */
-    function _close() {
+    protected function close() {
         $this->html->unindent();
         $this->html->ptln('</table>');
-        $this->_printListControls();
+        $this->printListControls();
         $this->html->ptln('</fieldset>');
     }
 
     /**
      *
      */
-    function _printListControls() {
+    private function printListControls() {
         $this->html->ptln('<div class="list-controls">');
         $this->html->indent();
 
-        $this->html->ptln($this->_getEdit());
-        $this->html->ptln($this->_getButton('add'));
-        $this->html->ptln($this->_getButton('rename'));
-        $this->html->ptln($this->_getButton('delete'));
+        $this->html->ptln($this->getEdit());
+        $this->html->ptln($this->getButton('add'));
+        $this->html->ptln($this->getButton('rename'));
+        $this->html->ptln($this->getButton('delete'));
 
         $this->html->unindent();
         $this->html->ptln('</div>');
@@ -273,7 +273,7 @@ class refnotes_config_list_section extends refnotes_config_section {
     /**
      *
      */
-    function _getEdit() {
+    private function getEdit() {
         $html = '<input type="text" class="edit"';
         $id = 'name-' . $this->id;
         $html .= ' id="' . $id . '"';
@@ -287,7 +287,7 @@ class refnotes_config_list_section extends refnotes_config_section {
     /**
      *
      */
-    function _getButton($action) {
+    private function getButton($action) {
         $id = $action . '-' . $this->id;
         $html = '<input type="button" class="button"';
         $html .= ' id="' . $id . '"';
@@ -301,8 +301,8 @@ class refnotes_config_list_section extends refnotes_config_section {
     /**
      *
      */
-    function _printFields() {
-        $field = $this->_getFields();
+    protected function printFields() {
+        $field = $this->getFields();
         $fields = count($field);
 
         $this->html->ptln('<tr>');
@@ -311,10 +311,10 @@ class refnotes_config_list_section extends refnotes_config_section {
         $this->html->ptln('<select class="list" id="select-' . $this->id . '" size="' . $this->listRows . '"></select>');
         $this->html->ptln('</td>');
 
-        $this->_printFieldRow($field[0], false);
+        $this->printFieldRow($field[0], false);
 
         for ($f = 1; $f < $fields; $f++) {
-            $this->_printFieldRow($field[$f]);
+            $this->printFieldRow($field[$f]);
         }
     }
 }
@@ -324,14 +324,14 @@ class refnotes_config_general extends refnotes_config_section {
     /**
      * Constructor
      */
-    function refnotes_config_general() {
-        parent::refnotes_config_section('general');
+    public function __construct() {
+        parent::__construct('general');
     }
 
     /**
      *
      */
-    function _getFieldDefinitions() {
+    protected function getFieldDefinitions() {
         static $field = array(
             'replace-footnotes' => array(
                 'class' => 'checkbox',
@@ -348,14 +348,14 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
     /**
      * Constructor
      */
-    function refnotes_config_namespaces() {
-        parent::refnotes_config_list_section('namespaces', 43);
+    public function __construct() {
+        parent::__construct('namespaces', 43);
     }
 
     /**
      *
      */
-    function _getFieldDefinitions() {
+    protected function getFieldDefinitions() {
         static $field = array(
             'refnote-id' => array(
                 'class' => 'select',
@@ -447,14 +447,14 @@ class refnotes_config_notes extends refnotes_config_list_section {
     /**
      * Constructor
      */
-    function refnotes_config_notes() {
-        parent::refnotes_config_list_section('notes', 7);
+    public function __construct() {
+        parent::__construct('notes', 7);
     }
 
     /**
      *
      */
-    function _getFieldDefinitions() {
+    protected function getFieldDefinitions() {
         static $field = array(
             'note-text' => array(
                 'class' => 'textarea',
@@ -473,14 +473,14 @@ class refnotes_config_notes extends refnotes_config_list_section {
 
 class refnotes_config_field {
 
-    var $id;
-    var $settingName;
-    var $label;
+    protected $id;
+    protected $settingName;
+    protected $label;
 
     /**
      * Constructor
      */
-    function refnotes_config_field($id, $data) {
+    public function __construct($id, $data) {
         $this->id = 'field-' . $id;
         $this->label = 'lbl_' . $id;
 
@@ -495,7 +495,7 @@ class refnotes_config_field {
     /**
      *
      */
-    function getSettingName() {
+    public function getSettingName() {
         $html = '';
 
         if ($this->settingName != '') {
@@ -508,7 +508,7 @@ class refnotes_config_field {
     /**
      *
      */
-    function getLabel($locale) {
+    public function getLabel($locale) {
         return '<label for="' . $this->id . '">' . $locale->getLang($this->label) . '</label>';
     }
 }
@@ -518,14 +518,14 @@ class refnotes_config_checkbox extends refnotes_config_field {
     /**
      * Constructor
      */
-    function refnotes_config_checkbox($id, $data) {
-        parent::refnotes_config_field($id, $data);
+    public function __construct($id, $data) {
+        parent::__construct($id, $data);
     }
 
     /**
      *
      */
-    function getControl($locale) {
+    public function getControl($locale) {
         $html = '<div class="input">';
         $html .= '<input type="checkbox" class="checkbox"';
         $html .= ' id="' . $this->id . '"';
@@ -538,13 +538,13 @@ class refnotes_config_checkbox extends refnotes_config_field {
 
 class refnotes_config_select extends refnotes_config_field {
 
-    var $option;
+    private $option;
 
     /**
      * Constructor
      */
-    function refnotes_config_select($id, $data) {
-        parent::refnotes_config_field($id, $data);
+    public function __construct($id, $data) {
+        parent::__construct($id, $data);
 
         $this->option = $data['option'];
     }
@@ -552,7 +552,7 @@ class refnotes_config_select extends refnotes_config_field {
     /**
      *
      */
-    function getControl($locale) {
+    public function getControl($locale) {
         $html = '<div class="input">';
 
         $html .= '<select class="edit"';
@@ -575,14 +575,14 @@ class refnotes_config_edit_inherit extends refnotes_config_field {
     /**
      * Constructor
      */
-    function refnotes_config_edit_inherit($id, $data) {
-        parent::refnotes_config_field($id, $data);
+    public function __construct($id, $data) {
+        parent::__construct($id, $data);
     }
 
     /**
      *
      */
-    function getControl($locale) {
+    public function getControl($locale) {
         $html = '<div class="input">';
 
         $html .= '<input type="text" class="edit"';
@@ -603,13 +603,13 @@ class refnotes_config_edit_inherit extends refnotes_config_field {
 
 class refnotes_config_textarea extends refnotes_config_field {
 
-    var $rows;
+    private $rows;
 
     /**
      * Constructor
      */
-    function refnotes_config_textarea($id, $data) {
-        parent::refnotes_config_field($id, $data);
+    public function __construct($id, $data) {
+        parent::__construct($id, $data);
 
         $this->rows = $data['rows'];
     }
@@ -617,7 +617,7 @@ class refnotes_config_textarea extends refnotes_config_field {
     /**
      *
      */
-    function getControl($locale) {
+    public function getControl($locale) {
         $html = '<div class="input">';
         $html .= '<textarea class="edit"';
         $html .= ' id="' . $this->id . '"';
@@ -631,13 +631,13 @@ class refnotes_config_textarea extends refnotes_config_field {
 
 class refnotes_html_sink {
 
-    var $indentIncrement;
-    var $indent;
+    private $indentIncrement;
+    private $indent;
 
     /**
      * Constructor
      */
-    function refnotes_html_sink() {
+    public function __construct() {
         $this->indentIncrement = 2;
         $this->indent = 0;
     }
@@ -645,14 +645,14 @@ class refnotes_html_sink {
     /**
      *
      */
-    function indent() {
+    public function indent() {
         $this->indent += $this->indentIncrement;
     }
 
     /**
      *
      */
-    function unindent() {
+    public function unindent() {
         if ($this->indent >= $this->indentIncrement) {
             $this->indent -= $this->indentIncrement;
         }
@@ -661,7 +661,7 @@ class refnotes_html_sink {
     /**
      *
      */
-    function ptln($string, $indentDelta = 0) {
+    public function ptln($string, $indentDelta = 0) {
         if ($indentDelta < 0) {
             $this->indent += $this->indentIncrement * $indentDelta;
         }
@@ -679,19 +679,19 @@ class refnotes_html_sink {
 
 class refnotes_localization {
 
-    var $plugin;
+    private $plugin;
 
     /**
      * Constructor
      */
-    function refnotes_localization($plugin) {
+    public function __construct($plugin) {
         $this->plugin = $plugin;
     }
 
     /**
      *
      */
-    function getLang($id) {
+    public function getLang($id) {
         return $this->plugin->getLang($id);
     }
 }
