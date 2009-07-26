@@ -750,7 +750,7 @@ class refnotes_note {
     private function renderBackRefId($reference, $style) {
         switch ($style) {
             case 'a':
-                $result = $this->_convertToStyle($reference, $style);
+                $result = $this->convertToLatin($reference, $style);
                 break;
 
             case '1':
@@ -868,7 +868,7 @@ class refnotes_note {
         switch ($style) {
             case 'a':
             case 'A':
-                $result = $this->_convertToStyle($id, $style);
+                $result = $this->convertToLatin($id, $style);
                 break;
             
             case 'i':
@@ -891,7 +891,7 @@ class refnotes_note {
     /**
      *
      */
-    private function _convertToStyle($number, $case)
+    private function convertToLatin($number, $case)
     {
         static $alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
