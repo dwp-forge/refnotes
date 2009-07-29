@@ -1,23 +1,23 @@
 div#refnotes-config div#config__manager div.cleared {
-  background-color: #eee;
-  color: #bbb;
-  border: 1px solid #ccc;
-  font-size: 90%;
-  margin: 0;
-  padding: 0.5em;
-  text-align: center;
+    background-color: #eee;
+    color: #bbb;
+    border: 1px solid #ccc;
+    font-size: 90%;
+    margin: 0;
+    padding: 0.5em;
+    text-align: center;
 }
 
 div#refnotes-config div#config__manager div.info {
-  border: 1px solid #aaf;
+    border: 1px solid #aaf;
 }
 
 div#refnotes-config div#config__manager div.success {
-  border: 1px solid #9e9;
+    border: 1px solid #9e9;
 }
 
 div#refnotes-config div#config__manager div.error {
-  border: 1px solid #faa;
+    border: 1px solid #faa;
 }
 
 div#refnotes-config div#config__manager td.list {

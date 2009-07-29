@@ -14,6 +14,8 @@ $lang['direction']  = 'ltr';
 // if set here, the plugin doesn't need to override the getMenuText() method
 $lang['menu'] = 'RefNotes Configuration';
 
+$lang['noscript'] = 'Sorry, this page requires JavaScript to function properly. Please enable it or get a decent browser.';
+
 $lang['sec_general'] = 'General settings';
 $lang['sec_namespaces'] = 'Namespaces';
 $lang['sec_notes'] = 'Notes';
