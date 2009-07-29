@@ -970,6 +970,8 @@ var admin_refnotes = (function () {
 
         window.onbeforeunload = onBeforeUnload;
 
+        $('server-status').style.display = 'block';
+
         server.loadSettings();
     }
 
