@@ -160,7 +160,7 @@ class refnotes_config_section {
     protected function open() {
         $this->html->ptln('<fieldset id="' . $this->id . '">');
         $this->html->ptln('<legend>' . $this->locale->getLang($this->title) . '</legend>');
-        $this->html->ptln('<table class="inline">');
+        $this->html->ptln('<table class="inline" cols="3">');
         $this->html->indent();
     }
 

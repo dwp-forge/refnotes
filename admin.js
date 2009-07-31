@@ -67,10 +67,11 @@ var admin_refnotes = (function () {
         {
             var option = document.createElement('option');
 
-            option.text     = value;
-            option.value    = value;
-            option.sorting  = value.replace(/:/g, '-').replace(/(-\w+)$/, '-$1');
-            option.selected = selected;
+            option.text      = value; /* FF3 */
+            option.innerText = value; /* IE7 */
+            option.value     = value;
+            option.sorting   = value.replace(/:/g, '-').replace(/(-\w+)$/, '-$1');
+            option.selected  = selected;
 
             return option;
         }
@@ -161,7 +162,7 @@ var admin_refnotes = (function () {
         function initialize() {
             var element = $('refnotes-lang');
             if (element != null) {
-                var strings = element.innerHTML.split(/:eos:\n/);
+                var strings = element.innerHTML.split(/:eos:/);
 
                 for (var i = 0; i < strings.length; i++) {
                     var match = strings[i].match(/^\s*(\w+) : (.+)/);
@@ -273,7 +274,8 @@ var admin_refnotes = (function () {
         function setStatus(textId, styleId, timeout) {
             var status = $('server-status');
             status.className   = styleId;
-            status.textContent = locale.getString(textId);
+            status.textContent = locale.getString(textId); /* FF3 */
+            status.innerText   = status.textContent; /* IE7 */
 
             if (typeof(timeout) != 'undefined') {
                 timer = window.setTimeout(clearStatus, timeout);
