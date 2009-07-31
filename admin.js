@@ -63,15 +63,13 @@ var admin_refnotes = (function () {
     function List(id) {
         var list = $(id);
 
-        function createOption(value, selected)
+        function createOption(value)
         {
             var option = document.createElement('option');
 
-            option.text      = value; /* FF3 */
-            option.innerText = value; /* IE7 */
+            option.innerHTML = value;
             option.value     = value;
             option.sorting   = value.replace(/:/g, '-').replace(/(-\w+)$/, '-$1');
-            option.selected  = selected;
 
             return option;
         }
@@ -94,12 +92,14 @@ var admin_refnotes = (function () {
         }
 
         this.insertSorted = function (value, selected) {
-            var option     = createOption(value, selected);
-            var nextOption = null;
+            var option        = createOption(value);
+            var nextOption    = null;
+            var selectedIndex = list.options.length;
 
             for (var i = 0; i < list.options.length; i++) {
                 if (list.options[i].sorting > option.sorting) {
-                    nextOption = list.options[i];
+                    nextOption    = list.options[i];
+                    selectedIndex = i;
                     break;
                 }
             }
@@ -109,6 +109,10 @@ var admin_refnotes = (function () {
             }
             else {
                 list.appendChild(option);
+            }
+
+            if (selected) {
+                list.selectedIndex = selectedIndex;
             }
 
             return this.getSelectedValue();
@@ -124,7 +128,7 @@ var admin_refnotes = (function () {
             }
 
             if (list.options.length > 0) {
-                list.options[0].selected = true;
+                list.selectedIndex = 0;
             }
 
             return this.getSelectedValue();
@@ -273,9 +277,8 @@ var admin_refnotes = (function () {
 
         function setStatus(textId, styleId, timeout) {
             var status = $('server-status');
-            status.className   = styleId;
-            status.textContent = locale.getString(textId); /* FF3 */
-            status.innerText   = status.textContent; /* IE7 */
+            status.className = styleId;
+            status.innerHTML = locale.getString(textId);
 
             if (typeof(timeout) != 'undefined') {
                 timer = window.setTimeout(clearStatus, timeout);
