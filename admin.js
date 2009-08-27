@@ -412,7 +412,7 @@ var admin_refnotes = (function () {
             'back-ref-base'        , 'super',
             'back-ref-font-weight' , 'bold',
             'back-ref-font-style'  , 'normal',
-            'back-ref-format'      , 'none',
+            'back-ref-format'      , 'note',
             'back-ref-separator'   , 'comma',
             'scoping'              , 'reset'
         );
