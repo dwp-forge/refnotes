@@ -203,7 +203,7 @@ var admin_refnotes = (function () {
 
 
     var server = (function () {
-        var ajax = new sack(DOKU_BASE + '/lib/exe/ajax.php');
+        var ajax = new sack(DOKU_BASE + 'lib/exe/ajax.php');
         var timer = null;
         var transaction = null;
         var onCompletion = null;
