@@ -604,7 +604,7 @@ class refnotes_note {
     /**
      *
      */
-    private function renderReferenceId() {
+    private function renderReferenceId($reference = 0) {
         $idStyle = $this->getStyle('refnote-id');
         if ($idStyle == 'name') {
             $html = $this->name;
@@ -616,7 +616,12 @@ class refnotes_note {
                     break;
                 
                 default:
-                    $id = end($this->reference);
+                    if ($reference > 0) {
+                        $id = $this->reference[$reference];
+                    }
+                    else {
+                        $id = end($this->reference);
+                    }
                     break;
             }
             $html = $this->convertToStyle($id, $idStyle);
@@ -677,19 +682,13 @@ class refnotes_note {
     /**
      *
      */
-    private function renderNoteId($reference = 0) {
+    private function renderNoteId() {
         $idStyle = $this->getStyle('refnote-id');
         if ($idStyle == 'name') {
             $html = $this->name;
         }
         else {
-            if ($reference > 0) {
-                $id = $this->reference[$reference];
-            }
-            else {
-                $id = $this->id;
-            }
-            $html = $this->convertToStyle($id, $idStyle);
+            $html = $this->convertToStyle($this->id, $idStyle);
         }
 
         return $html;
@@ -766,7 +765,7 @@ class refnotes_note {
                 break;
 
             default:
-                $result = $this->renderNoteId($reference);
+                $result = $this->renderReferenceId($reference);
                 break;
         }
 
