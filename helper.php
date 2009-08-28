@@ -196,7 +196,7 @@ class refnotes_namespace {
         $html = '';
         if (count($this->scope) > 0) {
             $scope = end($this->scope);
-            $limit = $this->getRenderLimit($limit);
+            $limit = $this->getRenderLimit($limit, $scope);
             $html = $scope->renderNotes($limit);
         }
 
@@ -220,7 +220,7 @@ class refnotes_namespace {
     /**
      *
      */
-    private function getRenderLimit($limit) {
+    private function getRenderLimit($limit, $scope) {
         if (preg_match('/(\/?)(\d+)/', $limit, $match) == 1) {
             if ($match[1] != '') {
                 $devider = intval($match[2]);
