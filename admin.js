@@ -1056,6 +1056,8 @@ var admin_refnotes = (function () {
 })();
 
 
-addInitEvent(function (){
-    admin_refnotes.initialize();
+addInitEvent(function () {
+    if ($('refnotes-config') != null) {
+        admin_refnotes.initialize();
+    }
 });
