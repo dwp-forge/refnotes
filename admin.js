@@ -227,11 +227,20 @@ var admin_refnotes = (function () {
         }
 
         function onLoaded() {
-            setStatus('loaded', 'success', 3000);
+            try {
+                var settings = JSON.parse(ajax.response);
 
-            var settings = JSON.parse(ajax.response);
+                if (settings.cookie != '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}') {
+                    throw 'invalid';
+                }
 
-            reloadSettings(settings);
+                setStatus('loaded', 'success', 3000);
+
+                reloadSettings(settings);
+            }
+            catch (error) {
+                setStatus('invalid_data', 'error');
+            }
         }
 
         function onSaved() {

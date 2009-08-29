@@ -80,6 +80,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $namespace = refnotes_loadConfigFile('namespaces');
         $namespace = $this->translateStyles($namespace, 'dw', 'js');
 
+        $config['cookie'] = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
         $config['general'] = refnotes_loadConfigFile('general');
         $config['namespaces'] = $namespace;
         $config['notes'] = refnotes_loadConfigFile('notes');
