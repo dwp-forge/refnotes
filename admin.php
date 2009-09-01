@@ -337,6 +337,10 @@ class refnotes_config_general extends refnotes_config_section {
             'replace-footnotes' => array(
                 'class' => 'checkbox',
                 'lean' => true
+            ),
+            'reference-database' => array(
+                'class' => 'edit',
+                'lean' => true
             )
         );
 
@@ -565,6 +569,31 @@ class refnotes_config_select extends refnotes_config_field {
         }
 
         $html .= '</select>';
+        $html .= '</div>';
+
+        return $html;
+    }
+}
+
+class refnotes_config_edit extends refnotes_config_field {
+
+    /**
+     * Constructor
+     */
+    public function __construct($id, $data) {
+        parent::__construct($id, $data);
+    }
+
+    /**
+     *
+     */
+    public function getControl($locale) {
+        $html = '<div class="input">';
+
+        $html .= '<input type="text" class="edit"';
+        $html .= ' id="' . $this->id . '"';
+        $html .= ' name="' . $this->id . '" />' . DOKU_LF;
+
         $html .= '</div>';
 
         return $html;

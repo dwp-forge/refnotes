@@ -21,6 +21,7 @@ $lang['sec_namespaces'] = 'Namespaces';
 $lang['sec_notes'] = 'Notes';
 
 $lang['lbl_replace-footnotes'] = 'Use footnotes syntax';
+$lang['lbl_reference-database'] = 'Namespace of the reference database';
 
 $lang['lbl_refnote-id'] = 'Reference/note identifier style';
 $lang['lbl_reference-base'] = 'Reference baseline';
