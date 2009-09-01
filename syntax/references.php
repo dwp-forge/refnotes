@@ -25,7 +25,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $exitPattern;
     private $handlePattern;
     private $core;
-    private $note;
+    private $database;
     private $handling;
     private $embedding;
     private $lastHiddenExit;
@@ -40,7 +40,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->entrySyntax = '[(';
         $this->exitSyntax = ')]';
         $this->core = NULL;
-        $this->note = refnotes_loadConfigFile('notes');
+        $this->database = new refnotes_reference_database();
         $this->handling = false;
         $this->embedding = false;
         $this->lastHiddenExit = -1;
@@ -201,8 +201,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         if (!$this->embedding) {
             $fullName = $namespace . $name;
-            if (array_key_exists($fullName, $this->note)) {
-                $this->embedPredefinedNote($fullName, $pos, $handler);
+            if ($this->database->isDefined($fullName)) {
+                $this->embedPredefinedNote($this->database->getNote($fullName), $pos, $handler);
             }
         }
 
@@ -218,8 +218,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    private function embedPredefinedNote($name, $pos, $handler) {
-        $text = $this->entrySyntax . $name . '>' . $this->note[$name]['text'] . $this->exitSyntax;
+    private function embedPredefinedNote($note, $pos, $handler) {
+        $text = $this->entrySyntax . $note['name'] . '>' . $note['text'] . $this->exitSyntax;
 
         $lastHiddenExit = $this->lastHiddenExit;
         $this->lastHiddenExit = 0;
@@ -230,7 +230,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->embedding = false;
         $this->lastHiddenExit = $lastHiddenExit;
 
-        if ($this->note[$name]['inline']) {
+        if ($note['inline']) {
             $handler->calls[count($handler->calls) - 1][1][0][0][1][1][1]['inline'] = true;
         }
     }
@@ -346,3 +346,39 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->docBackup = '';
     }
 }
+
+class refnotes_reference_database {
+
+    private $note;
+    private $namespace;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->note = refnotes_loadConfigFile('notes');
+        $this->namespace = ':refnotes:';
+
+        $config = refnotes_loadConfigFile('general');
+        if (array_key_exists('reference-database', $config)) {
+            $this->namespace = $config['reference-database'];
+        }
+    }
+
+    /**
+     *
+     */
+    public function isDefined($name) {
+        return array_key_exists($name, $this->note);
+    }
+
+    /**
+     *
+     */
+    public function getNote($name) {
+        $result['name'] = $name;
+        $result['text'] = $this->note[$name]['text'];
+        $result['inline'] = $this->note[$name]['inline'];
+
+        return $result;
+    }
