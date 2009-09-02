@@ -350,6 +350,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 class refnotes_reference_database {
 
     private $note;
+    private $page;
     private $namespace;
 
     /**
@@ -357,19 +358,26 @@ class refnotes_reference_database {
      */
     public function __construct() {
         $this->note = refnotes_loadConfigFile('notes');
-        $this->namespace = ':refnotes:';
 
-        $config = refnotes_loadConfigFile('general');
-        if (array_key_exists('reference-database', $config)) {
-            $this->namespace = $config['reference-database'];
-        }
+        $this->loadPageIndex();
+        $this->loadDatabaseNamespaces();
     }
 
     /**
      *
      */
     public function isDefined($name) {
-        return array_key_exists($name, $this->note);
+        $result = array_key_exists($name, $this->note);
+
+        if (!$result) {
+            list($namespace, $temp) = refnotes_parseName($name);
+            if (array_key_exists($namespace, $this->namespace)) {
+                // if namespece is not loaded
+                //    load all pages that define this namespace
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -381,4 +389,58 @@ class refnotes_reference_database {
         $result['inline'] = $this->note[$name]['inline'];
 
         return $result;
+    }
+
+    /**
+     *
+     */
+    private function loadPageIndex() {
+        global $conf;
+
+        $this->page = array();
+
+        if (file_exists($conf['indexdir'] . '/page.idx')) {
+            require_once(DOKU_INC . 'inc/indexer.php');
+
+            $pageIndex = idx_getIndex('page', '');
+            $namespacePattern = '/^' . preg_quote($this->getDatabaseNamespace()) . '/';
+
+            foreach ($pageIndex as $page) {
+                $page = trim($page);
+
+                if (preg_match($namespacePattern, $page) == 1) {
+                    $this->page[] = $page;
+                }
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private function getDatabaseNamespace() {
+        $result = ':refnotes:';
+        $config = refnotes_loadConfigFile('general');
+
+        if (array_key_exists('reference-database', $config)) {
+            if (trim($config['reference-database']) != '') {
+                $result = $config['reference-database'];
+            }
+        }
+        $result = trim($result, ':') . ':';
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    private function loadDatabaseNamespaces() {
+        $this->namespace = array();
+
+        foreach ($this->page as $page) {
+            $calls = p_cached_instructions(wikiFN(cleanID($page)));
+
+            // scan the calls
+        }
     }
