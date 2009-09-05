@@ -40,7 +40,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->entrySyntax = '[(';
         $this->exitSyntax = ')]';
         $this->core = NULL;
-        $this->database = new refnotes_reference_database();
+        $this->database = NULL;
         $this->handling = false;
         $this->embedding = false;
         $this->lastHiddenExit = -1;
@@ -199,10 +199,12 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         list($namespace, $name) = refnotes_parseName($match[2]);
 
-        if (!$this->embedding) {
+        if (!$this->embedding && ($name != '')) {
             $fullName = $namespace . $name;
-            if ($this->database->isDefined($fullName)) {
-                $this->embedPredefinedNote($this->database->getNote($fullName), $pos, $handler);
+            $database = $this->getDatabase();
+
+            if ($database->isDefined($fullName)) {
+                $this->embedPredefinedNote($database->getNote($fullName), $pos, $handler);
             }
         }
 
@@ -213,6 +215,17 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $info['hidden'] = $this->isHiddenReference($match[1], $pos, $handler);
 
         return array(DOKU_LEXER_ENTER, $info);
+    }
+
+    /**
+     *
+     */
+    private function getDatabase() {
+        if ($this->database == NULL) {
+            $this->database = new refnotes_reference_database();
+        }
+
+        return $this->database;
     }
 
     /**
@@ -242,7 +255,17 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $nestedWriter = new Doku_Handler_Nest($handler->CallWriter);
         $handler->CallWriter =& $nestedWriter;
 
+        /*
+            HACK: If doku.php parses a number of pages during one call (it's common after the cache
+            clean-up) $this->Lexer can be a different instance form the one used in the current parser
+            pass. Here we ensure that $handler is linked to $this->Lexer while parsing the nested text.
+        */
+        $handlerBackup = $this->Lexer->_parser;
+        $this->Lexer->_parser = $handler;
+
         $this->Lexer->parse($text);
+
+        $this->Lexer->_parser = $handlerBackup;
 
         $nestedWriter->process();
         $handler->CallWriter =& $nestedWriter->CallWriter;
@@ -438,8 +461,8 @@ class refnotes_reference_database {
     private function loadDatabaseNamespaces() {
         $this->namespace = array();
 
-        foreach ($this->page as $page) {
-            $calls = p_cached_instructions(wikiFN(cleanID($page)));
+        foreach ($this->page as $id) {
+            $calls = p_cached_instructions(wikiFN($id));
 
             // scan the calls
         }
