@@ -382,42 +382,16 @@ class refnotes_reference_database {
     public function __construct() {
         $this->note = refnotes_loadConfigFile('notes');
 
-        $this->loadPageIndex();
-        $this->loadDatabaseNamespaces();
+        $this->loadPages();
+        $this->loadNamespaces();
+        error_log(print_r(array_keys($this->page), true));
+        error_log(print_r($this->namespace, true));
     }
 
     /**
      *
      */
-    public function isDefined($name) {
-        $result = array_key_exists($name, $this->note);
-
-        if (!$result) {
-            list($namespace, $temp) = refnotes_parseName($name);
-            if (array_key_exists($namespace, $this->namespace)) {
-                // if namespece is not loaded
-                //    load all pages that define this namespace
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     *
-     */
-    public function getNote($name) {
-        $result['name'] = $name;
-        $result['text'] = $this->note[$name]['text'];
-        $result['inline'] = $this->note[$name]['inline'];
-
-        return $result;
-    }
-
-    /**
-     *
-     */
-    private function loadPageIndex() {
+    private function loadPages() {
         global $conf;
 
         $this->page = array();
@@ -432,7 +406,7 @@ class refnotes_reference_database {
                 $page = trim($page);
 
                 if (preg_match($namespacePattern, $page) == 1) {
-                    $this->page[] = $page;
+                    $this->page[$page] = new refnotes_reference_database_page($page);
                 }
             }
         }
@@ -458,12 +432,103 @@ class refnotes_reference_database {
     /**
      *
      */
-    private function loadDatabaseNamespaces() {
+    private function loadNamespaces() {
         $this->namespace = array();
 
-        foreach ($this->page as $id) {
-            $calls = p_cached_instructions(wikiFN($id));
-
-            // scan the calls
+        foreach ($this->page as $pageId => $page) {
+            foreach ($page->getNamespaces() as $ns) {
+                $this->namespace[$ns][] = $pageId;
+            }
         }
     }
+
+    /**
+     *
+     */
+    public function isDefined($name) {
+        $result = array_key_exists($name, $this->note);
+
+        if (!$result) {
+            list($namespace, $temp) = refnotes_parseName($name);
+
+            if (array_key_exists($namespace, $this->namespace)) {
+                $this->loadNamespaceNotes($namespace);
+
+                $result = array_key_exists($name, $this->note);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    private function loadNamespaceNotes($namespace) {
+        foreach ($this->namespace[$namespace] as $pageId) {
+            if (array_key_exists($pageId, $this->page)) {
+                $this->note = array_merge($this->note, $this->page[$pageId]->getNotes());
+
+                unset($this->page[$pageId]);
+            }
+        }
+
+        unset($this->namespace[$namespace]);
+    }
+
+    /**
+     *
+     */
+    public function getNote($name) {
+        $result['name'] = $name;
+        $result['text'] = $this->note[$name]['text'];
+        $result['inline'] = $this->note[$name]['inline'];
+
+        return $result;
+    }
+}
+
+class refnotes_reference_database_page {
+
+    private $fileName;
+    private $namespace;
+    private $note;
+
+    /**
+     * Constructor
+     */
+    public function __construct($id) {
+        $this->fileName = wikiFN($id);
+        $this->namespace = array();
+        $this->note = array();
+
+        $this->parse();
+    }
+
+    /**
+     *
+     */
+    private function parse() {
+        $calls = p_cached_instructions($this->fileName);
+
+        // scan the calls
+    }
+
+    /**
+     *
+     */
+    public function getNamespaces() {
+        return $this->namespace;
+    }
+
+    /**
+     *
+     */
+    public function getNotes() {
+        if (count($this->note) == 0) {
+            $this->parse();
+        }
+
+        return $this->note;
+    }
+}
