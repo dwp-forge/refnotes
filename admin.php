@@ -13,6 +13,7 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'admin.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 
 class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
 
@@ -702,48 +703,5 @@ class refnotes_html_sink {
         if ($indentDelta > 0) {
             $this->indent += $this->indentIncrement * $indentDelta;
         }
-    }
-}
-
-class refnotes_localization {
-
-    private $plugin;
-
-    /**
-     * Constructor
-     */
-    public function __construct($plugin) {
-        $this->plugin = $plugin;
-    }
-
-    /**
-     *
-     */
-    public function getLang($id) {
-        return $this->plugin->getLang($id);
-    }
-
-    /**
-     *
-     */
-    public function getByPrefix($prefix, $strip = true) {
-        $this->plugin->setupLocale();
-
-        if ($strip) {
-            $pattern = '/^' . $prefix . '_(.+)$/';
-        }
-        else {
-            $pattern = '/^(' . $prefix . '_.+)$/';
-        }
-
-        $result = array();
-
-        foreach ($this->plugin->lang as $key => $value) {
-            if (preg_match($pattern, $key, $match) == 1) {
-                $result[$match[1]] = $value;
-            }
-        }
-
-        return $result;
     }
 }
