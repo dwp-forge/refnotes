@@ -74,14 +74,12 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      * them as part of the page and then load them into the LANG array on the client side.
      */
     private function printLanguageStrings() {
+        $lang = $this->locale->getByPrefix('js');
+
         $this->html->ptln('<div id="refnotes-lang" style="display: none;">');
 
-        $this->setupLocale();
-
-        foreach ($this->lang as $key => $value) {
-            if (preg_match('/^js_(.+)$/', $key, $match) == 1) {
-                ptln($match[1] . ' : ' . $value . ':eos:');
-            }
+        foreach ($lang as $key => $value) {
+            ptln($key . ' : ' . $value . ':eos:');
         }
 
         $this->html->ptln('</div>');
@@ -723,5 +721,29 @@ class refnotes_localization {
      */
     public function getLang($id) {
         return $this->plugin->getLang($id);
+    }
+
+    /**
+     *
+     */
+    public function getByPrefix($prefix, $strip = true) {
+        $this->plugin->setupLocale();
+
+        if ($strip) {
+            $pattern = '/^' . $prefix . '_(.+)$/';
+        }
+        else {
+            $pattern = '/^(' . $prefix . '_.+)$/';
+        }
+
+        $result = array();
+
+        foreach ($this->plugin->lang as $key => $value) {
+            if (preg_match($pattern, $key, $match) == 1) {
+                $result[$match[1]] = $value;
+            }
+        }
+
+        return $result;
     }
 }
