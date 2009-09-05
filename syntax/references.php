@@ -13,6 +13,7 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'syntax.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
@@ -222,7 +223,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     private function getDatabase() {
         if ($this->database == NULL) {
-            $this->database = new refnotes_reference_database();
+            $locale = new refnotes_localization($this);
+            $this->database = new refnotes_reference_database($locale);
         }
 
         return $this->database;
@@ -372,6 +374,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
 class refnotes_reference_database {
 
+    private $key;
     private $note;
     private $page;
     private $namespace;
@@ -379,7 +382,8 @@ class refnotes_reference_database {
     /**
      * Constructor
      */
-    public function __construct() {
+    public function __construct($locale) {
+        $this->key = $locale->getByPrefix('dbk');
         $this->note = refnotes_loadConfigFile('notes');
 
         $this->loadPages();
