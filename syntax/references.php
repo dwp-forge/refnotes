@@ -384,8 +384,6 @@ class refnotes_reference_database {
 
         $this->loadPages();
         $this->loadNamespaces();
-        error_log(print_r(array_keys($this->page), true));
-        error_log(print_r($this->namespace, true));
     }
 
     /**
@@ -490,6 +488,7 @@ class refnotes_reference_database {
 
 class refnotes_reference_database_page {
 
+    private $id;
     private $fileName;
     private $namespace;
     private $note;
@@ -498,6 +497,7 @@ class refnotes_reference_database_page {
      * Constructor
      */
     public function __construct($id) {
+        $this->id = $id;
         $this->fileName = wikiFN($id);
         $this->namespace = array();
         $this->note = array();
@@ -509,9 +509,74 @@ class refnotes_reference_database_page {
      *
      */
     private function parse() {
-        $calls = p_cached_instructions($this->fileName);
+        $text = io_readWikiPage($this->fileName, $this->id);
+        $call = p_cached_instructions($this->fileName);
+        $calls = count($call);
 
-        // scan the calls
+        for ($c = 0; $c < $calls; $c++) {
+            if ($call[$c][0] == 'table_open') {
+                $c = $this->parseTable($call, $calls, $c, $text);
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private function parseTable($call, $calls, $c, $text) {
+        $row = 0;
+        $column = 0;
+        $columns = 0;
+        $valid = true;
+
+        for ( ; $c < $calls; $c++) {
+            switch ($call[$c][0]) {
+                case 'tablerow_open':
+                    $column = 0;
+                    break;
+
+                case 'tablerow_close':
+                    if ($row == 0) {
+                        $columns = $column;
+                    }
+                    else {
+                        if ($column != $columns) {
+                            $valid = false;
+                            break 2;
+                        }
+                    }
+                    $row++;
+                    break;
+
+                case 'tablecell_open':
+                case 'tableheader_open':
+                    $cellOpen = $call[$c][2];
+                    break;
+
+                case 'tablecell_close':
+                case 'tableheader_close':
+                    $table[$row][$column] = trim(substr($text, $cellOpen, $call[$c][2] - $cellOpen), "^| ");
+                    $column++;
+                    if ($columns < $column) {
+                    }
+                    break;
+
+                case 'table_close':
+                    break 2;
+            }
+        }
+
+        if ($valid && ($row > 1) && ($columns > 1)) {
+            $this->handleTable($table);
+        }
+
+        return $c;
+    }
+
+    /**
+     *
+     */
+    private function handleTable($table) {
     }
 
     /**
