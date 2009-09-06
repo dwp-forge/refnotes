@@ -433,14 +433,17 @@ class refnotes_reference_database {
 
             $pageIndex = idx_getIndex('page', '');
             $namespacePattern = '/^' . preg_quote($this->getDatabaseNamespace()) . '/';
+            $cache = new refnotes_reference_database_cache();
 
             foreach ($pageIndex as $pageId) {
                 $pageId = trim($pageId);
 
-                if (preg_match($namespacePattern, $pageId) == 1) {
-                    $this->page[$pageId] = new refnotes_reference_database_page($this, $pageId);
+                if ((preg_match($namespacePattern, $pageId) == 1) && file_exists(wikiFN($pageId))) {
+                    $this->page[$pageId] = new refnotes_reference_database_page($this, $cache, $pageId);
                 }
             }
+
+            $cache->save();
         }
     }
 
@@ -531,14 +534,21 @@ class refnotes_reference_database_page {
     /**
      * Constructor
      */
-    public function __construct($database, $id) {
+    public function __construct($database, $cache, $id) {
         $this->database = $database;
         $this->id = $id;
         $this->fileName = wikiFN($id);
         $this->namespace = array();
         $this->note = array();
 
-        $this->parse();
+        if ($cache->isCached($this->fileName)) {
+            $this->namespace = $cache->getNamespaces($this->fileName);
+        }
+        else {
+            $this->parse();
+
+            $cache->update($this->fileName, $this->namespace);
+        }
     }
 
     /**
@@ -709,5 +719,96 @@ class refnotes_reference_database_page {
         }
 
         return $this->note;
+    }
+}
+
+class refnotes_reference_database_cache {
+    
+    private $fileName;
+    private $cache;
+    private $requested;
+    private $updated;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->fileName = DOKU_PLUGIN . 'refnotes/database.dat';
+
+        $this->load();
+    }
+
+    /**
+     *
+     */
+    private function load() {
+        $this->cache = array();
+        $this->requested = array();
+
+        if (file_exists($this->fileName)) {
+            $this->cache = unserialize(io_readFile($this->fileName, false));
+        }
+
+        foreach (array_keys($this->cache) as $fileName) {
+            $this->requested[$fileName] = false;
+        }
+
+        $this->updated = false;
+    }
+
+    /**
+     *
+     */
+    public function isCached($fileName) {
+        $result = false;
+
+        if (array_key_exists($fileName, $this->cache)) {
+            if ($this->cache[$fileName]['time'] == @filemtime($fileName)) {
+                $result = true;
+            }
+        }
+
+        $this->requested[$fileName] = true;
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    public function getNamespaces($fileName) {
+        return $this->cache[$fileName]['ns'];
+    }
+
+    /**
+     *
+     */
+    public function update($fileName, $namespace) {
+        $this->cache[$fileName] = array('ns' => $namespace, 'time' => @filemtime($fileName));
+        $this->updated = true;
+    }
+
+    /**
+     *
+     */
+    public function save() {
+        $this->removeOldPages();
+
+        if ($this->updated) {
+            io_saveFile($this->fileName, serialize($this->cache));
+        }
+    }
+
+    /**
+     *
+     */
+    private function removeOldPages() {
+        foreach ($this->requested as $fileName => $requested) {
+            if (!$requested && array_key_exists($fileName, $this->cache)) {
+                unset($this->cache[$fileName]);
+
+                $this->updated = true;
+            }
+        }
     }
 }
