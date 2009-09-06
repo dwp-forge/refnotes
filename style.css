@@ -28,3 +28,12 @@ div.dokuwiki div.refnotes a.nolink {
 
 div.dokuwiki div.refnotes a.backref {
 }
+
+/* HACK: Fix compatibility problem with Sidebar plugin (issue 6) */
+.sidebar_inside_left div.insitu-footnote,
+.sidebar_inside_right div.insitu-footnote,
+.sidebar_outside_left div.insitu-footnote,
+.sidebar_outside_right div.insitu-footnote {
+    background: __background_other__;
+    padding: 4px;
+}
