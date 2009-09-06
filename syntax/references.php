@@ -374,8 +374,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
 class refnotes_reference_database {
 
-    private $key;
     private $note;
+    private $key;
     private $page;
     private $namespace;
 
@@ -383,11 +383,41 @@ class refnotes_reference_database {
      * Constructor
      */
     public function __construct($locale) {
-        $this->key = $locale->getByPrefix('dbk');
         $this->note = refnotes_loadConfigFile('notes');
 
+        $this->loadKeys($locale);
         $this->loadPages();
         $this->loadNamespaces();
+    }
+
+    /**
+     *
+     */
+    private function loadKeys($locale) {
+        foreach ($locale->getByPrefix('dbk') as $key => $text) {
+            $this->key[$this->normalizeKeyText($text)] = $key;
+        }
+    }
+
+    /**
+     *
+     */
+    public function getKey($text) {
+        $result = '';
+        $text = $this->normalizeKeyText($text);
+
+        if (array_key_exists($text, $this->key)) {
+            $result = $this->key[$text];
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    private function normalizeKeyText($text) {
+        return preg_replace('/\s+/', ' ', utf8_strtolower(trim($text)));
     }
 
     /**
@@ -404,11 +434,11 @@ class refnotes_reference_database {
             $pageIndex = idx_getIndex('page', '');
             $namespacePattern = '/^' . preg_quote($this->getDatabaseNamespace()) . '/';
 
-            foreach ($pageIndex as $page) {
-                $page = trim($page);
+            foreach ($pageIndex as $pageId) {
+                $pageId = trim($pageId);
 
-                if (preg_match($namespacePattern, $page) == 1) {
-                    $this->page[$page] = new refnotes_reference_database_page($page);
+                if (preg_match($namespacePattern, $pageId) == 1) {
+                    $this->page[$pageId] = new refnotes_reference_database_page($this, $pageId);
                 }
             }
         }
@@ -492,6 +522,7 @@ class refnotes_reference_database {
 
 class refnotes_reference_database_page {
 
+    private $database;
     private $id;
     private $fileName;
     private $namespace;
@@ -500,7 +531,8 @@ class refnotes_reference_database_page {
     /**
      * Constructor
      */
-    public function __construct($id) {
+    public function __construct($database, $id) {
+        $this->database = $database;
         $this->id = $id;
         $this->fileName = wikiFN($id);
         $this->namespace = array();
@@ -561,8 +593,6 @@ class refnotes_reference_database_page {
                 case 'tableheader_close':
                     $table[$row][$column] = trim(substr($text, $cellOpen, $call[$c][2] - $cellOpen), "^| ");
                     $column++;
-                    if ($columns < $column) {
-                    }
                     break;
 
                 case 'table_close':
@@ -571,7 +601,7 @@ class refnotes_reference_database_page {
         }
 
         if ($valid && ($row > 1) && ($columns > 1)) {
-            $this->handleTable($table);
+            $this->handleTable($table, $columns, $row);
         }
 
         return $c;
@@ -580,7 +610,87 @@ class refnotes_reference_database_page {
     /**
      *
      */
-    private function handleTable($table) {
+    private function handleTable($table, $columns, $rows) {
+        $key = array();
+        for ($c = 0; $c < $columns; $c++) {
+            $key[$c] = $this->database->getKey($table[0][$c]);
+        }
+
+        if (!in_array('', $key)) {
+            $this->handleDataSheet($table, $columns, $rows, $key);
+        }
+        else { 
+            if ($columns == 2) {
+                $key = array();
+                for ($r = 0; $r < $rows; $r++) {
+                    $key[$r] = $this->database->getKey($table[$r][0]);
+                }
+
+                if (!in_array('', $key)) {
+                    $this->handleDataCard($table, $rows, $key);
+                }
+            }
+        }
+    }
+
+    /**
+     * The data is organized in rows, one note per row. The first row contains the caption.
+     */
+    private function handleDataSheet($table, $columns, $rows, $key) {
+        for ($r = 1; $r < $rows; $r++) {
+            $field = array();
+
+            for ($c = 0; $c < $columns; $c++) {
+                $field[$key[$c]] = $table[$r][$c];
+            }
+
+            $this->handleNote($field);
+        }
+    }
+
+    /**
+     * Every note is stored in a separate table. The first column of the table contains
+     * the caption, the second one contains the data.
+     */
+    private function handleDataCard($table, $rows, $key) {
+        $field = array();
+
+        for ($r = 0; $r < $rows; $r++) {
+            $field[$key[$r]] = $table[$r][1];
+        }
+
+        $this->handleNote($field);
+    }
+
+    /**
+     *
+     */
+    private function handleNote($field) {
+        $name = '';
+        $note = array('text' => '', 'inline' => false);
+
+        foreach ($field as $key => $value) {
+            switch ($key) {
+                case 'note-name':
+                    if (preg_match('/(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*/', $value) == 1) {
+                        list($namespace, $name) = refnotes_parseName($value);
+                        $name = $namespace . $name;
+                    }
+                    break;
+
+                case 'note-text':
+                    $note['text'] = $value;
+                    break;
+            }
+        }
+
+        if (($name != '') && ($note['text'] != '')) {
+            if (!in_array($namespace, $this->namespace)) {
+                $this->namespace[] = $namespace;
+            }
+            
+            $this->note[$name] = $note;
+        }
     }
 
     /**
