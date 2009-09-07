@@ -7,30 +7,67 @@
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
  */
 
-function refnotes_loadConfigFile($name) {
-    $pluginRoot = DOKU_PLUGIN . 'refnotes/';
-    $fileName = $pluginRoot . $name . '.local.dat';
+class refnotes_configuration {
 
-    if (!file_exists($fileName)) {
-        $fileName = $pluginRoot . $name . '.dat';
-        if (!file_exists($fileName)) {
-            $fileName = '';
+    private static $section = array();
+    private static $setting = array(
+        'replace-footnotes' => array('general', false),
+        'reference-database' => array('general', ':refnotes:')
+    );
+
+    /**
+     *
+     */
+    public static function getSetting($name) {
+        $result = null;
+
+        if (array_key_exists($name, self::$setting)) {
+            $sectionName = self::$setting[$name][0];
+            $result = self::$setting[$name][1];
+
+            if (!array_key_exists($sectionName, self::$section)) {
+                self::$section[$sectionName] = self::load($sectionName);
+            }
+
+            if (array_key_exists($settingName, self::$section[$sectionName])) {
+                $result = self::$section[$sectionName][$settingName];
+            }
         }
+
+        return $result;
     }
 
-    if ($fileName != '') {
-        $result = unserialize(io_readFile($fileName, false));
+    /**
+     *
+     */
+    public static function load($sectionName) {
+        $pluginRoot = DOKU_PLUGIN . 'refnotes/';
+        $fileName = $pluginRoot . $sectionName . '.local.dat';
+
+        if (!file_exists($fileName)) {
+            $fileName = $pluginRoot . $sectionName . '.dat';
+            if (!file_exists($fileName)) {
+                $fileName = '';
+            }
+        }
+
+        if ($fileName != '') {
+            $result = unserialize(io_readFile($fileName, false));
+        }
+        else {
+            $result = array();
+        }
+
+        return $result;
     }
-    else {
-        $result = array();
+
+    /**
+     *
+     */
+    public static function save($sectionName, $config) {
+        $pluginRoot = DOKU_PLUGIN . 'refnotes/';
+        $fileName = $pluginRoot . $sectionName . '.local.dat';
+
+        return io_saveFile($fileName, serialize($config));
     }
-
-    return $result;
-}
-
-function refnotes_saveConfigFile($name, $config) {
-    $pluginRoot = DOKU_PLUGIN . 'refnotes/';
-    $fileName = $pluginRoot . $name . '.local.dat';
-
-    return io_saveFile($fileName, serialize($config));
 }

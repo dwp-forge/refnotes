@@ -55,14 +55,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      *
      */
     private function initializePatterns() {
-        $useFootnoteSyntax = false;
-        $config = refnotes_loadConfigFile('general');
-
-        if (array_key_exists('replace-footnotes', $config)) {
-            $useFootnoteSyntax = $config['replace-footnotes'];
-        }
-
-        if ($useFootnoteSyntax) {
+        if (refnotes_configuration::getSetting('replace-footnotes')) {
             $entry = '(?:\(\(|\[\()';
             $exit = '(?:\)\)|\)\])';
             $name ='(?:@@FNT\d+|#\d+|[[:alpha:]]\w*)';
@@ -383,7 +376,7 @@ class refnotes_reference_database {
      * Constructor
      */
     public function __construct($locale) {
-        $this->note = refnotes_loadConfigFile('notes');
+        $this->note = refnotes_configuration::load('notes');
 
         $this->loadKeys($locale);
         $this->loadPages();
@@ -432,7 +425,8 @@ class refnotes_reference_database {
             require_once(DOKU_INC . 'inc/indexer.php');
 
             $pageIndex = idx_getIndex('page', '');
-            $namespacePattern = '/^' . preg_quote($this->getDatabaseNamespace()) . '/';
+            $namespace = refnotes_configuration::getSetting('reference-database');
+            $namespacePattern = '/^' . trim($namespace, ':') . ':/';
             $cache = new refnotes_reference_database_cache();
 
             foreach ($pageIndex as $pageId) {
@@ -445,23 +439,6 @@ class refnotes_reference_database {
 
             $cache->save();
         }
-    }
-
-    /**
-     *
-     */
-    private function getDatabaseNamespace() {
-        $result = ':refnotes:';
-        $config = refnotes_loadConfigFile('general');
-
-        if (array_key_exists('reference-database', $config)) {
-            if (trim($config['reference-database']) != '') {
-                $result = $config['reference-database'];
-            }
-        }
-        $result = trim($result, ':') . ':';
-
-        return $result;
     }
 
     /**
