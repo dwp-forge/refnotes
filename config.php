@@ -12,7 +12,8 @@ class refnotes_configuration {
     private static $section = array();
     private static $setting = array(
         'replace-footnotes' => array('general', false),
-        'reference-database' => array('general', ':refnotes:')
+        'reference-db-enable' => array('general', false),
+        'reference-db-namespace' => array('general', ':refnotes:')
     );
 
     /**

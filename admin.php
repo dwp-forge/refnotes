@@ -337,7 +337,11 @@ class refnotes_config_general extends refnotes_config_section {
                 'class' => 'checkbox',
                 'lean' => true
             ),
-            'reference-database' => array(
+            'reference-db-enable' => array(
+                'class' => 'checkbox',
+                'lean' => true
+            ),
+            'reference-db-namespace' => array(
                 'class' => 'edit',
                 'lean' => true
             )

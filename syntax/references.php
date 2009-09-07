@@ -377,10 +377,14 @@ class refnotes_reference_database {
      */
     public function __construct($locale) {
         $this->note = refnotes_configuration::load('notes');
+        $this->page = array();
+        $this->namespace = array();
 
-        $this->loadKeys($locale);
-        $this->loadPages();
-        $this->loadNamespaces();
+        if (refnotes_configuration::getSetting('reference-db-enable')) {
+            $this->loadKeys($locale);
+            $this->loadPages();
+            $this->loadNamespaces();
+        }
     }
 
     /**
@@ -419,13 +423,11 @@ class refnotes_reference_database {
     private function loadPages() {
         global $conf;
 
-        $this->page = array();
-
         if (file_exists($conf['indexdir'] . '/page.idx')) {
             require_once(DOKU_INC . 'inc/indexer.php');
 
             $pageIndex = idx_getIndex('page', '');
-            $namespace = refnotes_configuration::getSetting('reference-database');
+            $namespace = refnotes_configuration::getSetting('reference-db-namespace');
             $namespacePattern = '/^' . trim($namespace, ':') . ':/';
             $cache = new refnotes_reference_database_cache();
 
@@ -445,8 +447,6 @@ class refnotes_reference_database {
      *
      */
     private function loadNamespaces() {
-        $this->namespace = array();
-
         foreach ($this->page as $pageId => $page) {
             foreach ($page->getNamespaces() as $ns) {
                 $this->namespace[$ns][] = $pageId;

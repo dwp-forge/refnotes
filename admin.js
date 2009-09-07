@@ -309,7 +309,8 @@ var admin_refnotes = (function () {
         var fields   = new Hash();
         var defaults = new Hash(
             'replace-footnotes', false,
-            'reference-database', ':refnotes:'
+            'reference-db-enable', false,
+            'reference-db-namespace', ':refnotes:'
         );
 
         function Field(settingName) {
@@ -393,7 +394,8 @@ var admin_refnotes = (function () {
 
         function initialize() {
             addField('replace-footnotes', CheckField);
-            addField('reference-database', TextField);
+            addField('reference-db-enable', CheckField);
+            addField('reference-db-namespace', TextField);
         }
 
         function addField(settingName, field) {
