@@ -25,7 +25,7 @@ $lang['sec_notes'] = 'Notes';
 
 $lang['lbl_replace-footnotes'] = 'Use footnotes syntax';
 $lang['lbl_reference-db-enable'] = 'Enable reference database';
-$lang['lbl_reference-db-namespace'] = 'Namespace of the reference database';
+$lang['lbl_reference-db-namespace'] = 'Reference database namespace';
 
 $lang['lbl_refnote-id'] = 'Reference/note identifier style';
 $lang['lbl_reference-base'] = 'Reference baseline';
