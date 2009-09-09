@@ -108,6 +108,10 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $saved = $saved && refnotes_configuration::save('namespaces', $namespace);
         $saved = $saved && refnotes_configuration::save('notes', $config['notes']);
 
+        if ($config['general']['reference-db-enable']) {
+            $saved = $saved && $this->setupReferenceDatabase($config['general']['reference-db-namespace']);
+        }
+
         /* Touch local config file to expire the cache */
         $saved = $saved && touch(reset($config_cascade['main']['local']));
 
@@ -180,6 +184,24 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         }
 
         return $style;
+    }
+
+    /**
+     *
+     */
+    private function setupReferenceDatabase($namespace) {
+        $success = true;
+        $source = $this->localFN('__template');
+        $destination = wikiFN(cleanID($namespace . ':template'));
+        $destination = preg_replace('/template.txt$/', '__template.txt', $destination);
+
+        if (@filemtime($destination) < @filemtime($source)) {
+            $success = copy($source, $destination);
+
+            touch($destination, filemtime($source));
+        }
+
+        return $success;
     }
 
     /**
