@@ -25,7 +25,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      * Constructor
      */
     public function __construct() {
-        $this->namespaceStyle = refnotes_loadConfigFile('namespaces');
+        $this->namespaceStyle = refnotes_configuration::load('namespaces');
         $this->namespace = array();
     }
 

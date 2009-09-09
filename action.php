@@ -77,13 +77,13 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      *
      */
     private function sendConfig() {
-        $namespace = refnotes_loadConfigFile('namespaces');
+        $namespace = refnotes_configuration::load('namespaces');
         $namespace = $this->translateStyles($namespace, 'dw', 'js');
 
         $config['cookie'] = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
-        $config['general'] = refnotes_loadConfigFile('general');
+        $config['general'] = refnotes_configuration::load('general');
         $config['namespaces'] = $namespace;
-        $config['notes'] = refnotes_loadConfigFile('notes');
+        $config['notes'] = refnotes_configuration::load('notes');
 
         $json = new JSON();
 
@@ -104,9 +104,13 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $namespace = $config['namespaces'];
         $namespace = $this->translateStyles($namespace, 'js', 'dw');
 
-        $saved = refnotes_saveConfigFile('general', $config['general']);
-        $saved = $saved && refnotes_saveConfigFile('namespaces', $namespace);
-        $saved = $saved && refnotes_saveConfigFile('notes', $config['notes']);
+        $saved = refnotes_configuration::save('general', $config['general']);
+        $saved = $saved && refnotes_configuration::save('namespaces', $namespace);
+        $saved = $saved && refnotes_configuration::save('notes', $config['notes']);
+
+        if ($config['general']['reference-db-enable']) {
+            $saved = $saved && $this->setupReferenceDatabase($config['general']['reference-db-namespace']);
+        }
 
         /* Touch local config file to expire the cache */
         $saved = $saved && touch(reset($config_cascade['main']['local']));
@@ -180,6 +184,24 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         }
 
         return $style;
+    }
+
+    /**
+     *
+     */
+    private function setupReferenceDatabase($namespace) {
+        $success = true;
+        $source = $this->localFN('__template');
+        $destination = wikiFN(cleanID($namespace . ':template'));
+        $destination = preg_replace('/template.txt$/', '__template.txt', $destination);
+
+        if (@filemtime($destination) < @filemtime($source)) {
+            $success = copy($source, $destination);
+
+            touch($destination, filemtime($source));
+        }
+
+        return $success;
     }
 
     /**

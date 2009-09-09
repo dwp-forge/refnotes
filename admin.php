@@ -13,6 +13,7 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'admin.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 
 class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
 
@@ -74,14 +75,12 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      * them as part of the page and then load them into the LANG array on the client side.
      */
     private function printLanguageStrings() {
+        $lang = $this->locale->getByPrefix('js');
+
         $this->html->ptln('<div id="refnotes-lang" style="display: none;">');
 
-        $this->setupLocale();
-
-        foreach ($this->lang as $key => $value) {
-            if (preg_match('/^js_(.+)$/', $key, $match) == 1) {
-                ptln($match[1] . ' : ' . $value . ':eos:');
-            }
+        foreach ($lang as $key => $value) {
+            ptln($key . ' : ' . $value . ':eos:');
         }
 
         $this->html->ptln('</div>');
@@ -337,6 +336,14 @@ class refnotes_config_general extends refnotes_config_section {
             'replace-footnotes' => array(
                 'class' => 'checkbox',
                 'lean' => true
+            ),
+            'reference-db-enable' => array(
+                'class' => 'checkbox',
+                'lean' => true
+            ),
+            'reference-db-namespace' => array(
+                'class' => 'edit',
+                'lean' => true
             )
         );
 
@@ -571,6 +578,31 @@ class refnotes_config_select extends refnotes_config_field {
     }
 }
 
+class refnotes_config_edit extends refnotes_config_field {
+
+    /**
+     * Constructor
+     */
+    public function __construct($id, $data) {
+        parent::__construct($id, $data);
+    }
+
+    /**
+     *
+     */
+    public function getControl($locale) {
+        $html = '<div class="input">';
+
+        $html .= '<input type="text" class="edit"';
+        $html .= ' id="' . $this->id . '"';
+        $html .= ' name="' . $this->id . '" />' . DOKU_LF;
+
+        $html .= '</div>';
+
+        return $html;
+    }
+}
+
 class refnotes_config_edit_inherit extends refnotes_config_field {
 
     /**
@@ -675,24 +707,5 @@ class refnotes_html_sink {
         if ($indentDelta > 0) {
             $this->indent += $this->indentIncrement * $indentDelta;
         }
-    }
-}
-
-class refnotes_localization {
-
-    private $plugin;
-
-    /**
-     * Constructor
-     */
-    public function __construct($plugin) {
-        $this->plugin = $plugin;
-    }
-
-    /**
-     *
-     */
-    public function getLang($id) {
-        return $this->plugin->getLang($id);
     }
 }

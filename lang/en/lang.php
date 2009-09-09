@@ -10,6 +10,9 @@
 $lang['encoding']   = 'utf-8';
 $lang['direction']  = 'ltr';
 
+$lang['dbk_note-name'] = 'Note name';
+$lang['dbk_note-text'] = 'Note text';
+
 // for admin plugins, the menu prompt to be displayed in the admin menu
 // if set here, the plugin doesn't need to override the getMenuText() method
 $lang['menu'] = 'RefNotes Configuration';
@@ -21,6 +24,8 @@ $lang['sec_namespaces'] = 'Namespaces';
 $lang['sec_notes'] = 'Notes';
 
 $lang['lbl_replace-footnotes'] = 'Use footnotes syntax';
+$lang['lbl_reference-db-enable'] = 'Enable reference database';
+$lang['lbl_reference-db-namespace'] = 'Namespace of the reference database';
 
 $lang['lbl_refnote-id'] = 'Reference/note identifier style';
 $lang['lbl_reference-base'] = 'Reference baseline';

@@ -308,7 +308,9 @@ var admin_refnotes = (function () {
     var general = (function () {
         var fields   = new Hash();
         var defaults = new Hash(
-            'replace-footnotes', false
+            'replace-footnotes', false,
+            'reference-db-enable', false,
+            'reference-db-namespace', ':refnotes:'
         );
 
         function Field(settingName) {
@@ -360,8 +362,40 @@ var admin_refnotes = (function () {
             this.enable(false);
         }
 
+        function TextField(settingName) {
+            this.baseClass = Field;
+            this.baseClass(settingName);
+
+            var edit = this.element;
+            var self = this;
+
+            addEvent(edit, 'change', function () {
+                self.onChange();
+            });
+
+            this.onChange = function () {
+                this.updateDefault(edit.value);
+
+                modified = true;
+            }
+
+            this.setValue = function (value) {
+                edit.value = value;
+                this.updateDefault(edit.value);
+            }
+
+            this.getValue = function () {
+                return edit.value;
+            }
+
+            this.setValue(defaults.getItem(settingName));
+            this.enable(false);
+        }
+
         function initialize() {
             addField('replace-footnotes', CheckField);
+            addField('reference-db-enable', CheckField);
+            addField('reference-db-namespace', TextField);
         }
 
         function addField(settingName, field) {

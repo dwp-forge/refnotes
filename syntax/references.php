@@ -13,6 +13,7 @@ if(!defined('DOKU_INC')) die();
 if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'syntax.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
@@ -25,7 +26,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $exitPattern;
     private $handlePattern;
     private $core;
-    private $note;
+    private $database;
     private $handling;
     private $embedding;
     private $lastHiddenExit;
@@ -40,7 +41,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->entrySyntax = '[(';
         $this->exitSyntax = ')]';
         $this->core = NULL;
-        $this->note = refnotes_loadConfigFile('notes');
+        $this->database = NULL;
         $this->handling = false;
         $this->embedding = false;
         $this->lastHiddenExit = -1;
@@ -54,14 +55,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      *
      */
     private function initializePatterns() {
-        $useFootnoteSyntax = false;
-        $config = refnotes_loadConfigFile('general');
-
-        if (array_key_exists('replace-footnotes', $config)) {
-            $useFootnoteSyntax = $config['replace-footnotes'];
-        }
-
-        if ($useFootnoteSyntax) {
+        if (refnotes_configuration::getSetting('replace-footnotes')) {
             $entry = '(?:\(\(|\[\()';
             $exit = '(?:\)\)|\)\])';
             $name ='(?:@@FNT\d+|#\d+|[[:alpha:]]\w*)';
@@ -199,10 +193,12 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         list($namespace, $name) = refnotes_parseName($match[2]);
 
-        if (!$this->embedding) {
+        if (!$this->embedding && ($name != '')) {
             $fullName = $namespace . $name;
-            if (array_key_exists($fullName, $this->note)) {
-                $this->embedPredefinedNote($fullName, $pos, $handler);
+            $database = $this->getDatabase();
+
+            if ($database->isDefined($fullName)) {
+                $this->embedPredefinedNote($database->getNote($fullName), $pos, $handler);
             }
         }
 
@@ -218,8 +214,20 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    private function embedPredefinedNote($name, $pos, $handler) {
-        $text = $this->entrySyntax . $name . '>' . $this->note[$name]['text'] . $this->exitSyntax;
+    private function getDatabase() {
+        if ($this->database == NULL) {
+            $locale = new refnotes_localization($this);
+            $this->database = new refnotes_reference_database($locale);
+        }
+
+        return $this->database;
+    }
+
+    /**
+     *
+     */
+    private function embedPredefinedNote($note, $pos, $handler) {
+        $text = $this->entrySyntax . $note['name'] . '>' . $note['text'] . $this->exitSyntax;
 
         $lastHiddenExit = $this->lastHiddenExit;
         $this->lastHiddenExit = 0;
@@ -230,7 +238,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->embedding = false;
         $this->lastHiddenExit = $lastHiddenExit;
 
-        if ($this->note[$name]['inline']) {
+        if ($note['inline']) {
             $handler->calls[count($handler->calls) - 1][1][0][0][1][1][1]['inline'] = true;
         }
     }
@@ -242,7 +250,17 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $nestedWriter = new Doku_Handler_Nest($handler->CallWriter);
         $handler->CallWriter =& $nestedWriter;
 
+        /*
+            HACK: If doku.php parses a number of pages during one call (it's common after the cache
+            clean-up) $this->Lexer can be a different instance form the one used in the current parser
+            pass. Here we ensure that $handler is linked to $this->Lexer while parsing the nested text.
+        */
+        $handlerBackup = $this->Lexer->_parser;
+        $this->Lexer->_parser = $handler;
+
         $this->Lexer->parse($text);
+
+        $this->Lexer->_parser = $handlerBackup;
 
         $nestedWriter->process();
         $handler->CallWriter =& $nestedWriter->CallWriter;
@@ -344,5 +362,430 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $renderer->doc = $this->docBackup;
         $this->capturedNote = NULL;
         $this->docBackup = '';
+    }
+}
+
+class refnotes_reference_database {
+
+    private $note;
+    private $key;
+    private $page;
+    private $namespace;
+
+    /**
+     * Constructor
+     */
+    public function __construct($locale) {
+        $this->note = refnotes_configuration::load('notes');
+        $this->page = array();
+        $this->namespace = array();
+
+        if (refnotes_configuration::getSetting('reference-db-enable')) {
+            $this->loadKeys($locale);
+            $this->loadPages();
+            $this->loadNamespaces();
+        }
+    }
+
+    /**
+     *
+     */
+    private function loadKeys($locale) {
+        foreach ($locale->getByPrefix('dbk') as $key => $text) {
+            $this->key[$this->normalizeKeyText($text)] = $key;
+        }
+    }
+
+    /**
+     *
+     */
+    public function getKey($text) {
+        $result = '';
+        $text = $this->normalizeKeyText($text);
+
+        if (array_key_exists($text, $this->key)) {
+            $result = $this->key[$text];
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    private function normalizeKeyText($text) {
+        return preg_replace('/\s+/', ' ', utf8_strtolower(trim($text)));
+    }
+
+    /**
+     *
+     */
+    private function loadPages() {
+        global $conf;
+
+        if (file_exists($conf['indexdir'] . '/page.idx')) {
+            require_once(DOKU_INC . 'inc/indexer.php');
+
+            $pageIndex = idx_getIndex('page', '');
+            $namespace = refnotes_configuration::getSetting('reference-db-namespace');
+            $namespacePattern = '/^' . trim($namespace, ':') . ':/';
+            $cache = new refnotes_reference_database_cache();
+
+            foreach ($pageIndex as $pageId) {
+                $pageId = trim($pageId);
+
+                if ((preg_match($namespacePattern, $pageId) == 1) && file_exists(wikiFN($pageId))) {
+                    $this->page[$pageId] = new refnotes_reference_database_page($this, $cache, $pageId);
+                }
+            }
+
+            $cache->save();
+        }
+    }
+
+    /**
+     *
+     */
+    private function loadNamespaces() {
+        foreach ($this->page as $pageId => $page) {
+            foreach ($page->getNamespaces() as $ns) {
+                $this->namespace[$ns][] = $pageId;
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public function isDefined($name) {
+        $result = array_key_exists($name, $this->note);
+
+        if (!$result) {
+            list($namespace, $temp) = refnotes_parseName($name);
+
+            if (array_key_exists($namespace, $this->namespace)) {
+                $this->loadNamespaceNotes($namespace);
+
+                $result = array_key_exists($name, $this->note);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    private function loadNamespaceNotes($namespace) {
+        foreach ($this->namespace[$namespace] as $pageId) {
+            if (array_key_exists($pageId, $this->page)) {
+                $this->note = array_merge($this->note, $this->page[$pageId]->getNotes());
+
+                unset($this->page[$pageId]);
+            }
+        }
+
+        unset($this->namespace[$namespace]);
+    }
+
+    /**
+     *
+     */
+    public function getNote($name) {
+        $result['name'] = $name;
+        $result['text'] = $this->note[$name]['text'];
+        $result['inline'] = $this->note[$name]['inline'];
+
+        return $result;
+    }
+}
+
+class refnotes_reference_database_page {
+
+    private $database;
+    private $id;
+    private $fileName;
+    private $namespace;
+    private $note;
+
+    /**
+     * Constructor
+     */
+    public function __construct($database, $cache, $id) {
+        $this->database = $database;
+        $this->id = $id;
+        $this->fileName = wikiFN($id);
+        $this->namespace = array();
+        $this->note = array();
+
+        if ($cache->isCached($this->fileName)) {
+            $this->namespace = $cache->getNamespaces($this->fileName);
+        }
+        else {
+            $this->parse();
+
+            $cache->update($this->fileName, $this->namespace);
+        }
+    }
+
+    /**
+     *
+     */
+    private function parse() {
+        $text = io_readWikiPage($this->fileName, $this->id);
+        $call = p_cached_instructions($this->fileName);
+        $calls = count($call);
+
+        for ($c = 0; $c < $calls; $c++) {
+            if ($call[$c][0] == 'table_open') {
+                $c = $this->parseTable($call, $calls, $c, $text);
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private function parseTable($call, $calls, $c, $text) {
+        $row = 0;
+        $column = 0;
+        $columns = 0;
+        $valid = true;
+
+        for ( ; $c < $calls; $c++) {
+            switch ($call[$c][0]) {
+                case 'tablerow_open':
+                    $column = 0;
+                    break;
+
+                case 'tablerow_close':
+                    if ($row == 0) {
+                        $columns = $column;
+                    }
+                    else {
+                        if ($column != $columns) {
+                            $valid = false;
+                            break 2;
+                        }
+                    }
+                    $row++;
+                    break;
+
+                case 'tablecell_open':
+                case 'tableheader_open':
+                    $cellOpen = $call[$c][2];
+                    break;
+
+                case 'tablecell_close':
+                case 'tableheader_close':
+                    $table[$row][$column] = trim(substr($text, $cellOpen, $call[$c][2] - $cellOpen), "^| ");
+                    $column++;
+                    break;
+
+                case 'table_close':
+                    break 2;
+            }
+        }
+
+        if ($valid && ($row > 1) && ($columns > 1)) {
+            $this->handleTable($table, $columns, $row);
+        }
+
+        return $c;
+    }
+
+    /**
+     *
+     */
+    private function handleTable($table, $columns, $rows) {
+        $key = array();
+        for ($c = 0; $c < $columns; $c++) {
+            $key[$c] = $this->database->getKey($table[0][$c]);
+        }
+
+        if (!in_array('', $key)) {
+            $this->handleDataSheet($table, $columns, $rows, $key);
+        }
+        else { 
+            if ($columns == 2) {
+                $key = array();
+                for ($r = 0; $r < $rows; $r++) {
+                    $key[$r] = $this->database->getKey($table[$r][0]);
+                }
+
+                if (!in_array('', $key)) {
+                    $this->handleDataCard($table, $rows, $key);
+                }
+            }
+        }
+    }
+
+    /**
+     * The data is organized in rows, one note per row. The first row contains the caption.
+     */
+    private function handleDataSheet($table, $columns, $rows, $key) {
+        for ($r = 1; $r < $rows; $r++) {
+            $field = array();
+
+            for ($c = 0; $c < $columns; $c++) {
+                $field[$key[$c]] = $table[$r][$c];
+            }
+
+            $this->handleNote($field);
+        }
+    }
+
+    /**
+     * Every note is stored in a separate table. The first column of the table contains
+     * the caption, the second one contains the data.
+     */
+    private function handleDataCard($table, $rows, $key) {
+        $field = array();
+
+        for ($r = 0; $r < $rows; $r++) {
+            $field[$key[$r]] = $table[$r][1];
+        }
+
+        $this->handleNote($field);
+    }
+
+    /**
+     *
+     */
+    private function handleNote($field) {
+        $name = '';
+        $note = array('text' => '', 'inline' => false);
+
+        foreach ($field as $key => $value) {
+            switch ($key) {
+                case 'note-name':
+                    if (preg_match('/(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*/', $value) == 1) {
+                        list($namespace, $name) = refnotes_parseName($value);
+                        $name = $namespace . $name;
+                    }
+                    break;
+
+                case 'note-text':
+                    $note['text'] = $value;
+                    break;
+            }
+        }
+
+        if (($name != '') && ($note['text'] != '')) {
+            if (!in_array($namespace, $this->namespace)) {
+                $this->namespace[] = $namespace;
+            }
+            
+            $this->note[$name] = $note;
+        }
+    }
+
+    /**
+     *
+     */
+    public function getNamespaces() {
+        return $this->namespace;
+    }
+
+    /**
+     *
+     */
+    public function getNotes() {
+        if (count($this->note) == 0) {
+            $this->parse();
+        }
+
+        return $this->note;
+    }
+}
+
+class refnotes_reference_database_cache {
+    
+    private $fileName;
+    private $cache;
+    private $requested;
+    private $updated;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->fileName = DOKU_PLUGIN . 'refnotes/database.dat';
+
+        $this->load();
+    }
+
+    /**
+     *
+     */
+    private function load() {
+        $this->cache = array();
+        $this->requested = array();
+
+        if (file_exists($this->fileName)) {
+            $this->cache = unserialize(io_readFile($this->fileName, false));
+        }
+
+        foreach (array_keys($this->cache) as $fileName) {
+            $this->requested[$fileName] = false;
+        }
+
+        $this->updated = false;
+    }
+
+    /**
+     *
+     */
+    public function isCached($fileName) {
+        $result = false;
+
+        if (array_key_exists($fileName, $this->cache)) {
+            if ($this->cache[$fileName]['time'] == @filemtime($fileName)) {
+                $result = true;
+            }
+        }
+
+        $this->requested[$fileName] = true;
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    public function getNamespaces($fileName) {
+        return $this->cache[$fileName]['ns'];
+    }
+
+    /**
+     *
+     */
+    public function update($fileName, $namespace) {
+        $this->cache[$fileName] = array('ns' => $namespace, 'time' => @filemtime($fileName));
+        $this->updated = true;
+    }
+
+    /**
+     *
+     */
+    public function save() {
+        $this->removeOldPages();
+
+        if ($this->updated) {
+            io_saveFile($this->fileName, serialize($this->cache));
+        }
+    }
+
+    /**
+     *
+     */
+    private function removeOldPages() {
+        foreach ($this->requested as $fileName => $requested) {
+            if (!$requested && array_key_exists($fileName, $this->cache)) {
+                unset($this->cache[$fileName]);
+
+                $this->updated = true;
+            }
+        }
     }
 }
