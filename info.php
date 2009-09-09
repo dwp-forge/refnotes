@@ -14,7 +14,7 @@ function refnotes_getInfo($component = '') {
         'date'   => '2009-08-01',
         'name'   => 'RefNotes Plugin',
         'desc'   => 'Extended syntax for footnotes and references.',
-        'url'    => 'http://code.google.com/p/dwp-forge/',
+        'url'    => 'http://www.dokuwiki.org/plugin:refnotes',
     );
 
     if ($component != '') {
