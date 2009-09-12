@@ -196,6 +196,10 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $destination = preg_replace('/template.txt$/', '__template.txt', $destination);
 
         if (@filemtime($destination) < @filemtime($source)) {
+            if (!file_exists(dirname($destination))) {
+                @mkdir(dirname($destination), 0755, true);
+            }
+
             $success = copy($source, $destination);
 
             touch($destination, filemtime($source));
