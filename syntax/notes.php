@@ -159,7 +159,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      */
     private function parseStyles($syntax) {
         $style = array();
-        preg_match_all('/([-\w]+)\s*:\s*(.+?)\s*?[\n;]/', $syntax, $match, PREG_SET_ORDER);
+        preg_match_all('/([-\w]+)\s*:\s*(.+?)\s*?(:?[\n;]|$)/', $syntax, $match, PREG_SET_ORDER);
         foreach ($match as $m) {
             $style[$m[1]] = $m[2];
         }
