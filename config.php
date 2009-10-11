@@ -30,8 +30,8 @@ class refnotes_configuration {
                 self::$section[$sectionName] = self::load($sectionName);
             }
 
-            if (array_key_exists($settingName, self::$section[$sectionName])) {
-                $result = self::$section[$sectionName][$settingName];
+            if (array_key_exists($name, self::$section[$sectionName])) {
+                $result = self::$section[$sectionName][$name];
             }
         }
 
