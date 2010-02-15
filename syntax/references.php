@@ -287,9 +287,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private function isHiddenReference($space, $pos, $handler) {
         $newLines = substr_count($space, "\n");
         $lastCall = end($handler->calls);
-        $lastCall = $lastCall[0];
 
-        if (($newLines == 2) || ($lastCall == 'table_close')) {
+        if (($newLines == 2) || (($lastCall[0] == 'table_close') && ($lastCall[2] == ($pos - 1)))) {
             $this->lastHiddenExit = $pos;
         }
         else {
@@ -606,7 +605,7 @@ class refnotes_reference_database_page {
         if (!in_array('', $key)) {
             $this->handleDataSheet($table, $columns, $rows, $key);
         }
-        else { 
+        else {
             if ($columns == 2) {
                 $key = array();
                 for ($r = 0; $r < $rows; $r++) {
@@ -675,7 +674,7 @@ class refnotes_reference_database_page {
             if (!in_array($namespace, $this->namespace)) {
                 $this->namespace[] = $namespace;
             }
-            
+
             $this->note[$name] = $note;
         }
     }
@@ -700,7 +699,7 @@ class refnotes_reference_database_page {
 }
 
 class refnotes_reference_database_cache {
-    
+
     private $fileName;
     private $cache;
     private $requested;
