@@ -233,21 +233,17 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->lastHiddenExit = 0;
         $this->embedding = true;
 
-        $this->parseNestedText($text, $pos, $handler);
+        $this->parseNestedText($text, $note['inline'], $pos, $handler);
 
         $this->embedding = false;
         $this->lastHiddenExit = $lastHiddenExit;
-
-        if ($note['inline']) {
-            $handler->calls[count($handler->calls) - 1][1][0][0][1][1][1]['inline'] = true;
-        }
     }
 
     /**
      *
      */
-    private function parseNestedText($text, $pos, $handler) {
-        $nestedWriter = new Doku_Handler_Nest($handler->CallWriter);
+    private function parseNestedText($text, $inline, $pos, $handler) {
+        $nestedWriter = new refnotes_nested_call_writer($handler->CallWriter);
         $handler->CallWriter =& $nestedWriter;
 
         /*
@@ -262,10 +258,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $this->Lexer->_parser = $handlerBackup;
 
-        $nestedWriter->process();
+        $nestedWriter->process($inline, $pos);
         $handler->CallWriter =& $nestedWriter->CallWriter;
-
-        $handler->calls[count($handler->calls) - 1][2] = $pos;
     }
 
     /**
@@ -361,6 +355,23 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $renderer->doc = $this->docBackup;
         $this->capturedNote = NULL;
         $this->docBackup = '';
+    }
+}
+
+class refnotes_nested_call_writer extends Doku_Handler_Nest {
+
+    /**
+     *
+     */
+    public function process($inline, $pos) {
+        if ($inline &&
+            $this->calls[0][0] == 'plugin' &&
+            $this->calls[0][1][0] == 'refnotes_references' &&
+            $this->calls[0][1][1][0] == DOKU_LEXER_ENTER) {
+            $this->calls[0][1][1][1]['inline'] = true;
+        }
+
+        $this->CallWriter->writeCall(array("nest", array($this->calls), $pos));
     }
 }
 
