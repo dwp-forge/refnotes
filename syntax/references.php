@@ -194,12 +194,15 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         list($namespace, $name) = refnotes_parseName($match[2]);
 
         if (!$this->embedding && ($name != '')) {
+            $this->embedding = true;
             $fullName = $namespace . $name;
             $database = $this->getDatabase();
 
             if ($database->isDefined($fullName)) {
                 $this->embedPredefinedNote($database->getNote($fullName), $pos, $handler);
             }
+
+            $this->embedding = false;
         }
 
         $this->handling = true;
@@ -231,11 +234,9 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $lastHiddenExit = $this->lastHiddenExit;
         $this->lastHiddenExit = 0;
-        $this->embedding = true;
 
         $this->parseNestedText($text, $note['inline'], $pos, $handler);
 
-        $this->embedding = false;
         $this->lastHiddenExit = $lastHiddenExit;
     }
 
