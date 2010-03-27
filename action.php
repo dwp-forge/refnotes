@@ -34,15 +34,15 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Register callbacks
      */
     public function register($controller) {
-        $controller->register_hook('AJAX_CALL_UNKNOWN', 'BEFORE', $this, 'ajaxHandler');
-        $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'addAdminIncludes');
-        $controller->register_hook('PARSER_HANDLER_DONE', 'AFTER', $this, 'processCallList');
+        $controller->register_hook('AJAX_CALL_UNKNOWN', 'BEFORE', $this, 'beforeAjaxCallUnknown');
+        $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'beforeTplMetaheaderOutput');
+        $controller->register_hook('PARSER_HANDLER_DONE', 'AFTER', $this, 'afterParserHandlerDone');
     }
 
     /**
      *
      */
-    public function ajaxHandler($event, $param) {
+    public function beforeAjaxCallUnknown($event, $param) {
         if ($event->data == 'refnotes-admin') {
             $event->preventDefault();
             $event->stopPropagation();
@@ -202,32 +202,49 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      *
      */
-    public function addAdminIncludes($event, $param) {
+    public function beforeTplMetaheaderOutput($event, $param) {
         if (($_REQUEST['do'] == 'admin') && !empty($_REQUEST['page']) && ($_REQUEST['page'] == 'refnotes')) {
-            $event->data['script'][] = array(
-                'type' => 'text/javascript',
-                'charset' => 'utf-8',
-                'src' => DOKU_BASE . 'lib/plugins/refnotes/admin.js',
-                '_data' => ''
-            );
-            $event->data['script'][] = array(
-                'type' => 'text/javascript',
-                'charset' => 'utf-8',
-                'src' => DOKU_BASE . 'lib/plugins/refnotes/json2.js',
-                '_data' => ''
-            );
-            $event->data['link'][] = array(
-                'type' => 'text/css',
-                'rel' => 'stylesheet',
-                'href' => DOKU_BASE . 'lib/plugins/refnotes/admin.css',
-            );
+            $this->addAdminIncludes($event);
         }
     }
 
     /**
      *
      */
-    public function processCallList($event, $param) {
+    private function addAdminIncludes($event) {
+        $this->addTemplateHeaderInclude($event, 'admin.js');
+        $this->addTemplateHeaderInclude($event, 'json2.js');
+        $this->addTemplateHeaderInclude($event, 'admin.css');
+    }
+
+    /**
+     *
+     */
+    private function addTemplateHeaderInclude($event, $fileName) {
+        $type = '';
+        $fileName = DOKU_BASE . 'lib/plugins/refnotes/' . $fileName;
+
+        switch (pathinfo($fileName, PATHINFO_EXTENSION)) {
+            case 'js':
+                $type = 'script';
+                $data = array('type' => 'text/javascript', 'charset' => 'utf-8', 'src' => $fileName, '_data' => '');
+                break;
+
+            case 'css':
+                $type = 'link';
+                $data = array('type' => 'text/css', 'rel' => 'stylesheet', 'href' => $fileName);
+                break;
+        }
+
+        if ($type != '') {
+            $event->data[$type][] = $data;
+        }
+    }
+
+    /**
+     *
+     */
+    public function afterParserHandlerDone($event, $param) {
         $this->reset();
         $this->extractStyles($event);
 
