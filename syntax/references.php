@@ -235,7 +235,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $lastHiddenExit = $this->lastHiddenExit;
         $this->lastHiddenExit = 0;
 
-        $this->parseNestedText($text, $note['inline'], $pos, $handler);
+        $this->parseNestedText($text, $note['inline'], $note['source'], $pos, $handler);
 
         $this->lastHiddenExit = $lastHiddenExit;
     }
@@ -243,7 +243,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    private function parseNestedText($text, $inline, $pos, $handler) {
+    private function parseNestedText($text, $inline, $source, $pos, $handler) {
         $nestedWriter = new refnotes_nested_call_writer($handler->CallWriter);
         $handler->CallWriter =& $nestedWriter;
 
@@ -259,7 +259,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $this->Lexer->_parser = $handlerBackup;
 
-        $nestedWriter->process($inline, $pos);
+        $nestedWriter->process($inline, $source, $pos);
         $handler->CallWriter =& $nestedWriter->CallWriter;
     }
 
@@ -364,12 +364,15 @@ class refnotes_nested_call_writer extends Doku_Handler_Nest {
     /**
      *
      */
-    public function process($inline, $pos) {
-        if ($inline &&
-            $this->calls[0][0] == 'plugin' &&
+    public function process($inline, $source, $pos) {
+        if ($this->calls[0][0] == 'plugin' &&
             $this->calls[0][1][0] == 'refnotes_references' &&
             $this->calls[0][1][1][0] == DOKU_LEXER_ENTER) {
-            $this->calls[0][1][1][1]['inline'] = true;
+            if ($inline) {
+                $this->calls[0][1][1][1]['inline'] = true;
+            }
+
+            $this->calls[0][1][1][1]['source'] = $source;
         }
 
         $this->CallWriter->writeCall(array("nest", array($this->calls), $pos));
@@ -515,11 +518,7 @@ class refnotes_reference_database {
      *
      */
     public function getNote($name) {
-        $result['name'] = $name;
-        $result['text'] = $this->note[$name]['text'];
-        $result['inline'] = $this->note[$name]['inline'];
-
-        return $result;
+        return array_merge(array('name' => $name), $this->note[$name]);
     }
 }
 
