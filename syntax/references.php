@@ -161,26 +161,24 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Create output
      */
     public function render($mode, $renderer, $data) {
+        $result = false;
+
         try {
-            if($mode == 'xhtml') {
-                switch ($data[0]) {
-                    case DOKU_LEXER_ENTER:
-                        $this->renderEnter($renderer, $data[1]);
-                        break;
+            switch ($mode) {
+                case 'xhtml':
+                    $result = $this->renderXhtml($renderer, $data);
+                    break;
 
-                    case DOKU_LEXER_EXIT:
-                        $this->renderExit($renderer);
-                        break;
-                }
-
-                return true;
+                case 'metadata':
+                    $result = $this->renderMetadata($renderer, $data);
+                    break;
             }
         }
         catch (Exception $error) {
             msg($error->getMessage(), -1);
         }
 
-        return false;
+        return $result;
     }
 
     /**
@@ -296,9 +294,26 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     }
 
     /**
+     *
+     */
+    public function renderXhtml($renderer, $data) {
+        switch ($data[0]) {
+            case DOKU_LEXER_ENTER:
+                $this->renderXhtmlEnter($renderer, $data[1]);
+                break;
+
+            case DOKU_LEXER_EXIT:
+                $this->renderXhtmlExit($renderer);
+                break;
+        }
+
+        return true;
+    }
+
+    /**
      * Renders reference link and starts renderer output capture
      */
-    private function renderEnter($renderer, $info) {
+    private function renderXhtmlEnter($renderer, $info) {
         $core = $this->getCore();
 
         $inline = false;
@@ -317,8 +332,27 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      * Stops renderer output capture
      */
-    private function renderExit($renderer) {
+    private function renderXhtmlExit($renderer) {
         $this->stopCapture($renderer);
+    }
+
+    /**
+     *
+     */
+    public function renderMetadata($renderer, $data) {
+        if ($data[0] == DOKU_LEXER_ENTER) {
+            $source = '';
+
+            if ( array_key_exists('source', $data[1])) {
+                $source = $data[1]['source'];
+            }
+
+            if (($source != '') && ($source != '{configuration}')) {
+                $renderer->meta['relation']['depends']['rendering'][wikiFN($source)] = true;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -365,9 +399,9 @@ class refnotes_nested_call_writer extends Doku_Handler_Nest {
      *
      */
     public function process($inline, $source, $pos) {
-        if ($this->calls[0][0] == 'plugin' &&
-            $this->calls[0][1][0] == 'refnotes_references' &&
-            $this->calls[0][1][1][0] == DOKU_LEXER_ENTER) {
+        if (($this->calls[0][0] == 'plugin') &&
+            ($this->calls[0][1][0] == 'refnotes_references') &&
+            ($this->calls[0][1][1][0] == DOKU_LEXER_ENTER)) {
             if ($inline) {
                 $this->calls[0][1][1][1]['inline'] = true;
             }
