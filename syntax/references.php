@@ -387,14 +387,26 @@ class refnotes_reference_database {
      * Constructor
      */
     public function __construct($locale) {
-        $this->note = refnotes_configuration::load('notes');
         $this->page = array();
         $this->namespace = array();
+
+        $this->loadNotesFromConfiguration();
 
         if (refnotes_configuration::getSetting('reference-db-enable')) {
             $this->loadKeys($locale);
             $this->loadPages();
             $this->loadNamespaces();
+        }
+    }
+
+    /**
+     *
+     */
+    private function loadNotesFromConfiguration() {
+        $this->note = refnotes_configuration::load('notes');
+
+        foreach ($this->note as &$note) {
+            $note['source'] = '{configuration}';
         }
     }
 
@@ -665,7 +677,7 @@ class refnotes_reference_database_page {
      */
     private function handleNote($field) {
         $name = '';
-        $note = array('text' => '', 'inline' => false);
+        $note = array('text' => '', 'inline' => false, 'source' => $this->id);
 
         foreach ($field as $key => $value) {
             switch ($key) {
