@@ -24,15 +24,6 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     private $style;
 
     /**
-     * Constructor
-     */
-    public function __construct() {
-        $this->scopeStart = array();
-        $this->scopeEnd = array();
-        $this->style = array();
-    }
-
-    /**
      * Return some info
      */
     public function getInfo() {
@@ -237,6 +228,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      *
      */
     public function processCallList($event, $param) {
+        $this->reset();
         $this->extractStyles($event);
 
         if (count($this->style) > 0) {
@@ -247,6 +239,15 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         if (count($this->scopeStart) > 0) {
             $this->renderLeftovers($event);
         }
+    }
+
+    /**
+     * Reset internal state
+     */
+    private function reset() {
+        $this->scopeStart = array();
+        $this->scopeEnd = array();
+        $this->style = array();
     }
 
     /**
