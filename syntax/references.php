@@ -28,7 +28,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $database;
     private $handling;
     private $embedding;
-    private $lastHiddenExit;
     private $capturedNote;
     private $docBackup;
 
@@ -43,7 +42,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->database = NULL;
         $this->handling = false;
         $this->embedding = false;
-        $this->lastHiddenExit = -1;
         $this->capturedNote = NULL;
         $this->docBackup = '';
 
@@ -65,7 +63,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             $name ='(?:#\d+|[[:alpha:]]\w*)';
         }
 
-        $newLine = '(?:\n?[ \t]*\n)?';
         $namespace ='(?:(?:[[:alpha:]]\w*)?:)*';
         $text = '.*?';
 
@@ -79,7 +76,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $lookaheadExit = '(?=' . $text . $exit . ')';
         $defineEntry = $optionalDefine . $lookaheadExit;
 
-        $this->entryPattern = $newLine . $entry . '(?:' . $nameEntry . '|' . $defineEntry . ')';
+        $this->entryPattern = $entry . '(?:' . $nameEntry . '|' . $defineEntry . ')';
         $this->exitPattern = $exit;
         $this->handlePattern = '/(\s*)' . $entry . '\s*(' . $namespace . $optionalName . ').*/';
     }
@@ -206,7 +203,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $info['ns'] = $namespace;
         $info['name'] = $name;
-        $info['hidden'] = $this->isHiddenReference($match[1], $pos, $handler);
 
         return array(DOKU_LEXER_ENTER, $info);
     }
@@ -228,21 +224,18 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     private function embedPredefinedNote($note, $pos, $handler) {
         $text = $this->entrySyntax . $note['name'] . '>' . $note['text'] . $this->exitSyntax;
+        $callWriter = new refnotes_nested_call_writer($handler->CallWriter);
 
-        $lastHiddenExit = $this->lastHiddenExit;
-        $this->lastHiddenExit = 0;
-
-        $this->parseNestedText($text, $note['inline'], $note['source'], $pos, $handler);
-
-        $this->lastHiddenExit = $lastHiddenExit;
+        $this->parseNestedText($text, $handler, $callWriter);
+        $callWriter->process($note['inline'], $note['source'], $pos);
     }
 
     /**
      *
      */
-    private function parseNestedText($text, $inline, $source, $pos, $handler) {
-        $nestedWriter = new refnotes_nested_call_writer($handler->CallWriter);
-        $handler->CallWriter =& $nestedWriter;
+    private function parseNestedText($text, $handler, $nestedWriter) {
+        $callWriterBackup = $handler->CallWriter;
+        $handler->CallWriter = $nestedWriter;
 
         /*
             HACK: If doku.php parses a number of pages during one call (it's common after the cache
@@ -255,9 +248,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->Lexer->parse($text);
 
         $this->Lexer->_parser = $handlerBackup;
-
-        $nestedWriter->process($inline, $source, $pos);
-        $handler->CallWriter =& $nestedWriter->CallWriter;
+        $handler->CallWriter = $callWriterBackup;
     }
 
     /**
@@ -266,30 +257,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private function handleExit($syntax, $pos) {
         $this->handling = false;
 
-        if ($this->lastHiddenExit >= 0) {
-            $this->lastHiddenExit = $pos + strlen($syntax);
-        }
-
         return array(DOKU_LEXER_EXIT);
-    }
-
-    /**
-     *
-     */
-    private function isHiddenReference($space, $pos, $handler) {
-        $newLines = substr_count($space, "\n");
-        $lastCall = end($handler->calls);
-
-        if (($newLines == 2) || (($lastCall[0] == 'table_close') && ($lastCall[2] == ($pos - 1)))) {
-            $this->lastHiddenExit = $pos;
-        }
-        else {
-            if (($this->lastHiddenExit >= 0) && ($this->lastHiddenExit < $pos)) {
-                $this->lastHiddenExit = -1;
-            }
-        }
-
-        return $this->lastHiddenExit >= 0;
     }
 
     /**
@@ -406,6 +374,7 @@ class refnotes_nested_call_writer extends Doku_Handler_Nest {
             }
 
             $this->calls[$index][1][1][1]['source'] = $source;
+            $this->calls[$index][1][1][1]['hidden'] = true;
 
             $this->CallWriter->writeCall(array("nest", array($this->calls), $pos));
         }

@@ -21,6 +21,8 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     private $scopeStart;
     private $scopeEnd;
     private $style;
+    private $hidden;
+    private $inReference;
 
     /**
      * Return some info
@@ -246,7 +248,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      */
     public function afterParserHandlerDone($event, $param) {
         $this->reset();
-        $this->extractStyles($event);
+        $this->scanInstructions($event);
 
         if (count($this->style) > 0) {
             $this->sortStyles();
@@ -265,15 +267,20 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $this->scopeStart = array();
         $this->scopeEnd = array();
         $this->style = array();
+        $this->hidden = true;
+        $this->inReference = false;
     }
 
     /**
-     * Extract style data and replace "split" instructions by "render"
+     *
      */
-    private function extractStyles($event) {
+    private function scanInstructions($event) {
         $count = count($event->data->calls);
         for ($i = 0; $i < $count; $i++) {
             $call =& $event->data->calls[$i];
+
+            $this->updateHidden($call);
+
             if ($call[0] == 'plugin') {
                 switch ($call[1][0]) {
                     case 'refnotes_references':
@@ -289,11 +296,44 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     }
 
     /**
-     * Mark namespace creation instructions
+     * Determine if references following the current instruction should be hidden
+     */
+    private function updateHidden($call) {
+        $name = ($call[0] == 'plugin') ? 'plugin_' . $call[1][0] : $call[0];
+
+        switch ($name) {
+            case 'p_open':
+                $this->hidden = true;
+                break;
+
+            case 'cdata':
+                if (!$this->inReference && (trim($call[1][0]) != '')) {
+                    $this->hidden = false;
+                }
+                break;
+
+            case 'plugin_refnotes_references':
+                $this->inReference = ($call[1][1][0] == DOKU_LEXER_ENTER);
+                break;
+
+            default:
+                if (!$this->inReference) {
+                    $this->hidden = false;
+                }
+                break;
+        }
+    }
+
+    /**
+     *
      */
     private function handleReference($callIndex, &$callData) {
         if ($callData[0] == DOKU_LEXER_ENTER) {
             $this->markScopeStart($callData[1]['ns'], $callIndex);
+
+            if ($this->hidden) {
+                $callData[1]['hidden'] = true;
+            }
         }
     }
 
@@ -474,7 +514,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Format data into plugin instruction
      */
     private function getInstruction($data, $offset) {
-        $parameters = array('refnotes_notes', $data, 5, 'refnotes_action');
+        $parameters = array('refnotes_notes', $data, DOKU_LEXER_SPECIAL, '');
 
         return array('plugin', $parameters, $offset);
     }
