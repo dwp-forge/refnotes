@@ -398,17 +398,35 @@ class refnotes_nested_call_writer extends Doku_Handler_Nest {
      *
      */
     public function process($inline, $source, $pos) {
-        if (($this->calls[0][0] == 'plugin') &&
-            ($this->calls[0][1][0] == 'refnotes_references') &&
-            ($this->calls[0][1][1][0] == DOKU_LEXER_ENTER)) {
+        $index = $this->findFirstReference();
+
+        if ($index >= 0) {
             if ($inline) {
-                $this->calls[0][1][1][1]['inline'] = true;
+                $this->calls[$index][1][1][1]['inline'] = true;
             }
 
-            $this->calls[0][1][1][1]['source'] = $source;
+            $this->calls[$index][1][1][1]['source'] = $source;
+
+            $this->CallWriter->writeCall(array("nest", array($this->calls), $pos));
+        }
+    }
+
+    /**
+     *
+     */
+    private function findFirstReference() {
+        $index = -1;
+        $calls = count($this->calls);
+
+        for ($c = 0; $c < $calls; $c++) {
+            if (($this->calls[$c][0] == 'plugin') &&
+                ($this->calls[$c][1][0] == 'refnotes_references') &&
+                ($this->calls[$c][1][1][0] == DOKU_LEXER_ENTER)) {
+                $index = $c;
+            }
         }
 
-        $this->CallWriter->writeCall(array("nest", array($this->calls), $pos));
+        return $index;
     }
 }
 
