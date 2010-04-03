@@ -348,7 +348,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             }
 
             if (($source != '') && ($source != '{configuration}')) {
-                $renderer->meta['relation']['depends']['rendering'][wikiFN($source)] = true;
+                $renderer->meta['plugin']['refnotes']['dbref'][wikiFN($source)] = true;
             }
         }
 

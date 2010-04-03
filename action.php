@@ -46,6 +46,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $controller->register_hook('AJAX_CALL_UNKNOWN', 'BEFORE', $this, 'ajaxHandler');
         $controller->register_hook('TPL_METAHEADER_OUTPUT', 'BEFORE', $this, 'addAdminIncludes');
         $controller->register_hook('PARSER_HANDLER_DONE', 'AFTER', $this, 'processCallList');
+        $controller->register_hook('PARSER_CACHE_USE', 'BEFORE', $this, 'beforeParserCacheUse');
     }
 
     /**
@@ -459,5 +460,35 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $parameters = array('refnotes_notes', $data, 5, 'refnotes_action');
 
         return array('plugin', $parameters, $offset);
+    }
+
+    /**
+     *
+     */
+    public function beforeParserCacheUse($event, $param) {
+        global $ID;
+
+        $cache = $event->data;
+
+        if (isset($cache->page) && ($cache->page == $ID)) {
+            if (isset($cache->mode) && (($cache->mode == 'xhtml') || ($cache->mode == 'i'))) {
+                $meta = p_get_metadata($ID, 'plugin refnotes');
+
+                if (!empty($meta) && isset($meta['dbref'])) {
+                    $this->addDependencies($cache, array_keys($meta['dbref']));
+                }
+            }
+        }
+    }
+
+    /**
+     * Add extra dependencies to the cache
+     */
+    private function addDependencies($cache, $depends) {
+        foreach ($depends as $file) {
+            if (!in_array($file, $cache->depends['files']) && file_exists($file)) {
+                $cache->depends['files'][] = $file;
+            }
+        }
     }
 }
