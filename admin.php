@@ -8,9 +8,8 @@
  */
 
 /* Must be run within Dokuwiki */
-if(!defined('DOKU_INC')) die();
+if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
-if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'admin.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');

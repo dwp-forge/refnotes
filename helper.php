@@ -8,9 +8,8 @@
  */
 
 /* Must be run within Dokuwiki */
-if(!defined('DOKU_INC')) die();
+if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
-if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_INC . 'inc/plugin.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
@@ -460,11 +459,11 @@ class refnotes_note {
             $noteName = $this->renderAnchorName();
             $referenceName = $this->renderAnchorName($this->references);
             $class = $this->renderReferenceClass();
-    
+
             list($baseOpen, $baseClose) = $this->renderReferenceBase();
             list($fontOpen, $fontClose) = $this->renderReferenceFont();
             list($formatOpen, $formatClose) = $this->renderReferenceFormat();
-    
+
             $html = $baseOpen . $fontOpen;
             $html .= '<a href="#' . $noteName . '" name="' . $referenceName . '" class="' . $class . '">';
             $html .= $formatOpen . $this->renderReferenceId() . $formatClose;
@@ -614,7 +613,7 @@ class refnotes_note {
                 case 'note':
                     $id = $this->id;
                     break;
-                
+
                 default:
                     if ($reference > 0) {
                         $id = $this->reference[$reference];
@@ -869,7 +868,7 @@ class refnotes_note {
             case 'A':
                 $result = $this->convertToLatin($id, $style);
                 break;
-            
+
             case 'i':
             case 'I':
                 $result = $this->convertToRoman($id, $style);

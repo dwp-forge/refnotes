@@ -8,9 +8,8 @@
  */
 
 /* Must be run within Dokuwiki */
-if(!defined('DOKU_INC')) die();
+if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
-if(!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 require_once(DOKU_PLUGIN . 'syntax.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
@@ -247,7 +246,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         /*
             HACK: If doku.php parses a number of pages during one call (it's common after the cache
-            clean-up) $this->Lexer can be a different instance form the one used in the current parser
+            clean-up) $this->Lexer can be a different instance from the one used in the current parser
             pass. Here we ensure that $handler is linked to $this->Lexer while parsing the nested text.
         */
         $handlerBackup = $this->Lexer->_parser;
