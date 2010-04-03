@@ -161,26 +161,24 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Create output
      */
     public function render($mode, $renderer, $data) {
+        $result = false;
+
         try {
-            if($mode == 'xhtml') {
-                switch ($data[0]) {
-                    case DOKU_LEXER_ENTER:
-                        $this->renderEnter($renderer, $data[1]);
-                        break;
+            switch ($mode) {
+                case 'xhtml':
+                    $result = $this->renderXhtml($renderer, $data);
+                    break;
 
-                    case DOKU_LEXER_EXIT:
-                        $this->renderExit($renderer);
-                        break;
-                }
-
-                return true;
+                case 'metadata':
+                    $result = $this->renderMetadata($renderer, $data);
+                    break;
             }
         }
         catch (Exception $error) {
             msg($error->getMessage(), -1);
         }
 
-        return false;
+        return $result;
     }
 
     /**
@@ -235,7 +233,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $lastHiddenExit = $this->lastHiddenExit;
         $this->lastHiddenExit = 0;
 
-        $this->parseNestedText($text, $note['inline'], $pos, $handler);
+        $this->parseNestedText($text, $note['inline'], $note['source'], $pos, $handler);
 
         $this->lastHiddenExit = $lastHiddenExit;
     }
@@ -243,7 +241,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    private function parseNestedText($text, $inline, $pos, $handler) {
+    private function parseNestedText($text, $inline, $source, $pos, $handler) {
         $nestedWriter = new refnotes_nested_call_writer($handler->CallWriter);
         $handler->CallWriter =& $nestedWriter;
 
@@ -259,7 +257,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $this->Lexer->_parser = $handlerBackup;
 
-        $nestedWriter->process($inline, $pos);
+        $nestedWriter->process($inline, $source, $pos);
         $handler->CallWriter =& $nestedWriter->CallWriter;
     }
 
@@ -296,9 +294,26 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     }
 
     /**
+     *
+     */
+    public function renderXhtml($renderer, $data) {
+        switch ($data[0]) {
+            case DOKU_LEXER_ENTER:
+                $this->renderXhtmlEnter($renderer, $data[1]);
+                break;
+
+            case DOKU_LEXER_EXIT:
+                $this->renderXhtmlExit($renderer);
+                break;
+        }
+
+        return true;
+    }
+
+    /**
      * Renders reference link and starts renderer output capture
      */
-    private function renderEnter($renderer, $info) {
+    private function renderXhtmlEnter($renderer, $info) {
         $core = $this->getCore();
 
         $inline = false;
@@ -317,8 +332,27 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      * Stops renderer output capture
      */
-    private function renderExit($renderer) {
+    private function renderXhtmlExit($renderer) {
         $this->stopCapture($renderer);
+    }
+
+    /**
+     *
+     */
+    public function renderMetadata($renderer, $data) {
+        if ($data[0] == DOKU_LEXER_ENTER) {
+            $source = '';
+
+            if ( array_key_exists('source', $data[1])) {
+                $source = $data[1]['source'];
+            }
+
+            if (($source != '') && ($source != '{configuration}')) {
+                $renderer->meta['plugin']['refnotes']['dbref'][wikiFN($source)] = true;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -364,12 +398,15 @@ class refnotes_nested_call_writer extends Doku_Handler_Nest {
     /**
      *
      */
-    public function process($inline, $pos) {
-        if ($inline &&
-            $this->calls[0][0] == 'plugin' &&
-            $this->calls[0][1][0] == 'refnotes_references' &&
-            $this->calls[0][1][1][0] == DOKU_LEXER_ENTER) {
-            $this->calls[0][1][1][1]['inline'] = true;
+    public function process($inline, $source, $pos) {
+        if (($this->calls[0][0] == 'plugin') &&
+            ($this->calls[0][1][0] == 'refnotes_references') &&
+            ($this->calls[0][1][1][0] == DOKU_LEXER_ENTER)) {
+            if ($inline) {
+                $this->calls[0][1][1][1]['inline'] = true;
+            }
+
+            $this->calls[0][1][1][1]['source'] = $source;
         }
 
         $this->CallWriter->writeCall(array("nest", array($this->calls), $pos));
@@ -387,14 +424,26 @@ class refnotes_reference_database {
      * Constructor
      */
     public function __construct($locale) {
-        $this->note = refnotes_configuration::load('notes');
         $this->page = array();
         $this->namespace = array();
+
+        $this->loadNotesFromConfiguration();
 
         if (refnotes_configuration::getSetting('reference-db-enable')) {
             $this->loadKeys($locale);
             $this->loadPages();
             $this->loadNamespaces();
+        }
+    }
+
+    /**
+     *
+     */
+    private function loadNotesFromConfiguration() {
+        $this->note = refnotes_configuration::load('notes');
+
+        foreach ($this->note as &$note) {
+            $note['source'] = '{configuration}';
         }
     }
 
@@ -503,11 +552,7 @@ class refnotes_reference_database {
      *
      */
     public function getNote($name) {
-        $result['name'] = $name;
-        $result['text'] = $this->note[$name]['text'];
-        $result['inline'] = $this->note[$name]['inline'];
-
-        return $result;
+        return array_merge(array('name' => $name), $this->note[$name]);
     }
 }
 
@@ -665,7 +710,7 @@ class refnotes_reference_database_page {
      */
     private function handleNote($field) {
         $name = '';
-        $note = array('text' => '', 'inline' => false);
+        $note = array('text' => '', 'inline' => false, 'source' => $this->id);
 
         foreach ($field as $key => $value) {
             switch ($key) {
