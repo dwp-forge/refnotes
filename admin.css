@@ -38,6 +38,10 @@ div#refnotes-config div#config__manager td.value {
     width: 20em;
 }
 
+div#refnotes-config div#config__manager td.value div.input {
+    width: auto;
+}
+
 div#refnotes-config div#config__manager td.value select {
     width: 99%;
 }
