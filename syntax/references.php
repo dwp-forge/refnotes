@@ -698,19 +698,13 @@ class refnotes_reference_database_page {
         $name = '';
         $note = array('text' => '', 'inline' => false, 'source' => $this->id);
 
-        foreach ($field as $key => $value) {
-            switch ($key) {
-                case 'note-name':
-                    if (preg_match('/(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*/', $value) == 1) {
-                        list($namespace, $name) = refnotes_parseName($value);
-                        $name = $namespace . $name;
-                    }
-                    break;
-
-                case 'note-text':
-                    $note['text'] = $value;
-                    break;
+        if (array_key_exists('note-name', $field)) {
+            if (preg_match('/(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*/', $field['note-name']) == 1) {
+                list($namespace, $name) = refnotes_parseName($field['note-name']);
+                $name = $namespace . $name;
             }
+
+            $note['text'] = $this->renderNoteText($field);
         }
 
         if (($name != '') && ($note['text'] != '')) {
@@ -720,6 +714,32 @@ class refnotes_reference_database_page {
 
             $this->note[$name] = $note;
         }
+    }
+
+    /**
+     *
+     */
+    private function renderNoteText($field) {
+        $text = '';
+
+        if (array_key_exists('note-text', $field)) {
+            $text = $this->renderBasicNoteText($field);
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    private function renderBasicNoteText($field) {
+        $text = $field['note-text'];
+
+        if (array_key_exists('url', $field)) {
+            $text = '[[' . $field['url'] . '|' . $text . ']]';
+        }
+
+        return $text;
     }
 
     /**
