@@ -20,8 +20,16 @@ div.dokuwiki div.refnotes div.note {
     font-size: 90%;
 }
 
-div.dokuwiki div.refnotes div.smallnote {
+div.dokuwiki div.refnotes div.note.small {
     font-size: 70%;
+}
+
+div.dokuwiki div.refnotes div.note.justify {
+    text-align: justify;
+}
+
+div.dokuwiki div.refnotes div.note.left {
+    text-align: left;
 }
 
 div.dokuwiki div.refnotes a.nolink {

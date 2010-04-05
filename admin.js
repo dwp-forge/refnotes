@@ -446,6 +446,7 @@ var admin_refnotes = (function () {
             'multi-ref-id'         , 'ref-counter',
             'note-preview'         , 'popup',
             'notes-separator'      , '100%',
+            'note-text-align'      , 'justify',
             'note-font-size'       , 'normal',
             'note-id-base'         , 'super',
             'note-id-font-weight'  , 'normal',
@@ -666,6 +667,7 @@ var admin_refnotes = (function () {
                 }
                 return value;
             }));
+            fields.push(new SelectField('note-text-align'));
             fields.push(new SelectField('note-font-size'));
             fields.push(new SelectField('note-id-base'));
             fields.push(new SelectField('note-id-font-weight'));
@@ -1031,7 +1033,7 @@ var admin_refnotes = (function () {
 
     function saveSettings() {
         var settings = {};
-        
+
         settings.general    = general.getSettings();
         settings.namespaces = namespaces.getSettings();
         settings.notes      = notes.getSettings();
@@ -1044,9 +1046,9 @@ var admin_refnotes = (function () {
     function onBeforeUnload(event) {
         if (modified) {
             var message = locale.getString('unsaved');
-    
+
             (event || window.event).returnValue = message;
-    
+
             return message;
         }
     }

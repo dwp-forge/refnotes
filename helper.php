@@ -633,13 +633,21 @@ class refnotes_note {
      *
      */
     private function renderNoteClass() {
+        $result = 'note';
+
         switch ($this->getStyle('note-font-size')) {
             case 'small':
-                $result = 'smallnote';
+                $result .= ' small';
+                break;
+        }
+
+        switch ($this->getStyle('note-text-align')) {
+            case 'left':
+                $result .= ' left';
                 break;
 
             default:
-                $result = 'note';
+                $result .= ' justify';
                 break;
         }
 

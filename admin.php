@@ -395,6 +395,10 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
             'notes-separator' => array(
                 'class' => 'edit_inherit'
             ),
+            'note-text-align' => array(
+                'class' => 'select',
+                'option' => array('justify', 'left', 'inherit')
+            ),
             'note-font-size' => array(
                 'class' => 'select',
                 'option' => array('normal', 'small', 'inherit')
