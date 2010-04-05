@@ -6,15 +6,29 @@
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
  */
 
-// settings must be present and set appropriately for the language
-$lang['encoding']   = 'utf-8';
-$lang['direction']  = 'ltr';
+// Settings must be present and set appropriately for the language
+$lang['encoding'] = 'utf-8';
+$lang['direction'] = 'ltr';
 
+// Reference database keys
+$lang['dbk_authors'] = 'Authors';
+$lang['dbk_chapter'] = 'Chapter';
+$lang['dbk_edition'] = 'Edition';
+$lang['dbk_isbn'] = 'ISBN';
+$lang['dbk_issn'] = 'ISSN';
+$lang['dbk_journal'] = 'Journal';
 $lang['dbk_note-name'] = 'Note name';
 $lang['dbk_note-text'] = 'Note text';
+$lang['dbk_pages'] = 'Pages';
+$lang['dbk_published'] = 'Published';
+$lang['dbk_publisher'] = 'Publisher';
+$lang['dbk_title'] = 'Title';
 $lang['dbk_url'] = 'URL';
+$lang['dbk_volume'] = 'Volume';
 
-// for admin plugins, the menu prompt to be displayed in the admin menu
+$lang['txt_in_cap'] = 'In';
+
+// For admin plugins, the menu prompt to be displayed in the admin menu
 // if set here, the plugin doesn't need to override the getMenuText() method
 $lang['menu'] = 'RefNotes Configuration';
 

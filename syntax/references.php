@@ -403,6 +403,7 @@ class refnotes_reference_database {
 
     private $note;
     private $key;
+    private $noteRenderer;
     private $page;
     private $namespace;
 
@@ -416,6 +417,9 @@ class refnotes_reference_database {
         $this->loadNotesFromConfiguration();
 
         if (refnotes_configuration::getSetting('reference-db-enable')) {
+            $this->noteRenderer['basic'] = new refnotes_basic_note_renderer();
+            $this->noteRenderer['harvard'] = new refnotes_harvard_note_renderer($locale);
+
             $this->loadKeys($locale);
             $this->loadPages();
             $this->loadNamespaces();
@@ -451,6 +455,20 @@ class refnotes_reference_database {
 
         if (array_key_exists($text, $this->key)) {
             $result = $this->key[$text];
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    public function getNoteRenderer($name) {
+        if (array_key_exists($name, $this->noteRenderer)) {
+            $result = $this->noteRenderer[$name];
+        }
+        else {
+            $result = $this->noteRenderer['basic'];
         }
 
         return $result;
@@ -720,23 +738,20 @@ class refnotes_reference_database_page {
      *
      */
     private function renderNoteText($field) {
-        $text = '';
+        $renderer = '';
 
         if (array_key_exists('note-text', $field)) {
-            $text = $this->renderBasicNoteText($field);
+            $renderer = 'basic';
+        }
+        elseif (array_key_exists('title', $field)) {
+            $renderer = 'harvard';
         }
 
-        return $text;
-    }
-
-    /**
-     *
-     */
-    private function renderBasicNoteText($field) {
-        $text = $field['note-text'];
-
-        if (array_key_exists('url', $field)) {
-            $text = '[[' . $field['url'] . '|' . $text . ']]';
+        if ($renderer != '') {
+            $text = $this->database->getNoteRenderer($renderer)->render($field);
+        }
+        else {
+            $text = '';
         }
 
         return $text;
@@ -758,6 +773,181 @@ class refnotes_reference_database_page {
         }
 
         return $this->note;
+    }
+}
+
+class refnotes_basic_note_renderer {
+
+    /**
+     *
+     */
+    public function render($field) {
+        $text = $field['note-text'];
+
+        if (array_key_exists('url', $field)) {
+            $text = '[[' . $field['url'] . '|' . $text . ']]';
+        }
+
+        return $text;
+    }
+}
+
+class refnotes_harvard_note_renderer {
+
+    private $locale;
+
+    /**
+     * Constructor
+     */
+    public function __construct($locale) {
+        $this->locale = $locale;
+    }
+
+    /**
+     *
+     */
+    public function render($field) {
+        // authors, published. //[[url|title.]]// edition. publisher, pages, isbn.
+        // authors, published. chapter In //[[url|title.]]// edition. publisher, pages, isbn.
+        // authors, published. [[url|title.]] //journal//, volume, publisher, pages, issn.
+
+        $title = $this->renderTitle($field);
+
+        // authors, published. //$title// edition. publisher, pages, isbn.
+        // authors, published. chapter In //$title// edition. publisher, pages, isbn.
+        // authors, published. $title //journal//, volume, publisher, pages, issn.
+
+        $authors = $this->renderAuthors($field);
+
+        // $authors? //$title// edition. publisher, pages, isbn.
+        // $authors? chapter In //$title// edition. publisher, pages, isbn.
+        // $authors? $title //journal//, volume, publisher, pages, issn.
+
+        $publication = $this->renderPublication($field, $authors != '');
+
+        if (array_key_exists('journal', $field)) {
+            // $authors? $title //journal//, volume, $publication?
+
+            $text = $title . ' ' . $this->renderJournal($field);
+
+            // $authors? $text, $publication?
+
+            $text .= ($publication != '') ? ',' : '.';
+        }
+        else {
+            // $authors? //$title// edition. $publication?
+            // $authors? chapter In //$title// edition. $publication?
+
+            $text = $this->renderBook($field, $title);
+        }
+
+        // $authors? $text $publication?
+
+        if ($authors != '') {
+            $text = $authors . ' ' . $text;
+        }
+
+        if ($publication != '') {
+            $text .= ' ' . $publication;
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    private function renderTitle($field) {
+        $text = $field['title'] . '.';
+
+        if (array_key_exists('url', $field)) {
+            $text = '[[' . $field['url'] . '|' . $text . ']]';
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    private function renderAuthors($field) {
+        $text = '';
+
+        if (array_key_exists('authors', $field)) {
+            $text = $field['authors'];
+
+            if (array_key_exists('published', $field)) {
+                $text .= ', ' . $field['published'];
+            }
+
+            $text .= '.';
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    private function renderPublication($field, $authors) {
+        $part = array();
+
+        if (array_key_exists('publisher', $field)) {
+            $part[] = $field['publisher'];
+        }
+
+        if (!$authors && array_key_exists('published', $field)) {
+            $part[] = $field['published'];
+        }
+
+        if (array_key_exists('pages', $field)) {
+            $part[] = $field['pages'];
+        }
+
+        if (array_key_exists('isbn', $field)) {
+            $part[] = 'ISBN ' . $field['isbn'];
+        }
+        elseif (array_key_exists('issn', $field)) {
+            $part[] = 'ISSN ' . $field['issn'];
+        }
+
+        $text = implode(', ', $part);
+
+        if ($text != '') {
+            $text .= '.';
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    private function renderJournal($field) {
+        $text = '//' . $field['journal'] . '//';
+
+        if (array_key_exists('volume', $field)) {
+            $text .= ', ' . $field['volume'];
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    private function renderBook($field, $title) {
+        $text = '//' . $title . '//';
+
+        if (array_key_exists('chapter', $field)) {
+            $text = $field['chapter'] . '. ' . $this->locale->getLang('txt_in_cap') . ' ' . $text;
+        }
+
+        if (array_key_exists('edition', $field)) {
+            $text .= ' ' . $field['edition'] . '.';
+        }
+
+        return $text;
     }
 }
 
