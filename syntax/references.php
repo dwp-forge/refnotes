@@ -914,7 +914,7 @@ class refnotes_harvard_note_renderer {
         $text = implode(', ', $part);
 
         if ($text != '') {
-            $text .= '.';
+            $text = rtrim($text, '.') . '.';
         }
 
         return $text;
