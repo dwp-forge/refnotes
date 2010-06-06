@@ -63,22 +63,24 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             $name ='(?:#\d+|[[:alpha:]]\w*)';
         }
 
-        $namespace ='(?:(?:[[:alpha:]]\w*)?:)*';
+        $optionalNamespace ='(?:(?:[[:alpha:]]\w*)?:)*';
         $text = '.*?';
 
-        $nameMatch = '\s*' . $namespace . $name .'\s*';
+        $fullName = '\s*' . $optionalNamespace . $name .'\s*';
         $lookaheadExit = '(?=' . $exit . ')';
-        $nameEntry = $nameMatch . $lookaheadExit;
+        $nameEntry = $fullName . $lookaheadExit;
 
-        $optionalName = $name .'?';
-        $define = '\s*' . $namespace . $optionalName .'\s*>';
+        $optionalFullName = $optionalNamespace . $name .'?';
+        $structuredEntry = '\s*' . $optionalFullName . '\s*>>' . $text  . $lookaheadExit;
+
+        $define = '\s*' . $optionalFullName . '\s*>';
         $optionalDefine = '(?:' . $define . ')?';
         $lookaheadExit = '(?=' . $text . $exit . ')';
         $defineEntry = $optionalDefine . $lookaheadExit;
 
-        $this->entryPattern = $entry . '(?:' . $nameEntry . '|' . $defineEntry . ')';
+        $this->entryPattern = $entry . '(?:' . $nameEntry . '|' . $structuredEntry . '|' . $defineEntry . ')';
         $this->exitPattern = $exit;
-        $this->handlePattern = '/(\s*)' . $entry . '\s*(' . $namespace . $optionalName . ').*/';
+        $this->handlePattern = '/' . $entry . '\s*(' . $optionalFullName . ')\s*(.*)/';
     }
 
     /**
@@ -185,7 +187,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             return false;
         }
 
-        list($namespace, $name) = refnotes_parseName($match[2]);
+        list($namespace, $name) = refnotes_parseName($match[1]);
 
         if (!$this->embedding && ($name != '')) {
             $this->embedding = true;
