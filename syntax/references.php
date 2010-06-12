@@ -238,24 +238,47 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         list($namespace, $name) = refnotes_parseName($match[1]);
 
+        $info = array('ns' => $namespace, 'name' => $name);
+
         if (!$this->embedding && ($name != '')) {
             $this->embedding = true;
-            $fullName = $namespace . $name;
-            $database = $this->getDatabase();
+            $name = $namespace . $name;
 
-            if ($database->isDefined($fullName)) {
-                $this->embedPredefinedNote($database->getNote($fullName), $pos, $handler);
-            }
+            $this->embedDatabaseNote($name, $pos, $handler, $info);
 
             $this->embedding = false;
         }
 
         $this->handling = true;
 
-        $info['ns'] = $namespace;
-        $info['name'] = $name;
-
         return array(DOKU_LEXER_ENTER, $info);
+    }
+
+    /**
+     *
+     */
+    private function embedDatabaseNote($name, $pos, $handler, &$info) {
+        $database = $this->getDatabase();
+
+        if ($database->isDefined($name)) {
+            $note = $database->getNote($name);
+
+            $this->embedPredefinedNote($note, $pos, $handler);
+            $this->updateNoteInfo($note, $info);
+        }
+    }
+
+    /**
+     *
+     */
+    private function updateNoteInfo($note, &$info) {
+        static $noteKey = array('inline', 'source');
+
+        foreach($noteKey as $key) {
+            if (isset($note[$key])) {
+                $info[$key] = $note[$key];
+            }
+        }
     }
 
     /**
