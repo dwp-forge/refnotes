@@ -278,29 +278,18 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $count = count($event->data->calls);
         for ($i = 0; $i < $count; $i++) {
             $call =& $event->data->calls[$i];
+            $name = ($call[0] == 'plugin') ? 'plugin_' . $call[1][0] : $call[0];
 
-            $this->updateHidden($call);
-
-            if ($call[0] == 'plugin') {
-                switch ($call[1][0]) {
-                    case 'refnotes_references':
-                        $this->handleReference($i, $call[1][1]);
-                        break;
-
-                    case 'refnotes_notes':
-                        $this->handleNotes($i, $call[1][1]);
-                        break;
-                }
-            }
+            $this->markHiddenReferences($name, $call);
+            $this->markScopeLimits($name, $i, $call[1][1]);
+            $this->extractStyles($name, $call[1][1]);
         }
     }
 
     /**
-     * Determine if references following the current instruction should be hidden
+     *
      */
-    private function updateHidden($call) {
-        $name = ($call[0] == 'plugin') ? 'plugin_' . $call[1][0] : $call[0];
-
+    private function markHiddenReferences($name, &$call) {
         switch ($name) {
             case 'p_open':
                 $this->hidden = true;
@@ -313,7 +302,19 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
                 break;
 
             case 'plugin_refnotes_references':
-                $this->inReference = ($call[1][1][0] == DOKU_LEXER_ENTER);
+                switch ($call[1][1][0]) {
+                    case DOKU_LEXER_ENTER:
+                        $this->inReference = true;
+
+                        if ($this->hidden) {
+                            $call[1][1][1]['hidden'] = true;
+                        }
+                        break;
+
+                    case DOKU_LEXER_EXIT:
+                        $this->inReference = false;
+                        break;
+                }
                 break;
 
             default:
@@ -327,27 +328,37 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      *
      */
-    private function handleReference($callIndex, &$callData) {
-        if ($callData[0] == DOKU_LEXER_ENTER) {
-            $this->markScopeStart($callData[1]['ns'], $callIndex);
+    private function markScopeLimits($name, $callIndex, $callData) {
+        switch ($name) {
+            case 'plugin_refnotes_references':
+                if ($callData[0] == DOKU_LEXER_ENTER) {
+                    $this->markScopeStart($callData[1]['ns'], $callIndex);
+                }
+                break;
 
-            if ($this->hidden) {
-                $callData[1]['hidden'] = true;
-            }
+            case 'plugin_refnotes_notes':
+                $this->markScopeEnd($callData[1]['ns'], $callIndex);
+                break;
         }
+    }
+
+    /**
+     *
+     */
+    private function initializeNamespaceScoping($namespace) {
+        $this->scopeStart[$namespace] = array();
+        $this->scopeEnd[$namespace] = array(-1);
     }
 
     /**
      * Mark instruction that starts a scope
      */
     private function markScopeStart($namespace, $callIndex) {
-        if (array_key_exists($namespace, $this->scopeStart)) {
-            if (count($this->scopeStart[$namespace]) < count($this->scopeEnd[$namespace])) {
-                $this->scopeStart[$namespace][] = $callIndex;
-            }
+        if (!array_key_exists($namespace, $this->scopeStart)) {
+            $this->initializeNamespaceScoping($namespace);
         }
-        else {
-            $this->markScopeEnd($namespace, -1);
+
+        if (count($this->scopeStart[$namespace]) < count($this->scopeEnd[$namespace])) {
             $this->scopeStart[$namespace][] = $callIndex;
         }
     }
@@ -356,15 +367,25 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Mark instruction that ends a scope
      */
     private function markScopeEnd($namespace, $callIndex) {
+        if (!array_key_exists($namespace, $this->scopeEnd)) {
+            $this->initializeNamespaceScoping($namespace);
+        }
+
+        if (count($this->scopeStart[$namespace]) < count($this->scopeEnd[$namespace])) {
+            /* Create an empty scope */
+            $this->scopeStart[$namespace][] = $callIndex - 1;
+        }
+
         $this->scopeEnd[$namespace][] = $callIndex;
     }
 
     /**
      * Extract style data and replace "split" instructions with "render"
      */
-    private function handleNotes($callIndex, &$callData) {
-        $namespace = $callData[1]['ns'];
-        if ($callData[0] == 'split') {
+    private function extractStyles($name, &$callData) {
+        if (($name == 'plugin_refnotes_notes') && ($callData[0] == 'split')) {
+            $namespace = $callData[1]['ns'];
+
             if (array_key_exists('inherit', $callData[2])) {
                 $index = $this->getStyleIndex($namespace, $callData[2]['inherit']);
             }
@@ -376,24 +397,24 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
             $callData[0] = 'render';
             unset($callData[2]);
         }
-
-        $this->markScopeEnd($namespace, $callIndex);
     }
 
     /**
      * Returns instruction index where the style instruction has to be inserted
      */
     private function getStyleIndex($namespace, $parent = '') {
-        if (($parent == '') && (count($this->scopeStart[$namespace]) == 1)) {
+        $scopes = count($this->scopeStart[$namespace]);
+
+        if (($parent == '') && ($scopes == 1)) {
             /* Default inheritance for the first scope */
             $parent = refnotes_getParentNamespace($namespace);
         }
 
-        $index = end($this->scopeEnd[$namespace]) + 1;
+        $index = $this->scopeEnd[$namespace][$scopes - 1] + 1;
 
         if ($parent != '') {
-            $start = end($this->scopeStart[$namespace]);
-            $end = end($this->scopeEnd[$namespace]);
+            $start = $this->scopeStart[$namespace][$scopes - 1];
+            $end = $this->scopeEnd[$namespace][$scopes - 1];
 
             while ($parent != '') {
                 if (array_key_exists($parent, $this->scopeEnd)) {
