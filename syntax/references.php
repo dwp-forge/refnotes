@@ -30,8 +30,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $database;
     private $handling;
     private $embedding;
-    private $capturedNote;
-    private $docBackup;
+    private $noteCapture;
 
     /**
      * Constructor
@@ -46,8 +45,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->database = NULL;
         $this->handling = false;
         $this->embedding = false;
-        $this->capturedNote = NULL;
-        $this->docBackup = '';
+        $this->noteCapture = new refnotes_note_capture();
 
         $this->initializePatterns();
     }
@@ -311,7 +309,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
                 break;
 
             case DOKU_LEXER_EXIT:
-                $this->renderXhtmlExit($renderer);
+                $this->renderXhtmlExit();
                 break;
         }
 
@@ -334,14 +332,14 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             $renderer->doc .= $note->renderReference();
         }
 
-        $this->startCapture($renderer, $note);
+        $this->noteCapture->start($renderer, $note);
     }
 
     /**
      * Stops renderer output capture
      */
-    private function renderXhtmlExit($renderer) {
-        $this->stopCapture($renderer);
+    private function renderXhtmlExit() {
+        $this->noteCapture->stop();
     }
 
     /**
@@ -361,29 +359,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         }
 
         return true;
-    }
-
-    /**
-     * Starts renderer output capture
-     */
-    private function startCapture($renderer, $note) {
-        $this->capturedNote = $note;
-        $this->docBackup = $renderer->doc;
-        $renderer->doc = '';
-    }
-
-    /**
-     * Stops renderer output capture
-     */
-    private function stopCapture($renderer) {
-        $text = trim($renderer->doc);
-        if ($text != '') {
-            $this->capturedNote->setText($text);
-        }
-
-        $renderer->doc = $this->docBackup;
-        $this->capturedNote = NULL;
-        $this->docBackup = '';
     }
 }
 
@@ -423,6 +398,78 @@ class refnotes_nested_call_writer extends Doku_Handler_Nest {
         }
 
         return $index;
+    }
+}
+
+class refnotes_note_capture {
+
+    private $renderer;
+    private $note;
+    private $doc;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->initialize();
+    }
+
+    /**
+     *
+     */
+    private function initialize() {
+        $this->renderer = NULL;
+        $this->note = NULL;
+        $this->doc = '';
+    }
+
+    /**
+     *
+     */
+    private function resetCapture() {
+        $this->renderer->doc = '';
+    }
+
+    /**
+     *
+     */
+    private function setNoteText() {
+        if ($this->note != NULL) {
+            $text = trim($this->renderer->doc);
+            if ($text != '') {
+                $this->note->setText($text);
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public function start($renderer, $note) {
+        $this->renderer = $renderer;
+        $this->note = $note;
+        $this->doc = $renderer->doc;
+
+        $this->resetCapture();
+    }
+
+    /**
+     *
+     */
+    public function restart() {
+        $this->setNoteText();
+        $this->resetCapture();
+    }
+
+    /**
+     *
+     */
+    public function stop() {
+        $this->setNoteText();
+
+        $this->renderer->doc = $this->doc;
+
+        $this->initialize();
     }
 }
 
