@@ -394,6 +394,7 @@ class refnotes_nested_call_writer extends Doku_Handler_Nest {
                 ($this->calls[$c][1][0] == 'refnotes_references') &&
                 ($this->calls[$c][1][1][0] == DOKU_LEXER_ENTER)) {
                 $index = $c;
+                break;
             }
         }
 
