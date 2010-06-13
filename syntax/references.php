@@ -29,6 +29,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $locale;
     private $noteRenderer;
     private $database;
+    private $databaseLock;
     private $parsingContext;
     private $noteCapture;
 
@@ -54,6 +55,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->locale = NULL;
         $this->noteRenderer = NULL;
         $this->database = NULL;
+        $this->databaseLock = false;
         $this->parsingContext = new refnotes_parsing_context_stack();
         $this->noteCapture = new refnotes_note_capture();
 
@@ -122,7 +124,9 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     private function getDatabase() {
         if ($this->database == NULL) {
+            $this->databaseLock = true;
             $this->database = new refnotes_reference_database($this->getLocale(), $this->getNoteRenderer());
+            $this->databaseLock = false;
         }
 
         return $this->database;
@@ -247,7 +251,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $data = $this->parsingContext->getNoteData();
         $text = '';
 
-        if ($info['name'] != '') {
+        if (!$this->databaseLock && ($info['name'] != '')) {
             $name = $info['ns'] . $info['name'];
             $database = $this->getDatabase();
 
