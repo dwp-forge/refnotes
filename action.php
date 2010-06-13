@@ -305,14 +305,14 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
                 switch ($call[1][1][0]) {
                     case DOKU_LEXER_ENTER:
                         $this->inReference = true;
-
-                        if ($this->hidden) {
-                            $call[1][1][1]['hidden'] = true;
-                        }
                         break;
 
                     case DOKU_LEXER_EXIT:
                         $this->inReference = false;
+
+                        if ($this->hidden) {
+                            $call[1][1][1]['hidden'] = true;
+                        }
                         break;
                 }
                 break;
@@ -331,7 +331,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     private function markScopeLimits($name, $callIndex, $callData) {
         switch ($name) {
             case 'plugin_refnotes_references':
-                if ($callData[0] == DOKU_LEXER_ENTER) {
+                if ($callData[0] == DOKU_LEXER_EXIT) {
                     $this->markScopeStart($callData[1]['ns'], $callIndex);
                 }
                 break;

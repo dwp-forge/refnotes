@@ -19,8 +19,6 @@ require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
     private $mode;
-    private $entrySyntax;
-    private $exitSyntax;
     private $entryPattern;
     private $exitPattern;
     private $handlePattern;
@@ -29,6 +27,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $noteRenderer;
     private $database;
     private $handling;
+    private $noteInfo;
     private $embedding;
     private $noteCapture;
 
@@ -37,13 +36,12 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     public function __construct() {
         $this->mode = substr(get_class($this), 7);
-        $this->entrySyntax = '[(';
-        $this->exitSyntax = ')]';
         $this->core = NULL;
         $this->locale = NULL;
         $this->noteRenderer = NULL;
         $this->database = NULL;
         $this->handling = false;
+        $this->noteInfo = array();
         $this->embedding = false;
         $this->noteCapture = new refnotes_note_capture();
 
@@ -194,7 +192,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
             case DOKU_LEXER_EXIT:
                 if ($this->handling) {
-                    return $this->handleExit($match, $pos);
+                    return $this->handleExit($pos, $handler);
                 }
                 break;
         }
@@ -238,20 +236,28 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         list($namespace, $name) = refnotes_parseName($match[1]);
 
-        $info = array('ns' => $namespace, 'name' => $name);
-
-        if (!$this->embedding && ($name != '')) {
-            $this->embedding = true;
-            $name = $namespace . $name;
-
-            $this->embedDatabaseNote($name, $pos, $handler, $info);
-
-            $this->embedding = false;
-        }
-
+        $this->noteInfo = array('ns' => $namespace, 'name' => $name);
         $this->handling = true;
 
-        return array(DOKU_LEXER_ENTER, $info);
+        return array(DOKU_LEXER_ENTER);
+    }
+
+    /**
+     *
+     */
+    private function handleExit($pos, $handler) {
+        $info = $this->noteInfo;
+
+        if ($info['name'] != '') {
+            $name = $info['ns'] . $info['name'];
+
+            $this->embedDatabaseNote($name, $pos, $handler, $info);
+        }
+
+        $this->handling = false;
+        $this->noteInfo = array();
+
+        return array(DOKU_LEXER_EXIT, $info);
     }
 
     /**
@@ -263,7 +269,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         if ($database->isDefined($name)) {
             $note = $database->getNote($name);
 
-            $this->embedPredefinedNote($note, $pos, $handler);
+            $this->parseNestedText($note['text'], $pos, $handler);
             $this->updateNoteInfo($note, $info);
         }
     }
@@ -271,31 +277,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    private function updateNoteInfo($note, &$info) {
-        static $noteKey = array('inline', 'source');
-
-        foreach($noteKey as $key) {
-            if (isset($note[$key])) {
-                $info[$key] = $note[$key];
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    private function embedPredefinedNote($note, $pos, $handler) {
-        $text = $this->entrySyntax . $note['name'] . '>' . $note['text'] . $this->exitSyntax;
-        $callWriter = new refnotes_nested_call_writer($handler->CallWriter);
-
-        $this->parseNestedText($text, $handler, $callWriter);
-        $callWriter->process($note['inline'], $note['source'], $pos);
-    }
-
-    /**
-     *
-     */
-    private function parseNestedText($text, $handler, $nestedWriter) {
+    private function parseNestedText($text, $pos, $handler) {
+        $nestedWriter = new refnotes_nested_call_writer($handler->CallWriter);
         $callWriterBackup = $handler->CallWriter;
         $handler->CallWriter = $nestedWriter;
 
@@ -311,15 +294,21 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $this->Lexer->_parser = $handlerBackup;
         $handler->CallWriter = $callWriterBackup;
+
+        $nestedWriter->process($pos);
     }
 
     /**
      *
      */
-    private function handleExit($syntax, $pos) {
-        $this->handling = false;
+    private function updateNoteInfo($note, &$info) {
+        static $noteKey = array('inline', 'source');
 
-        return array(DOKU_LEXER_EXIT);
+        foreach ($noteKey as $key) {
+            if (isset($note[$key])) {
+                $info[$key] = $note[$key];
+            }
+        }
     }
 
     /**
@@ -328,11 +317,11 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     public function renderXhtml($renderer, $data) {
         switch ($data[0]) {
             case DOKU_LEXER_ENTER:
-                $this->renderXhtmlEnter($renderer, $data[1]);
+                $this->renderXhtmlEnter($renderer);
                 break;
 
             case DOKU_LEXER_EXIT:
-                $this->renderXhtmlExit();
+                $this->renderXhtmlExit($renderer, $data[1]);
                 break;
         }
 
@@ -340,34 +329,38 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     }
 
     /**
-     * Renders reference link and starts renderer output capture
+     * Starts renderer output capture
      */
-    private function renderXhtmlEnter($renderer, $info) {
-        $core = $this->getCore();
-
-        $hidden = isset($info['hidden']) ? $info['hidden'] : false;
-        $inline = isset($info['inline']) ? $info['inline'] : false;
-
-        $note = $core->addReference($info['ns'], $info['name'], $hidden, $inline);
-        if (($note != NULL) && !$hidden) {
-            $renderer->doc .= $note->renderReference();
-        }
-
-        $this->noteCapture->start($renderer, $note);
+    private function renderXhtmlEnter($renderer) {
+        $this->noteCapture->start($renderer);
     }
 
     /**
-     * Stops renderer output capture
+     * Stops renderer output capture and renders the reference link
      */
-    private function renderXhtmlExit() {
-        $this->noteCapture->stop();
+    private function renderXhtmlExit($renderer, $info) {
+        $hidden = isset($info['hidden']) ? $info['hidden'] : false;
+        $inline = isset($info['inline']) ? $info['inline'] : false;
+        $core = $this->getCore();
+        $note = $core->addReference($info['ns'], $info['name'], $hidden, $inline);
+        $text = $this->noteCapture->stop();
+
+        if ($note != NULL) {
+            if ($text != '') {
+                $note->setText($text);
+            }
+
+            if (!$hidden) {
+                $renderer->doc .= $note->renderReference();
+            }
+        }
     }
 
     /**
      *
      */
     public function renderMetadata($renderer, $data) {
-        if ($data[0] == DOKU_LEXER_ENTER) {
+        if ($data[0] == DOKU_LEXER_EXIT) {
             $source = '';
 
             if ( array_key_exists('source', $data[1])) {
@@ -388,38 +381,8 @@ class refnotes_nested_call_writer extends Doku_Handler_Nest {
     /**
      *
      */
-    public function process($inline, $source, $pos) {
-        $index = $this->findFirstReference();
-
-        if ($index >= 0) {
-            if ($inline) {
-                $this->calls[$index][1][1][1]['inline'] = true;
-            }
-
-            $this->calls[$index][1][1][1]['source'] = $source;
-            $this->calls[$index][1][1][1]['hidden'] = true;
-
-            $this->CallWriter->writeCall(array("nest", array($this->calls), $pos));
-        }
-    }
-
-    /**
-     *
-     */
-    private function findFirstReference() {
-        $index = -1;
-        $calls = count($this->calls);
-
-        for ($c = 0; $c < $calls; $c++) {
-            if (($this->calls[$c][0] == 'plugin') &&
-                ($this->calls[$c][1][0] == 'refnotes_references') &&
-                ($this->calls[$c][1][1][0] == DOKU_LEXER_ENTER)) {
-                $index = $c;
-                break;
-            }
-        }
-
-        return $index;
+    public function process($pos) {
+        $this->CallWriter->writeCall(array("nest", array($this->calls), $pos));
     }
 }
 
@@ -441,7 +404,6 @@ class refnotes_note_capture {
      */
     private function initialize() {
         $this->renderer = NULL;
-        $this->note = NULL;
         $this->doc = '';
     }
 
@@ -455,21 +417,8 @@ class refnotes_note_capture {
     /**
      *
      */
-    private function setNoteText() {
-        if ($this->note != NULL) {
-            $text = trim($this->renderer->doc);
-            if ($text != '') {
-                $this->note->setText($text);
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    public function start($renderer, $note) {
+    public function start($renderer) {
         $this->renderer = $renderer;
-        $this->note = $note;
         $this->doc = $renderer->doc;
 
         $this->resetCapture();
@@ -479,19 +428,24 @@ class refnotes_note_capture {
      *
      */
     public function restart() {
-        $this->setNoteText();
+        $text = trim($this->renderer->doc);
+
         $this->resetCapture();
+
+        return $text;
     }
 
     /**
      *
      */
     public function stop() {
-        $this->setNoteText();
+        $text = trim($this->renderer->doc);
 
         $this->renderer->doc = $this->doc;
 
         $this->initialize();
+
+        return $text;
     }
 }
 
