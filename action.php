@@ -16,6 +16,7 @@ require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
+require_once(DOKU_PLUGIN . 'refnotes/syntax/references.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
@@ -23,6 +24,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     private $afterParserHandlerDone;
     private $beforeAjaxCallUnknown;
     private $beforeParserCacheUse;
+    private $beforeParserWikitextPreprocess;
     private $beforeTplMetaheaderOutput;
 
     /**
@@ -34,6 +36,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $this->afterParserHandlerDone = new refnotes_after_parser_handler_done();
         $this->beforeAjaxCallUnknown = new refnotes_before_ajax_call_unknown($locale);
         $this->beforeParserCacheUse = new refnotes_before_parser_cache_use();
+        $this->beforeParserWikitextPreprocess = new refnotes_before_parser_wikitext_preprocess();
         $this->beforeTplMetaheaderOutput = new refnotes_before_tpl_metaheader_output();
     }
 
@@ -51,6 +54,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $this->afterParserHandlerDone->register($controller);
         $this->beforeAjaxCallUnknown->register($controller);
         $this->beforeParserCacheUse->register($controller);
+        $this->beforeParserWikitextPreprocess->register($controller);
         $this->beforeTplMetaheaderOutput->register($controller);
     }
 }
@@ -75,6 +79,8 @@ class refnotes_after_parser_handler_done {
      *
      */
     public function handle($event, $param) {
+        syntax_plugin_refnotes_references::getInstance()->exitParsingContext();
+
         $this->reset();
         $this->scanInstructions($event);
 
@@ -587,6 +593,24 @@ class refnotes_before_parser_cache_use {
                 $cache->depends['files'][] = $file;
             }
         }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_before_parser_wikitext_preprocess {
+
+    /**
+     * Register callback
+     */
+    public function register($controller) {
+        $controller->register_hook('PARSER_WIKITEXT_PREPROCESS', 'BEFORE', $this, 'handle');
+    }
+
+    /**
+     *
+     */
+    public function handle($event, $param) {
+        syntax_plugin_refnotes_references::getInstance()->enterParsingContext();
     }
 }
 

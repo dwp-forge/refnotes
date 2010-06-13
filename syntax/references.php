@@ -20,6 +20,8 @@ require_once(DOKU_PLUGIN . 'refnotes/helper.php');
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
+    private static $instance = NULL;
+
     private $mode;
     private $entryPattern;
     private $exitPattern;
@@ -31,6 +33,20 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $noteInfo;
     private $noteData;
     private $noteCapture;
+
+    /**
+     *
+     */
+    public static function getInstance() {
+        if (self::$instance == NULL) {
+            self::$instance = plugin_load('syntax', 'refnotes_references');
+            if (self::$instance == NULL) {
+                throw new Exception('Syntax plugin "refnotes_references" is not available or invalid.');
+            }
+        }
+
+        return self::$instance;
+    }
 
     /**
      * Constructor
@@ -366,6 +382,20 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         return true;
     }
+
+    /**
+     *
+     */
+    public function enterParsingContext() {
+        $this->parsingContext->enterContext();
+    }
+
+    /**
+     *
+     */
+    public function exitParsingContext() {
+        $this->parsingContext->exitContext();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -379,6 +409,20 @@ class refnotes_parsing_context_stack {
     public function __construct() {
         /* Default context. Should never be used, but just in case... */
         $this->context = array(new refnotes_parsing_context());
+    }
+
+    /**
+     *
+     */
+    public function enterContext() {
+        $this->context[] = new refnotes_parsing_context();
+    }
+
+    /**
+     *
+     */
+    public function exitContext() {
+        unset($this->context[count($this->context) - 1]);
     }
 
     /**
