@@ -14,6 +14,7 @@ require_once(DOKU_PLUGIN . 'admin.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
 
     private $html;
@@ -124,6 +125,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_section {
 
     protected $html;
@@ -230,6 +232,7 @@ class refnotes_config_section {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_list_section extends refnotes_config_section {
 
     private $listRows;
@@ -318,6 +321,7 @@ class refnotes_config_list_section extends refnotes_config_section {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_general extends refnotes_config_section {
 
     /**
@@ -350,6 +354,7 @@ class refnotes_config_general extends refnotes_config_section {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_namespaces extends refnotes_config_list_section {
 
     /**
@@ -453,6 +458,7 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_notes extends refnotes_config_list_section {
 
     /**
@@ -482,6 +488,7 @@ class refnotes_config_notes extends refnotes_config_list_section {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_field {
 
     protected $id;
@@ -524,6 +531,7 @@ class refnotes_config_field {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_checkbox extends refnotes_config_field {
 
     /**
@@ -547,6 +555,7 @@ class refnotes_config_checkbox extends refnotes_config_field {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_select extends refnotes_config_field {
 
     private $option;
@@ -581,6 +590,7 @@ class refnotes_config_select extends refnotes_config_field {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_edit extends refnotes_config_field {
 
     /**
@@ -606,6 +616,7 @@ class refnotes_config_edit extends refnotes_config_field {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_edit_inherit extends refnotes_config_field {
 
     /**
@@ -637,6 +648,7 @@ class refnotes_config_edit_inherit extends refnotes_config_field {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_textarea extends refnotes_config_field {
 
     private $rows;
@@ -665,6 +677,7 @@ class refnotes_config_textarea extends refnotes_config_field {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_html_sink {
 
     private $indentIncrement;
