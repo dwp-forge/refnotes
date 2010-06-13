@@ -245,36 +245,34 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private function handleExit($pos, $handler) {
         $info = $this->parsingContext->getReferenceInfo();
         $data = $this->parsingContext->getNoteData();
+        $text = '';
 
         if ($info['name'] != '') {
             $name = $info['ns'] . $info['name'];
+            $database = $this->getDatabase();
 
-            $this->embedDatabaseNote($name, $pos, $handler, $info);
+            if ($database->isDefined($name)) {
+                $note = $database->getNote($name);
+                $text = $note['text'];
+
+                $this->updateNoteInfo($note, $info);
+            }
         }
 
         if (!empty($data)) {
-            $text = $this->getNoteRenderer()->render($data);
+            $temp = $this->getNoteRenderer()->render($data);
+            if ($temp != '') {
+                $text = $temp;
+            }
+        }
 
+        if ($text != '') {
             $this->parseNestedText($text, $pos, $handler);
         }
 
         $this->parsingContext->exitReference();
 
         return array(DOKU_LEXER_EXIT, $info);
-    }
-
-    /**
-     *
-     */
-    private function embedDatabaseNote($name, $pos, $handler, &$info) {
-        $database = $this->getDatabase();
-
-        if ($database->isDefined($name)) {
-            $note = $database->getNote($name);
-
-            $this->parseNestedText($note['text'], $pos, $handler);
-            $this->updateNoteInfo($note, $info);
-        }
     }
 
     /**
