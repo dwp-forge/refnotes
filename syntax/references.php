@@ -29,6 +29,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $database;
     private $handling;
     private $noteInfo;
+    private $noteData;
     private $embedding;
     private $noteCapture;
 
@@ -43,6 +44,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->database = NULL;
         $this->handling = false;
         $this->noteInfo = array();
+        $this->noteData = array();
         $this->embedding = false;
         $this->noteCapture = new refnotes_note_capture();
 
@@ -81,7 +83,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $this->entryPattern = $entry . '(?:' . $nameEntry . '|' . $structuredEntry . '|' . $defineEntry . ')';
         $this->exitPattern = $exit;
-        $this->handlePattern = '/' . $entry . '\s*(' . $optionalFullName . ')\s*(.*)/';
+        $this->handlePattern = '/' . $entry . '\s*(' . $optionalFullName . ')\s*(>>)?(.*)/s';
     }
 
     /**
@@ -240,7 +242,25 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->noteInfo = array('ns' => $namespace, 'name' => $name);
         $this->handling = true;
 
+        if ($match[2] == '>>') {
+            $this->noteData = $this->parseStructuredData($match[3]);
+        }
+
         return array(DOKU_LEXER_ENTER);
+    }
+
+    /**
+     *
+     */
+    private function parseStructuredData($syntax) {
+        preg_match_all('/([-\w]+)\s*[:=]\s*(.+?)\s*?(:?[\n|;]|$)/', $syntax, $match, PREG_SET_ORDER);
+
+        $note = array();
+        foreach ($match as $m) {
+            $note[$m[1]] = $m[2];
+        }
+
+        return $note;
     }
 
     /**
@@ -255,8 +275,15 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             $this->embedDatabaseNote($name, $pos, $handler, $info);
         }
 
+        if (!empty($this->noteData)) {
+            $text = $this->getNoteRenderer()->render($this->noteData);
+
+            $this->parseNestedText($text, $pos, $handler);
+        }
+
         $this->handling = false;
         $this->noteInfo = array();
+        $this->noteData = array();
 
         return array(DOKU_LEXER_EXIT, $info);
     }
