@@ -43,6 +43,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->handling = false;
         $this->noteInfo = array();
         $this->noteData = array();
+        $this->parsingContext = new refnotes_parsing_context_stack();
         $this->noteCapture = new refnotes_note_capture();
 
         $this->initializePatterns();
@@ -169,23 +170,25 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Handle the match
      */
     public function handle($match, $state, $pos, $handler) {
-        switch ($state) {
-            case DOKU_LEXER_ENTER:
-                if (!$this->handling) {
-                    return $this->handleEnter($match, $pos, $handler);
-                }
-                break;
+        $result = $this->parsingContext->canHandle($state);
 
-            case DOKU_LEXER_EXIT:
-                if ($this->handling) {
-                    return $this->handleExit($pos, $handler);
-                }
-                break;
+        if ($result) {
+            switch ($state) {
+                case DOKU_LEXER_ENTER:
+                    $result = $this->handleEnter($match, $pos, $handler);
+                    break;
+
+                case DOKU_LEXER_EXIT:
+                    $result = $this->handleExit($pos, $handler);
+                    break;
+            }
         }
 
-        $handler->_addCall('cdata', array($match), $pos);
+        if ($result === false) {
+            $handler->_addCall('cdata', array($match), $pos);
+        }
 
-        return false;
+        return $result;
     }
 
     /**
@@ -220,14 +223,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             return false;
         }
 
-        list($namespace, $name) = refnotes_parseName($match[1]);
-
-        $this->noteInfo = array('ns' => $namespace, 'name' => $name);
-        $this->handling = true;
-
-        if ($match[2] == '>>') {
-            $this->noteData = $this->parseStructuredData($match[3]);
-        }
+        $this->parsingContext->enterReference($match[1], ($match[2] == '>>') ? $match[3] : '');
 
         return array(DOKU_LEXER_ENTER);
     }
@@ -235,22 +231,9 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    private function parseStructuredData($syntax) {
-        preg_match_all('/([-\w]+)\s*[:=]\s*(.+?)\s*?(:?[\n|;]|$)/', $syntax, $match, PREG_SET_ORDER);
-
-        $note = array();
-        foreach ($match as $m) {
-            $note[$m[1]] = $m[2];
-        }
-
-        return $note;
-    }
-
-    /**
-     *
-     */
     private function handleExit($pos, $handler) {
-        $info = $this->noteInfo;
+        $info = $this->parsingContext->getReferenceInfo();
+        $data = $this->parsingContext->getNoteData();
 
         if ($info['name'] != '') {
             $name = $info['ns'] . $info['name'];
@@ -258,15 +241,13 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             $this->embedDatabaseNote($name, $pos, $handler, $info);
         }
 
-        if (!empty($this->noteData)) {
-            $text = $this->getNoteRenderer()->render($this->noteData);
+        if (!empty($data)) {
+            $text = $this->getNoteRenderer()->render($data);
 
             $this->parseNestedText($text, $pos, $handler);
         }
 
-        $this->handling = false;
-        $this->noteInfo = array();
-        $this->noteData = array();
+        $this->parsingContext->exitReference();
 
         return array(DOKU_LEXER_EXIT, $info);
     }
@@ -384,6 +365,149 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         }
 
         return true;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_parsing_context_stack {
+
+    private $context;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        /* Default context. Should never be used, but just in case... */
+        $this->context = array(new refnotes_parsing_context());
+    }
+
+    /**
+     *
+     */
+    public function canHandle($state) {
+        return end($this->context)->canHandle($state);
+    }
+
+    /**
+     *
+     */
+    public function enterReference($name, $data) {
+        end($this->context)->enterReference($name, $data);
+    }
+
+    /**
+     *
+     */
+    public function exitReference() {
+        end($this->context)->exitReference();
+    }
+
+    /**
+     *
+     */
+    public function getReferenceInfo() {
+        return end($this->context)->getReferenceInfo();
+    }
+
+    /**
+     *
+     */
+    public function getNoteData() {
+        return end($this->context)->getNoteData();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_parsing_context {
+
+    private $handling;
+    private $info;
+    private $data;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->initialize();
+    }
+
+    /**
+     *
+     */
+    private function initialize() {
+        $this->handling = false;
+        $this->info = array();
+        $this->data = array();
+    }
+
+    /**
+     *
+     */
+    public function canHandle($state) {
+        switch ($state) {
+            case DOKU_LEXER_ENTER:
+                $result = !$this->handling;
+                break;
+
+            case DOKU_LEXER_EXIT:
+                $result = $this->handling;
+                break;
+
+            default:
+                $result = false;
+                break;
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    public function enterReference($name, $data) {
+        list($namespace, $name) = refnotes_parseName($name);
+
+        $this->handling = true;
+        $this->info = array('ns' => $namespace, 'name' => $name);
+
+        if ($data != '') {
+            $this->data = $this->parseStructuredData($data);
+        }
+    }
+
+    /**
+     *
+     */
+    private function parseStructuredData($syntax) {
+        preg_match_all('/([-\w]+)\s*[:=]\s*(.+?)\s*?(:?[\n|;]|$)/', $syntax, $match, PREG_SET_ORDER);
+
+        $data = array();
+        foreach ($match as $m) {
+            $data[$m[1]] = $m[2];
+        }
+
+        return $data;
+    }
+
+    /**
+     *
+     */
+    public function exitReference() {
+        $this->initialize();
+    }
+
+    /**
+     *
+     */
+    public function getReferenceInfo() {
+        return $this->info;
+    }
+
+    /**
+     *
+     */
+    public function getNoteData() {
+        return $this->data;
     }
 }
 
