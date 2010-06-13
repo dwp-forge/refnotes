@@ -28,6 +28,20 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     }
 
     /**
+     *
+     */
+    private function getCore() {
+        if ($this->core == NULL) {
+            $this->core = plugin_load('helper', 'refnotes');
+            if ($this->core == NULL) {
+                throw new Exception('Helper plugin "refnotes" is not available or invalid.');
+            }
+        }
+
+        return $this->core;
+    }
+
+    /**
      * Return some info
      */
     public function getInfo() {
@@ -199,19 +213,5 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
             $renderer->doc .= $html;
             $renderer->doc .= '</div>' . DOKU_LF;
         }
-    }
-
-    /**
-     *
-     */
-    private function getCore() {
-        if ($this->core == NULL) {
-            $this->core = plugin_load('helper', 'refnotes');
-            if ($this->core == NULL) {
-                throw new Exception('Helper plugin "refnotes" is not available or invalid.');
-            }
-        }
-
-        return $this->core;
     }
 }

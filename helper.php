@@ -15,6 +15,7 @@ require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class helper_plugin_refnotes extends DokuWiki_Plugin {
 
     private $namespaceStyle;
@@ -115,6 +116,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_namespace {
 
     private $name;
@@ -237,6 +239,7 @@ class refnotes_namespace {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_scope {
 
     private $namespace;
@@ -379,6 +382,7 @@ class refnotes_scope {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_note {
 
     private $scope;

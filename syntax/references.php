@@ -16,6 +16,7 @@ require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
     private $mode;
@@ -376,6 +377,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_nested_call_writer extends Doku_Handler_Nest {
 
     /**
@@ -386,6 +388,7 @@ class refnotes_nested_call_writer extends Doku_Handler_Nest {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_note_capture {
 
     private $renderer;
@@ -449,6 +452,7 @@ class refnotes_note_capture {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_note_renderer {
 
     private $renderer;
@@ -485,6 +489,7 @@ class refnotes_note_renderer {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_basic_note_renderer {
 
     /**
@@ -501,6 +506,7 @@ class refnotes_basic_note_renderer {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_harvard_note_renderer {
 
     private $locale;
@@ -660,6 +666,7 @@ class refnotes_harvard_note_renderer {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_reference_database {
 
     private $note;
@@ -813,6 +820,7 @@ class refnotes_reference_database {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_reference_database_page {
 
     private $database;
@@ -1006,6 +1014,7 @@ class refnotes_reference_database_page {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_reference_database_cache {
 
     private $fileName;
