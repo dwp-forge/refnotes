@@ -29,9 +29,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $locale;
     private $noteRenderer;
     private $database;
-    private $handling;
-    private $noteInfo;
-    private $noteData;
+    private $parsingContext;
     private $noteCapture;
 
     /**
@@ -56,9 +54,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->locale = NULL;
         $this->noteRenderer = NULL;
         $this->database = NULL;
-        $this->handling = false;
-        $this->noteInfo = array();
-        $this->noteData = array();
         $this->parsingContext = new refnotes_parsing_context_stack();
         $this->noteCapture = new refnotes_note_capture();
 
