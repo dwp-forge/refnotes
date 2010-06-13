@@ -30,7 +30,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $handling;
     private $noteInfo;
     private $noteData;
-    private $embedding;
     private $noteCapture;
 
     /**
@@ -44,7 +43,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->handling = false;
         $this->noteInfo = array();
         $this->noteData = array();
-        $this->embedding = false;
         $this->noteCapture = new refnotes_note_capture();
 
         $this->initializePatterns();
