@@ -13,6 +13,7 @@ if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 require_once(DOKU_INC . 'inc/JSON.php');
 require_once(DOKU_PLUGIN . 'action.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
@@ -28,8 +29,10 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
      * Constructor
      */
     public function __construct() {
+        $locale = new refnotes_localization($this);
+
         $this->afterParserHandlerDone = new refnotes_after_parser_handler_done();
-        $this->beforeAjaxCallUnknown = new refnotes_before_ajax_call_unknown();
+        $this->beforeAjaxCallUnknown = new refnotes_before_ajax_call_unknown($locale);
         $this->beforeParserCacheUse = new refnotes_before_parser_cache_use();
         $this->beforeTplMetaheaderOutput = new refnotes_before_tpl_metaheader_output();
     }
@@ -369,6 +372,15 @@ class refnotes_after_parser_handler_done {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_before_ajax_call_unknown {
 
+    private $locale;
+
+    /**
+     * Constructor
+     */
+    public function __construct($locale) {
+        $this->locale = $locale;
+    }
+
     /**
      * Register callback
      */
@@ -519,7 +531,7 @@ class refnotes_before_ajax_call_unknown {
      */
     private function setupReferenceDatabase($namespace) {
         $success = true;
-        $source = $this->localFN('__template');
+        $source = $this->locale->getFileName('__template');
         $destination = wikiFN(cleanID($namespace . ':template'));
         $destination = preg_replace('/template.txt$/', '__template.txt', $destination);
 

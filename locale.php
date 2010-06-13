@@ -28,6 +28,13 @@ class refnotes_localization {
     /**
      *
      */
+    public function getFileName($id) {
+        return $this->plugin->localFN($id);
+    }
+
+    /**
+     *
+     */
     public function getByPrefix($prefix, $strip = true) {
         $this->plugin->setupLocale();
 
