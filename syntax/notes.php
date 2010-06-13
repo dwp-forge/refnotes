@@ -13,32 +13,17 @@ if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 require_once(DOKU_PLUGIN . 'syntax.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
+require_once(DOKU_PLUGIN . 'refnotes/helper.php');
 
 class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
 
     private $mode;
-    private $core;
 
     /**
      * Constructor
      */
     public function __construct() {
         $this->mode = substr(get_class($this), 7);
-        $this->core = NULL;
-    }
-
-    /**
-     *
-     */
-    private function getCore() {
-        if ($this->core == NULL) {
-            $this->core = plugin_load('helper', 'refnotes');
-            if ($this->core == NULL) {
-                throw new Exception('Helper plugin "refnotes" is not available or invalid.');
-            }
-        }
-
-        return $this->core;
     }
 
     /**
@@ -199,7 +184,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      *
      */
     private function styleNamespace($renderer, $attribute, $style) {
-        $this->getCore()->styleNamespace($attribute['ns'], $style);
+        helper_plugin_refnotes::getInstance()->styleNamespace($attribute['ns'], $style);
     }
 
     /**
@@ -207,7 +192,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      */
     private function renderNotes($renderer, $attribute) {
         $limit = array_key_exists('limit', $attribute) ? $attribute['limit'] : '';
-        $html = $this->getCore()->renderNotes($attribute['ns'], $limit);
+        $html = helper_plugin_refnotes::getInstance()->renderNotes($attribute['ns'], $limit);
         if ($html != '') {
             $renderer->doc .= '<div class="refnotes">' . DOKU_LF;
             $renderer->doc .= $html;

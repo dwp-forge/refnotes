@@ -18,8 +18,24 @@ require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class helper_plugin_refnotes extends DokuWiki_Plugin {
 
+    private static $instance = NULL;
+
     private $namespaceStyle;
     private $namespace;
+
+    /**
+     *
+     */
+    public static function getInstance() {
+        if (self::$instance == NULL) {
+            self::$instance = plugin_load('helper', 'refnotes');
+            if (self::$instance == NULL) {
+                throw new Exception('Helper plugin "refnotes" is not available or invalid.');
+            }
+        }
+
+        return self::$instance;
+    }
 
     /**
      * Constructor

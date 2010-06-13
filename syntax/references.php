@@ -15,6 +15,7 @@ require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
+require_once(DOKU_PLUGIN . 'refnotes/helper.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
@@ -23,7 +24,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $entryPattern;
     private $exitPattern;
     private $handlePattern;
-    private $core;
     private $locale;
     private $noteRenderer;
     private $database;
@@ -38,7 +38,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     public function __construct() {
         $this->mode = substr(get_class($this), 7);
-        $this->core = NULL;
         $this->locale = NULL;
         $this->noteRenderer = NULL;
         $this->database = NULL;
@@ -84,20 +83,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->entryPattern = $entry . '(?:' . $nameEntry . '|' . $structuredEntry . '|' . $defineEntry . ')';
         $this->exitPattern = $exit;
         $this->handlePattern = '/' . $entry . '\s*(' . $optionalFullName . ')\s*(>>)?(.*)/s';
-    }
-
-    /**
-     *
-     */
-    private function getCore() {
-        if ($this->core == NULL) {
-            $this->core = plugin_load('helper', 'refnotes');
-            if ($this->core == NULL) {
-                throw new Exception('Helper plugin "refnotes" is not available or invalid.');
-            }
-        }
-
-        return $this->core;
     }
 
     /**
@@ -369,7 +354,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private function renderXhtmlExit($renderer, $info) {
         $hidden = isset($info['hidden']) ? $info['hidden'] : false;
         $inline = isset($info['inline']) ? $info['inline'] : false;
-        $core = $this->getCore();
+        $core = helper_plugin_refnotes::getInstance();
         $note = $core->addReference($info['ns'], $info['name'], $hidden, $inline);
         $text = $this->noteCapture->stop();
 
