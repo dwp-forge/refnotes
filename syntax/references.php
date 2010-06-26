@@ -87,7 +87,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $optionalFullName = $optionalNamespace . $name .'?';
         $structuredEntry = '\s*' . $optionalFullName . '\s*>>' . $text  . $lookaheadExit;
 
-        $define = '\s*' . $optionalFullName . '\s*>';
+        $define = '\s*' . $optionalFullName . '\s*>\s*';
         $optionalDefine = '(?:' . $define . ')?';
         $lookaheadExit = '(?=' . $text . $exit . ')';
         $defineEntry = $optionalDefine . $lookaheadExit;
@@ -238,7 +238,10 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             return false;
         }
 
-        $this->parsingContext->enterReference($match[1], ($match[2] == '>>') ? $match[3] : '');
+        $data = ($match[2] == '>>') ? $match[3] : '';
+        $exitPos = $pos + strlen($syntax);
+
+        $this->parsingContext->enterReference($match[1], $data, $exitPos);
 
         return array(DOKU_LEXER_ENTER);
     }
@@ -274,7 +277,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             $this->parseNestedText($text, $pos, $handler);
         }
 
-        $this->parsingContext->exitReference();
+        $this->parsingContext->exitReference($pos);
 
         return array(DOKU_LEXER_EXIT, $info);
     }
@@ -432,15 +435,15 @@ class refnotes_parsing_context_stack {
     /**
      *
      */
-    public function enterReference($name, $data) {
-        end($this->context)->enterReference($name, $data);
+    public function enterReference($name, $data, $exitPos) {
+        end($this->context)->enterReference($name, $data, $exitPos);
     }
 
     /**
      *
      */
-    public function exitReference() {
-        end($this->context)->exitReference();
+    public function exitReference($pos) {
+        end($this->context)->exitReference($pos);
     }
 
     /**
@@ -462,6 +465,7 @@ class refnotes_parsing_context_stack {
 class refnotes_parsing_context {
 
     private $handling;
+    private $exitPos;
     private $info;
     private $data;
 
@@ -477,6 +481,7 @@ class refnotes_parsing_context {
      */
     private function initialize() {
         $this->handling = false;
+        $this->exitPos = -1;
         $this->info = array();
         $this->data = array();
     }
@@ -505,10 +510,11 @@ class refnotes_parsing_context {
     /**
      *
      */
-    public function enterReference($name, $data) {
+    public function enterReference($name, $data, $exitPos) {
         list($namespace, $name) = refnotes_parseName($name);
 
         $this->handling = true;
+        $this->exitPos = $exitPos;
         $this->info = array('ns' => $namespace, 'name' => $name);
 
         if ($data != '') {
@@ -533,7 +539,9 @@ class refnotes_parsing_context {
     /**
      *
      */
-    public function exitReference() {
+    public function exitReference($pos) {
+        $textDefined = ($pos > $this->exitPos);
+
         $this->initialize();
     }
 
