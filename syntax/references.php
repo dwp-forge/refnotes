@@ -125,7 +125,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private function getDatabase() {
         if ($this->database == NULL) {
             $this->databaseLock = true;
-            $this->database = new refnotes_reference_database($this->getLocale(), $this->getNoteRenderer());
+            $this->database = new refnotes_reference_database($this->getLocale());
             $this->databaseLock = false;
         }
 
@@ -260,7 +260,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
             if ($database->isDefined($name)) {
                 $note = $database->getNote($name);
-                $text = $note['text'];
+                $text = $this->getNoteRenderer()->render($note['data']);
 
                 $this->updateNoteInfo($note, $info);
             }
@@ -854,22 +854,19 @@ class refnotes_reference_database {
 
     private $note;
     private $key;
-    private $noteRenderer;
     private $page;
     private $namespace;
 
     /**
      * Constructor
      */
-    public function __construct($locale, $noteRenderer) {
+    public function __construct($locale) {
         $this->page = array();
         $this->namespace = array();
 
         $this->loadNotesFromConfiguration();
 
         if (refnotes_configuration::getSetting('reference-db-enable')) {
-            $this->noteRenderer = $noteRenderer;
-
             $this->loadKeys($locale);
             $this->loadPages();
             $this->loadNamespaces();
@@ -884,6 +881,8 @@ class refnotes_reference_database {
 
         foreach ($this->note as &$note) {
             $note['source'] = '{configuration}';
+            $note['data'] = array('note-text' => $note['text']);
+            unset($note['text']);
         }
     }
 
@@ -908,13 +907,6 @@ class refnotes_reference_database {
         }
 
         return $result;
-    }
-
-    /**
-     *
-     */
-    public function getNoteRenderer() {
-        return $this->noteRenderer;
     }
 
     /**
@@ -1158,18 +1150,16 @@ class refnotes_reference_database_page {
      */
     private function handleNote($field) {
         $name = '';
-        $note = array('text' => '', 'inline' => false, 'source' => $this->id);
+        $note = array('text' => '', 'inline' => false, 'source' => $this->id, 'data' => $field);
 
         if (array_key_exists('note-name', $field)) {
             if (preg_match('/(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*/', $field['note-name']) == 1) {
                 list($namespace, $name) = refnotes_parseName($field['note-name']);
                 $name = $namespace . $name;
             }
-
-            $note['text'] = $this->database->getNoteRenderer()->render($field);
         }
 
-        if (($name != '') && ($note['text'] != '')) {
+        if ($name != '') {
             if (!in_array($namespace, $this->namespace)) {
                 $this->namespace[] = $namespace;
             }
