@@ -249,22 +249,21 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private function handleExit($pos, $handler) {
         $textDefined = $this->parsingContext->isTextDefined($pos);
         $reference = $this->parsingContext->getReferenceInfo();
-        $data = $this->parsingContext->getNoteData();
+        $note = $this->parsingContext->getNoteData();
 
         if (!$textDefined && $reference->isNamed()) {
-            $name = $reference->getFullName();
             $database = $this->getDatabase();
+            $name = $reference->getFullName();
 
             if ($database->isDefined($name)) {
-                $note = $database->getNote($name);
-                $data = array_merge($data, $note['data']);
+                $reference->updateInfo($database->getNoteInfo($name));
 
-                $reference->updateInfo($note);
+                $note = $database->getNoteData($name)->updateData($note);
             }
         }
 
-        if (!empty($data)) {
-            $text = $this->getNoteRenderer()->render($data);
+        if (!$note->isEmpty()) {
+            $text = $this->getNoteRenderer()->render($note->getData());
 
             if ($text != '') {
                 $this->parseNestedText($text, $pos, $handler);
@@ -471,7 +470,7 @@ class refnotes_parsing_context {
         $this->handling = false;
         $this->exitPos = -1;
         $this->info = NULL;
-        $this->data = array();
+        $this->data = NULL;
     }
 
     /**
@@ -502,24 +501,7 @@ class refnotes_parsing_context {
         $this->handling = true;
         $this->exitPos = $exitPos;
         $this->info = new refnotes_reference_info($name);
-
-        if ($data != '') {
-            $this->data = $this->parseStructuredData($data);
-        }
-    }
-
-    /**
-     *
-     */
-    private function parseStructuredData($syntax) {
-        preg_match_all('/([-\w]+)\s*[:=]\s*(.+?)\s*?(:?[\n|;]|$)/', $syntax, $match, PREG_SET_ORDER);
-
-        $data = array();
-        foreach ($match as $m) {
-            $data[$m[1]] = $m[2];
-        }
-
-        return $data;
+        $this->data = new refnotes_note_data($data);
     }
 
     /**
@@ -597,6 +579,65 @@ class refnotes_reference_info {
      */
     public function getInfo() {
         return $this->info;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_note_data {
+
+    private $data;
+
+    /**
+     * Constructor
+     */
+    public function __construct($data) {
+        if (is_array($data)) {
+            $this->data = $data;
+        }
+        elseif ($data != '') {
+            $this->data = $this->parseStructuredData($data);
+        }
+        else {
+            $this->data = array();
+        }
+    }
+
+    /**
+     *
+     */
+    private function parseStructuredData($syntax) {
+        preg_match_all('/([-\w]+)\s*[:=]\s*(.+?)\s*?(:?[\n|;]|$)/', $syntax, $match, PREG_SET_ORDER);
+
+        $data = array();
+
+        foreach ($match as $m) {
+            $data[$m[1]] = $m[2];
+        }
+
+        return $data;
+    }
+
+    /**
+     *
+     */
+    public function updateData($data) {
+        $this->data = array_merge($this->data, $data->getData());
+
+        return $this;
+    }
+
+    /**
+     *
+     */
+    public function isEmpty() {
+        return empty($this->data);
+    }
+
+    /**
+     *
+     */
+    public function getData() {
+        return $this->data;
     }
 }
 
@@ -928,13 +969,10 @@ class refnotes_reference_database {
      *
      */
     private function loadNotesFromConfiguration() {
-        $this->note = refnotes_configuration::load('notes');
+        $note = refnotes_configuration::load('notes');
 
-        foreach ($this->note as &$note) {
-            $note['source'] = '{configuration}';
-            $note['data'] = array('note-text' => $note['text']);
-
-            unset($note['text']);
+        foreach ($note as $name => $info) {
+            $this->note[$name] = new refnotes_reference_database_note('{configuration}', $info);
         }
     }
 
@@ -1042,8 +1080,15 @@ class refnotes_reference_database {
     /**
      *
      */
-    public function getNote($name) {
-        return array_merge(array('name' => $name), $this->note[$name]);
+    public function getNoteInfo($name) {
+        return $this->note[$name]->getInfo();
+    }
+
+    /**
+     *
+     */
+    public function getNoteData($name) {
+        return $this->note[$name]->getData();
     }
 }
 
@@ -1201,22 +1246,16 @@ class refnotes_reference_database_page {
      *
      */
     private function handleNote($field) {
-        $name = '';
-        $note = array('text' => '', 'inline' => false, 'source' => $this->id, 'data' => $field);
+        $note = new refnotes_reference_database_note($this->id, $field);
 
-        if (array_key_exists('note-name', $field)) {
-            if (preg_match('/(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*/', $field['note-name']) == 1) {
-                list($namespace, $name) = refnotes_parseName($field['note-name']);
-                $name = $namespace . $name;
-            }
-        }
+        list($namespace, $name) = $note->getNameParts();
 
         if ($name != '') {
             if (!in_array($namespace, $this->namespace)) {
                 $this->namespace[] = $namespace;
             }
 
-            $this->note[$name] = $note;
+            $this->note[$namespace . $name] = $note;
         }
     }
 
@@ -1231,11 +1270,83 @@ class refnotes_reference_database_page {
      *
      */
     public function getNotes() {
-        if (count($this->note) == 0) {
+        if (empty($this->note)) {
             $this->parse();
         }
 
         return $this->note;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_reference_database_note {
+
+    private $nameParts;
+    private $info;
+    private $data;
+
+    /**
+     * Constructor
+     */
+    public function __construct($source, $data) {
+        $this->nameParts = array('', '');
+
+        if ($source == '{configuration}') {
+            $this->initializeConfigNote($data);
+        }
+        else {
+            $this->initializePageNote($data);
+        }
+
+        $this->info['source'] = $source;
+    }
+
+    /**
+     *
+     */
+    public function initializeConfigNote($info) {
+        $this->info = $info;
+        $this->data = new refnotes_note_data(array('note-text' => $info['text']));
+
+        unset($this->info['text']);
+    }
+
+
+    /**
+     *
+     */
+    public function initializePageNote($data) {
+        if (isset($data['note-name'])) {
+            if (preg_match('/(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*/', $data['note-name']) == 1) {
+                $this->nameParts = refnotes_parseName($data['note-name']);
+            }
+
+            unset($data['note-name']);
+        }
+
+        $this->info = array();
+        $this->data = new refnotes_note_data($data);
+    }
+
+    /**
+     *
+     */
+    public function getNameParts() {
+        return $this->nameParts;
+    }
+
+    /**
+     *
+     */
+    public function getInfo() {
+        return $this->info;
+    }
+
+    /**
+     *
+     */
+    public function getData() {
+        return $this->data;
     }
 }
 
