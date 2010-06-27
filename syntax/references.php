@@ -248,18 +248,18 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     private function handleExit($pos, $handler) {
         $textDefined = $this->parsingContext->isTextDefined($pos);
-        $info = $this->parsingContext->getReferenceInfo();
+        $reference = $this->parsingContext->getReferenceInfo();
         $data = $this->parsingContext->getNoteData();
 
-        if (!$textDefined && ($info['name'] != '')) {
-            $name = $info['ns'] . $info['name'];
+        if (!$textDefined && $reference->isNamed()) {
+            $name = $reference->getFullName();
             $database = $this->getDatabase();
 
             if ($database->isDefined($name)) {
                 $note = $database->getNote($name);
                 $data = array_merge($data, $note['data']);
 
-                $this->updateNoteInfo($note, $info);
+                $reference->updateInfo($note);
             }
         }
 
@@ -273,7 +273,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $this->parsingContext->exitReference();
 
-        return array(DOKU_LEXER_EXIT, $info);
+        return array(DOKU_LEXER_EXIT, $reference->getInfo());
     }
 
     /**
@@ -298,19 +298,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $handler->CallWriter = $callWriterBackup;
 
         $nestedWriter->process($pos);
-    }
-
-    /**
-     *
-     */
-    private function updateNoteInfo($note, &$info) {
-        static $noteKey = array('inline', 'source');
-
-        foreach ($noteKey as $key) {
-            if (isset($note[$key])) {
-                $info[$key] = $note[$key];
-            }
-        }
     }
 
     /**
@@ -483,7 +470,7 @@ class refnotes_parsing_context {
     private function initialize() {
         $this->handling = false;
         $this->exitPos = -1;
-        $this->info = array();
+        $this->info = NULL;
         $this->data = array();
     }
 
@@ -512,11 +499,9 @@ class refnotes_parsing_context {
      *
      */
     public function enterReference($name, $data, $exitPos) {
-        list($namespace, $name) = refnotes_parseName($name);
-
         $this->handling = true;
         $this->exitPos = $exitPos;
-        $this->info = array('ns' => $namespace, 'name' => $name);
+        $this->info = new refnotes_reference_info($name);
 
         if ($data != '') {
             $this->data = $this->parseStructuredData($data);
@@ -563,6 +548,55 @@ class refnotes_parsing_context {
      */
     public function getNoteData() {
         return $this->data;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_reference_info {
+
+    private $info;
+
+    /**
+     * Constructor
+     */
+    public function __construct($name) {
+        list($namespace, $name) = refnotes_parseName($name);
+
+        $this->info = array('ns' => $namespace, 'name' => $name);
+    }
+
+    /**
+     *
+     */
+    public function isNamed() {
+        return ($this->info['name'] != '') && ($this->info['name']{0} != '#');
+    }
+
+    /**
+     *
+     */
+    public function getFullName() {
+        return $this->info['ns'] . $this->info['name'];
+    }
+
+    /**
+     *
+     */
+    public function updateInfo($info) {
+        static $key = array('inline', 'source');
+
+        foreach ($key as $k) {
+            if (isset($info[$k])) {
+                $this->info[$k] = $info[$k];
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public function getInfo() {
+        return $this->info;
     }
 }
 
