@@ -247,34 +247,31 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      *
      */
     private function handleExit($pos, $handler) {
+        $textDefined = $this->parsingContext->isTextDefined($pos);
         $info = $this->parsingContext->getReferenceInfo();
         $data = $this->parsingContext->getNoteData();
-        $text = '';
 
-        if ($info['name'] != '') {
+        if (!$textDefined && ($info['name'] != '')) {
             $name = $info['ns'] . $info['name'];
             $database = $this->getDatabase();
 
             if ($database->isDefined($name)) {
                 $note = $database->getNote($name);
-                $text = $this->getNoteRenderer()->render($note['data']);
+                $data = array_merge($data, $note['data']);
 
                 $this->updateNoteInfo($note, $info);
             }
         }
 
         if (!empty($data)) {
-            $temp = $this->getNoteRenderer()->render($data);
-            if ($temp != '') {
-                $text = $temp;
+            $text = $this->getNoteRenderer()->render($data);
+
+            if ($text != '') {
+                $this->parseNestedText($text, $pos, $handler);
             }
         }
 
-        if ($text != '') {
-            $this->parseNestedText($text, $pos, $handler);
-        }
-
-        $this->parsingContext->exitReference($pos);
+        $this->parsingContext->exitReference();
 
         return array(DOKU_LEXER_EXIT, $info);
     }
@@ -439,8 +436,15 @@ class refnotes_parsing_context_stack {
     /**
      *
      */
-    public function exitReference($pos) {
-        end($this->context)->exitReference($pos);
+    public function exitReference() {
+        end($this->context)->exitReference();
+    }
+
+    /**
+     *
+     */
+    public function isTextDefined($pos) {
+        return end($this->context)->isTextDefined($pos);
     }
 
     /**
@@ -536,10 +540,15 @@ class refnotes_parsing_context {
     /**
      *
      */
-    public function exitReference($pos) {
-        $textDefined = ($pos > $this->exitPos);
-
+    public function exitReference() {
         $this->initialize();
+    }
+
+    /**
+     *
+     */
+    public function isTextDefined($pos) {
+        return $pos > $this->exitPos;
     }
 
     /**
