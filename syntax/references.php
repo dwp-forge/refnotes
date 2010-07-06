@@ -268,6 +268,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             if ($text != '') {
                 $this->parseNestedText($text, $pos, $handler);
             }
+
+            $reference->setData($note->getData());
         }
 
         $this->parsingContext->exitReference();
@@ -570,6 +572,20 @@ class refnotes_reference_info {
         foreach ($key as $k) {
             if (isset($info[$k])) {
                 $this->info[$k] = $info[$k];
+            }
+        }
+    }
+
+
+    /**
+     *
+     */
+    public function setData($data) {
+        static $key = array('authors', 'page');
+
+        foreach ($key as $k) {
+            if (isset($data[$k])) {
+                $this->info[$k] = $data[$k];
             }
         }
     }
