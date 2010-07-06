@@ -62,10 +62,12 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     /**
      * Adds a reference to the notes array. Returns a note
      */
-    public function addReference($namespaceName, $noteName, $hidden, $inline) {
-        $namespace = $this->findNamespace($namespaceName, true);
+    public function addReference($info) {
+        $reference = new refnotes_reference($info);
 
-        return $namespace->addReference($noteName, $hidden, $inline);
+        $namespace = $this->findNamespace($reference->getNamespace(), true);
+
+        return $namespace->addReference($reference);
     }
 
     /**
@@ -193,7 +195,7 @@ class refnotes_namespace {
     /**
      * Adds a reference to the current scope. Returns a note
      */
-    public function addReference($name, $hidden, $inline) {
+    public function addReference($reference) {
         if ($this->newScope) {
             $id = count($this->scope) + 1;
             $this->scope[] = new refnotes_scope($this, $id);
@@ -202,7 +204,7 @@ class refnotes_namespace {
 
         $scope = end($this->scope);
 
-        return $scope->addReference($name, $hidden, $inline);
+        return $scope->addReference($reference);
     }
 
     /**
@@ -308,12 +310,13 @@ class refnotes_scope {
     /**
      * Adds a reference to the notes array. Returns a note
      */
-    public function addReference($name, $hidden, $inline) {
+    public function addReference($reference) {
+        $name = $reference->getName();
         $note = NULL;
-        if (preg_match('/(?:@@FNT|#)(\d+)/', $name, $match) == 1) {
-            $id = intval($match[1]);
-            if (array_key_exists($id, $this->note)) {
-                $note = $this->note[$id];
+
+        if (is_int($name)) {
+            if (array_key_exists($name, $this->note)) {
+                $note = $this->note[$name];
             }
         }
         else {
@@ -322,23 +325,31 @@ class refnotes_scope {
             }
 
             if ($note == NULL) {
-                if ($inline) {
-                    $id = --$this->inlineNotes;
-                }
-                else {
-                    $id = ++$this->notes;
-                }
-
-                $note = new refnotes_note($this, $id, $name, $inline);
-                $this->note[$id] = $note;
+                $note = $this->addNote($name, $reference->isInline());
             }
         }
 
-        if (($note != NULL) && !$hidden && !$note->isInline()) {
+        if (($note != NULL) && $reference->isSequential()) {
             $note->addReference(++$this->references);
         }
 
         return $note;
+    }
+
+    /**
+     *
+     */
+    public function addNote($name, $inline) {
+        if ($inline) {
+            $id = --$this->inlineNotes;
+        }
+        else {
+            $id = ++$this->notes;
+        }
+
+        $this->note[$id] = new refnotes_note($this, $id, $name, $inline);
+
+        return $this->note[$id];
     }
 
     /**
@@ -399,6 +410,59 @@ class refnotes_scope {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_reference {
+
+    private $namespace;
+    private $name;
+    private $inline;
+    private $hidden;
+    private $data;
+
+    /**
+     * Constructor
+     */
+    public function __construct($info) {
+        $this->namespace = $info['ns'];
+        $this->name = $info['name'];
+        $this->inline = isset($info['inline']) ? $info['inline'] : false;
+        $this->hidden = isset($info['hidden']) ? $info['hidden'] : false;
+        $this->data = $info;
+
+        if (preg_match('/(?:@@FNT|#)(\d+)/', $this->name, $match) == 1) {
+            $this->name = intval($match[1]);
+        }
+    }
+
+    /**
+     *
+     */
+    public function getNamespace() {
+        return $this->namespace;
+    }
+
+    /**
+     *
+     */
+    public function getName() {
+        return $this->name;
+    }
+
+    /**
+     *
+     */
+    public function isInline() {
+        return $this->inline;
+    }
+
+    /**
+     *
+     */
+    public function isSequential() {
+        return !$this->hidden && !$this->inline;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_note {
 
     private $scope;
@@ -452,13 +516,6 @@ class refnotes_note {
         if (($this->text == '') || !$this->inline) {
             $this->text = $text;
         }
-    }
-
-    /**
-     *
-     */
-    public function isInline() {
-        return $this->inline;
     }
 
     /**

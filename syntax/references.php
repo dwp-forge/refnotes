@@ -329,10 +329,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Stops renderer output capture and renders the reference link
      */
     private function renderXhtmlExit($renderer, $info) {
-        $hidden = isset($info['hidden']) ? $info['hidden'] : false;
-        $inline = isset($info['inline']) ? $info['inline'] : false;
         $core = helper_plugin_refnotes::getInstance();
-        $note = $core->addReference($info['ns'], $info['name'], $hidden, $inline);
+        $note = $core->addReference($info);
         $text = $this->noteCapture->stop();
 
         if ($note != NULL) {
@@ -340,7 +338,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
                 $note->setText($text);
             }
 
-            if (!$hidden) {
+            if (!$info['hidden']) {
                 $renderer->doc .= $note->renderReference();
             }
         }
