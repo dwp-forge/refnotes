@@ -323,25 +323,16 @@ class refnotes_scope {
      * Adds a reference to the notes array. Returns a note
      */
     public function addReference($reference) {
-        $name = $reference->getName();
-        $note = $this->findNote($name);
+        $reference->joinScope($this);
 
-        if (($note == NULL) && !is_int($name)) {
-            $note = $this->addNote($name, $reference->isInline());
-        }
-
-        $reference->joinScope($this, $note);
-
-        return $note;
+        return $reference->getNote();
     }
 
     /**
      *
      */
-    public function addNote($name, $inline) {
-        $this->note[] = new refnotes_note($this, $name, $inline);
-
-        return end($this->note);
+    public function addNote($note) {
+        $this->note[] = $note;
     }
 
     /**
@@ -369,9 +360,9 @@ class refnotes_scope {
     }
 
     /**
-     * Finds a note given it's name
+     * Finds a note given it's name or id
      */
-    private function findNote($name) {
+    public function findNote($name) {
         $result = NULL;
 
         if ($name != '') {
@@ -452,24 +443,30 @@ class refnotes_reference {
     /**
      *
      */
-    public function isInline() {
-        return $this->inline;
+    public function getNote() {
+        return $this->note;
     }
 
     /**
      *
      */
-    public function joinScope($scope, $note) {
+    public function joinScope($scope) {
+        $note = $scope->findNote($this->name);
+
+        if (($note == NULL) && !is_int($this->name)) {
+            $note = new refnotes_note($scope, $this->name, $this->inline);
+
+            $scope->addNote($note);
+        }
+
+        if (($note != NULL) && !$this->hidden && !$this->inline) {
+            $this->id = $scope->getReferenceId();
+
+            $note->addReference($this->id);
+        }
+
         $this->scope = $scope;
         $this->note = $note;
-
-        if (!$this->hidden && !$this->inline) {
-            $this->id = $this->scope->getReferenceId();
-
-            if ($this->note != NULL) {
-                $this->note->addReference($this->id);
-            }
-        }
     }
 }
 
