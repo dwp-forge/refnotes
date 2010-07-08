@@ -264,7 +264,6 @@ class refnotes_scope {
     private $id;
     private $note;
     private $notes;
-    private $inlineNotes;
     private $references;
 
     /**
@@ -275,7 +274,6 @@ class refnotes_scope {
         $this->id = $id;
         $this->note = array();
         $this->notes = 0;
-        $this->inlineNotes = 0;
         $this->references = 0;
     }
 
@@ -291,6 +289,13 @@ class refnotes_scope {
      */
     public function getStyle($property) {
         return $this->namespace->getStyle($property);
+    }
+
+    /**
+     *
+     */
+    public function getNoteId() {
+        return ++$this->notes;
     }
 
     /**
@@ -319,21 +324,10 @@ class refnotes_scope {
      */
     public function addReference($reference) {
         $name = $reference->getName();
-        $note = NULL;
+        $note = $this->findNote($name);
 
-        if (is_int($name)) {
-            if (array_key_exists($name, $this->note)) {
-                $note = $this->note[$name];
-            }
-        }
-        else {
-            if ($name != '') {
-                $note = $this->findNote($name);
-            }
-
-            if ($note == NULL) {
-                $note = $this->addNote($name, $reference->isInline());
-            }
+        if (($note == NULL) && !is_int($name)) {
+            $note = $this->addNote($name, $reference->isInline());
         }
 
         $reference->joinScope($this, $note);
@@ -345,16 +339,9 @@ class refnotes_scope {
      *
      */
     public function addNote($name, $inline) {
-        if ($inline) {
-            $id = --$this->inlineNotes;
-        }
-        else {
-            $id = ++$this->notes;
-        }
+        $this->note[] = new refnotes_note($this, $name, $inline);
 
-        $this->note[$id] = new refnotes_note($this, $id, $name, $inline);
-
-        return $this->note[$id];
+        return end($this->note);
     }
 
     /**
@@ -387,10 +374,14 @@ class refnotes_scope {
     private function findNote($name) {
         $result = NULL;
 
-        foreach ($this->note as $note) {
-            if ($note->getName() == $name) {
-                $result = $note;
-                break;
+        if ($name != '') {
+            $getter = is_int($name) ? 'getId' : 'getName';
+
+            foreach ($this->note as $note) {
+                if ($note->$getter() == $name) {
+                    $result = $note;
+                    break;
+                }
             }
         }
 
@@ -497,9 +488,9 @@ class refnotes_note {
     /**
      * Constructor
      */
-    public function __construct($scope, $id, $name, $inline) {
+    public function __construct($scope, $name, $inline) {
         $this->scope = $scope;
-        $this->id = $id;
+        $this->id = $inline ? 0 : $scope->getNoteId();
 
         if ($name != '') {
             $this->name = $name;
@@ -513,6 +504,13 @@ class refnotes_note {
         $this->references = 0;
         $this->text = '';
         $this->rendered = false;
+    }
+
+    /**
+     *
+     */
+    public function getId() {
+        return $this->id;
     }
 
     /**
