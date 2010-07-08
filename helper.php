@@ -294,6 +294,13 @@ class refnotes_scope {
     }
 
     /**
+     *
+     */
+    public function getReferenceId() {
+        return ++$this->references;
+    }
+
+    /**
      * Returns the number of renderable notes in the scope
      */
     public function getRenderableCount() {
@@ -329,9 +336,7 @@ class refnotes_scope {
             }
         }
 
-        if (($note != NULL) && $reference->isSequential()) {
-            $note->addReference(++$this->references);
-        }
+        $reference->joinScope($this, $note);
 
         return $note;
     }
@@ -417,6 +422,9 @@ class refnotes_reference {
     private $inline;
     private $hidden;
     private $data;
+    private $scope;
+    private $note;
+    private $id;
 
     /**
      * Constructor
@@ -427,6 +435,9 @@ class refnotes_reference {
         $this->inline = isset($info['inline']) ? $info['inline'] : false;
         $this->hidden = isset($info['hidden']) ? $info['hidden'] : false;
         $this->data = $info;
+        $this->scope = NULL;
+        $this->note = NULL;
+        $this->id = 0;
 
         if (preg_match('/(?:@@FNT|#)(\d+)/', $this->name, $match) == 1) {
             $this->name = intval($match[1]);
@@ -457,8 +468,17 @@ class refnotes_reference {
     /**
      *
      */
-    public function isSequential() {
-        return !$this->hidden && !$this->inline;
+    public function joinScope($scope, $note) {
+        $this->scope = $scope;
+        $this->note = $note;
+
+        if (!$this->hidden && !$this->inline) {
+            $this->id = $this->scope->getReferenceId();
+
+            if ($this->note != NULL) {
+                $this->note->addReference($this->id);
+            }
+        }
     }
 }
 
