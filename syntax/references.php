@@ -330,18 +330,14 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     private function renderXhtmlExit($renderer, $info) {
         $core = helper_plugin_refnotes::getInstance();
-        $note = $core->addReference($info);
+        $reference = $core->addReference($info);
         $text = $this->noteCapture->stop();
 
-        if ($note != NULL) {
-            if ($text != '') {
-                $note->setText($text);
-            }
-
-            if (!$info['hidden']) {
-                $renderer->doc .= $note->renderReference();
-            }
+        if ($text != '') {
+            $reference->getNote()->setText($text);
         }
+
+        $renderer->doc .= $reference->render();
     }
 
     /**
@@ -351,7 +347,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         if ($data[0] == DOKU_LEXER_EXIT) {
             $source = '';
 
-            if ( array_key_exists('source', $data[1])) {
+            if (array_key_exists('source', $data[1])) {
                 $source = $data[1]['source'];
             }
 

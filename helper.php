@@ -60,14 +60,14 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     }
 
     /**
-     * Adds a reference to the notes array. Returns a note
+     * Adds a reference to the notes array
      */
     public function addReference($info) {
         $reference = new refnotes_reference($info);
 
-        $namespace = $this->findNamespace($reference->getNamespace(), true);
+        $this->findNamespace($reference->getNamespace(), true)->addReference($reference);
 
-        return $namespace->addReference($reference);
+        return $reference;
     }
 
     /**
@@ -193,7 +193,7 @@ class refnotes_namespace {
     }
 
     /**
-     * Adds a reference to the current scope. Returns a note
+     * Adds a reference to the current scope
      */
     public function addReference($reference) {
         if ($this->newScope) {
@@ -202,9 +202,7 @@ class refnotes_namespace {
             $this->newScope = false;
         }
 
-        $scope = end($this->scope);
-
-        return $scope->addReference($reference);
+        $reference->joinScope(end($this->scope));
     }
 
     /**
@@ -320,15 +318,6 @@ class refnotes_scope {
     }
 
     /**
-     * Adds a reference to the notes array. Returns a note
-     */
-    public function addReference($reference) {
-        $reference->joinScope($this);
-
-        return $reference->getNote();
-    }
-
-    /**
      *
      */
     public function addNote($note) {
@@ -436,15 +425,14 @@ class refnotes_reference {
     /**
      *
      */
-    public function getName() {
-        return $this->name;
-    }
-
-    /**
-     *
-     */
     public function getNote() {
-        return $this->note;
+        $result = $this->note;
+
+        if ($result == NULL) {
+            $result = new refnotes_note_mock();
+        }
+
+        return $result;
     }
 
     /**
@@ -467,6 +455,29 @@ class refnotes_reference {
 
         $this->scope = $scope;
         $this->note = $note;
+    }
+
+    /**
+     *
+     */
+    public function render() {
+        $html = '';
+
+        if (($this->note != NULL) && !$this->hidden) {
+            $html = $this->note->renderReference();
+        }
+
+        return $html;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_note_mock {
+
+    /**
+     *
+     */
+    public function setText($text) {
     }
 }
 
