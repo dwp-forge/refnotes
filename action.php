@@ -73,15 +73,15 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $namespace = refnotes_configuration::load('namespaces');
         $namespace = $this->translateStyles($namespace, 'dw', 'js');
 
-        $config['cookie'] = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
         $config['general'] = refnotes_configuration::load('general');
         $config['namespaces'] = $namespace;
         $config['notes'] = refnotes_configuration::load('notes');
 
+        $cookie = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
         $json = new JSON();
 
         header('Content-Type: application/x-suggestions+json');
-        print($json->encode($config));
+        print($cookie . $json->encode($config) . $cookie);
     }
 
     /**
