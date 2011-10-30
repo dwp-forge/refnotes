@@ -24,8 +24,10 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      * Constructor
      */
     public function __construct() {
+        refnotes_localization::initialize($this);
+
         $this->html = new refnotes_html_sink();
-        $this->locale = new refnotes_localization($this);
+        $this->locale = refnotes_localization::getInstance();
     }
 
     /**
@@ -91,7 +93,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      */
     private function printGeneral() {
         $section = new refnotes_config_general();
-        $section->printHtml($this->html, $this->locale);
+        $section->printHtml($this->html);
     }
 
     /**
@@ -99,7 +101,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      */
     private function printNamespaces() {
         $section = new refnotes_config_namespaces();
-        $section->printHtml($this->html, $this->locale);
+        $section->printHtml($this->html);
     }
 
     /**
@@ -107,7 +109,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      */
     private function printNotes() {
         $section = new refnotes_config_notes();
-        $section->printHtml($this->html, $this->locale);
+        $section->printHtml($this->html);
     }
 
     /**
@@ -129,7 +131,6 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
 class refnotes_config_section {
 
     protected $html;
-    protected $locale;
     protected $id;
     protected $title;
 
@@ -138,7 +139,6 @@ class refnotes_config_section {
      */
     public function __construct($id) {
         $this->html = NULL;
-        $this->locale = NULL;
         $this->id = $id;
         $this->title = 'sec_' . $id;
     }
@@ -146,9 +146,8 @@ class refnotes_config_section {
     /**
      *
      */
-    public function printHtml($html, $locale) {
+    public function printHtml($html) {
         $this->html = $html;
-        $this->locale = $locale;
         $this->open();
         $this->printFields();
         $this->close();
@@ -158,8 +157,10 @@ class refnotes_config_section {
      *
      */
     protected function open() {
+        $title = refnotes_localization::getInstance()->getLang($this->title);
+
         $this->html->ptln('<fieldset id="' . $this->id . '">');
-        $this->html->ptln('<legend>' . $this->locale->getLang($this->title) . '</legend>');
+        $this->html->ptln('<legend>' . $title . '</legend>');
         $this->html->ptln('<table class="inline" cols="3">');
         $this->html->indent();
     }
@@ -217,14 +218,14 @@ class refnotes_config_section {
                 $this->html->ptln('<td class="lean-label">');
             }
 
-            $this->html->ptln($field->getLabel($this->locale));
+            $this->html->ptln($field->getLabel());
             $this->html->ptln('</td><td class="value">');
         }
         else {
             $this->html->ptln('<td class="value" colspan="2">');
         }
 
-        $this->html->ptln($field->getControl($this->locale));
+        $this->html->ptln($field->getControl());
         $this->html->ptln('</td>');
 
         $this->html->unindent();
@@ -290,11 +291,13 @@ class refnotes_config_list_section extends refnotes_config_section {
      *
      */
     private function getButton($action) {
+        $label = refnotes_localization::getInstance()->getLang('btn_' . $action);
+
         $id = $action . '-' . $this->id;
         $html = '<input type="button" class="button"';
         $html .= ' id="' . $id . '"';
         $html .= ' name="' . $id . '"';
-        $html .= ' value="' . $this->locale->getLang('btn_' . $action) . '"';
+        $html .= ' value="' . $label . '"';
         $html .= ' />';
 
         return $html;
@@ -530,8 +533,10 @@ class refnotes_config_field {
     /**
      *
      */
-    public function getLabel($locale) {
-        return '<label for="' . $this->id . '">' . $locale->getLang($this->label) . '</label>';
+    public function getLabel() {
+        $label = refnotes_localization::getInstance()->getLang($this->label);
+
+        return '<label for="' . $this->id . '">' . $label . '</label>';
     }
 }
 
@@ -548,7 +553,7 @@ class refnotes_config_checkbox extends refnotes_config_field {
     /**
      *
      */
-    public function getControl($locale) {
+    public function getControl() {
         $html = '<div class="input">';
         $html .= '<input type="checkbox" class="checkbox"';
         $html .= ' id="' . $this->id . '"';
@@ -576,7 +581,9 @@ class refnotes_config_select extends refnotes_config_field {
     /**
      *
      */
-    public function getControl($locale) {
+    public function getControl() {
+        $locale = refnotes_localization::getInstance();
+
         $html = '<div class="input">';
 
         $html .= '<select class="edit"';
@@ -607,7 +614,7 @@ class refnotes_config_edit extends refnotes_config_field {
     /**
      *
      */
-    public function getControl($locale) {
+    public function getControl() {
         $html = '<div class="input">';
 
         $html .= '<input type="text" class="edit"';
@@ -633,7 +640,9 @@ class refnotes_config_edit_inherit extends refnotes_config_field {
     /**
      *
      */
-    public function getControl($locale) {
+    public function getControl() {
+        $buttonLabel = refnotes_localization::getInstance()->getLang('opt_inherit');
+
         $html = '<div class="input">';
 
         $html .= '<input type="text" class="edit"';
@@ -643,7 +652,7 @@ class refnotes_config_edit_inherit extends refnotes_config_field {
         $html .= '<input type="button" class="button"';
         $html .= ' id="' . $this->id . '-inherit"';
         $html .= ' name="' . $this->id . '-inherit"';
-        $html .= ' value="' . $locale->getLang('opt_inherit') . '"';
+        $html .= ' value="' . $buttonLabel . '"';
         $html .= ' />';
 
         $html .= '</div>';
@@ -669,7 +678,7 @@ class refnotes_config_textarea extends refnotes_config_field {
     /**
      *
      */
-    public function getControl($locale) {
+    public function getControl() {
         $html = '<div class="input">';
         $html .= '<textarea class="edit"';
         $html .= ' id="' . $this->id . '"';

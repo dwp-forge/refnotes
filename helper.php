@@ -12,6 +12,7 @@ if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
 require_once(DOKU_INC . 'inc/plugin.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
+require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
@@ -41,6 +42,8 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      * Constructor
      */
     public function __construct() {
+        refnotes_localization::initialize($this);
+
         $this->namespaceStyle = refnotes_configuration::load('namespaces');
         $this->namespace = array();
     }
@@ -65,7 +68,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     public function addReference($info) {
         $reference = new refnotes_reference($info);
 
-        $this->findNamespace($reference->getNamespace(), true)->addReference($reference);
+        $this->getNamespace($reference->getNamespace())->addReference($reference);
 
         return $reference;
     }
@@ -74,10 +77,10 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      *
      */
     public function styleNamespace($namespaceName, $style) {
-        $namespace = $this->findNamespace($namespaceName, true);
+        $namespace = $this->getNamespace($namespaceName);
 
         if (array_key_exists('inherit', $style)) {
-            $source = $this->findNamespace($style['inherit'], true);
+            $source = $this->getNamespace($style['inherit']);
             $namespace->inheritStyle($source);
         }
 
@@ -105,32 +108,48 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
     }
 
     /**
+     * Returns a namespace given it's name. The namespace is created if it doesn't exist yet.
+     */
+    public function getNamespace($name) {
+        $result = $this->findNamespace($name);
+
+        if ($result == NULL) {
+            $result = $this->createNamespace($name);
+        }
+
+        return $result;
+    }
+
+    /**
      * Finds a namespace given it's name
      */
-    private function findNamespace($name, $create = false) {
+    private function findNamespace($name) {
         $result = NULL;
         if (array_key_exists($name, $this->namespace)) {
             $result = $this->namespace[$name];
         }
 
-        if (($result == NULL) && $create) {
-            if ($name != ':') {
-                $parentName = refnotes_getParentNamespace($name);
-                $parent = $this->findNamespace($parentName, true);
-                $this->namespace[$name] = new refnotes_namespace($name, $parent);
-            }
-            else {
-                $this->namespace[$name] = new refnotes_namespace($name);
-            }
+        return $result;
+    }
 
-            if (array_key_exists($name, $this->namespaceStyle)) {
-                $this->namespace[$name]->style($this->namespaceStyle[$name]);
-            }
-
-            $result = $this->namespace[$name];
+    /**
+     *
+     */
+    private function createNamespace($name) {
+        if ($name != ':') {
+            $parentName = refnotes_getParentNamespace($name);
+            $parent = $this->getNamespace($parentName);
+            $this->namespace[$name] = new refnotes_namespace($name, $parent);
+        }
+        else {
+            $this->namespace[$name] = new refnotes_namespace($name);
         }
 
-        return $result;
+        if (array_key_exists($name, $this->namespaceStyle)) {
+            $this->namespace[$name]->style($this->namespaceStyle[$name]);
+        }
+
+        return $this->namespace[$name];
     }
 }
 
@@ -139,6 +158,7 @@ class refnotes_namespace {
 
     private $name;
     private $style;
+    private $dataRenderer;
     private $scope;
     private $newScope;
 
@@ -148,6 +168,7 @@ class refnotes_namespace {
     public function __construct($name, $parent = NULL) {
         $this->name = $name;
         $this->style = array();
+        $this->dataRenderer = NULL;
         $this->scope = array();
         $this->newScope = true;
 
@@ -194,6 +215,25 @@ class refnotes_namespace {
         }
 
         return $result;
+    }
+
+    /**
+     *
+     */
+    public function getDataRenderer() {
+        if ($this->dataRenderer == NULL) {
+            switch ($this->getStyle('data-renderer')) {
+                case 'harvard':
+                    $this->dataRenderer = new refnotes_harvard_data_renderer();
+                    break;
+
+                default:
+                    $this->dataRenderer = new refnotes_basic_data_renderer();
+                    break;
+            }
+        }
+
+        return $this->dataRenderer;
     }
 
     /**
@@ -672,7 +712,7 @@ class refnotes_note {
 
                 $html .= $fontOpen;
                 $html .= '<a href="#' . $referenceName . '"' . $nameAttribute .' class="backref">';
-                $html .= $formatOpen . $this->renderBackRefId($r, $backRefFormat) . $formatClose;
+                $html .= $formatOpen . $this->renderBackRefId($r) . $formatClose;
                 $html .= '</a>';
                 $html .= $fontClose;
 
@@ -875,7 +915,8 @@ class refnotes_note {
     /**
      *
      */
-    private function renderBackRefId($referenceIndex, $style) {
+    private function renderBackRefId($referenceIndex) {
+        $style = $this->getStyle('back-ref-format');
         switch ($style) {
             case 'a':
                 $result = $this->convertToLatin($referenceIndex + 1, $style);
@@ -1063,5 +1104,186 @@ class refnotes_note {
         }
 
         return $result;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_basic_data_renderer {
+
+    /**
+     *
+     */
+    public function renderNoteText($data) {
+        if (array_key_exists('note-text', $data)) {
+            $text = $data['note-text'];
+        }
+        elseif (array_key_exists('title', $data)) {
+            $text = $data['title'];
+        }
+        else {
+            $text = '';
+            foreach($data as $value) {
+                if (strlen($text) < strlen($value)) {
+                    $text = $value;
+                }
+            }
+        }
+
+        if (array_key_exists('url', $data)) {
+            $text = '[[' . $data['url'] . '|' . $text . ']]';
+        }
+
+        return $text;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_harvard_data_renderer {
+
+    /**
+     *
+     */
+    public function renderNoteText($data) {
+        // authors, published. //[[url|title.]]// edition. publisher, pages, isbn.
+        // authors, published. chapter In //[[url|title.]]// edition. publisher, pages, isbn.
+        // authors, published. [[url|title.]] //journal//, volume, publisher, pages, issn.
+
+        $title = $this->renderTitle($data);
+
+        // authors, published. //$title// edition. publisher, pages, isbn.
+        // authors, published. chapter In //$title// edition. publisher, pages, isbn.
+        // authors, published. $title //journal//, volume, publisher, pages, issn.
+
+        $authors = $this->renderAuthors($data);
+
+        // $authors? //$title// edition. publisher, pages, isbn.
+        // $authors? chapter In //$title// edition. publisher, pages, isbn.
+        // $authors? $title //journal//, volume, publisher, pages, issn.
+
+        $publication = $this->renderPublication($data, $authors != '');
+
+        if (array_key_exists('journal', $data)) {
+            // $authors? $title //journal//, volume, $publication?
+
+            $text = $title . ' ' . $this->renderJournal($data);
+
+            // $authors? $text, $publication?
+
+            $text .= ($publication != '') ? ',' : '.';
+        }
+        else {
+            // $authors? //$title// edition. $publication?
+            // $authors? chapter In //$title// edition. $publication?
+
+            $text = $this->renderBook($data, $title);
+        }
+
+        // $authors? $text $publication?
+
+        if ($authors != '') {
+            $text = $authors . ' ' . $text;
+        }
+
+        if ($publication != '') {
+            $text .= ' ' . $publication;
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    private function renderTitle($data) {
+        $text = $data['title'] . '.';
+
+        if (array_key_exists('url', $data)) {
+            $text = '[[' . $data['url'] . '|' . $text . ']]';
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    private function renderAuthors($data) {
+        $text = '';
+
+        if (array_key_exists('authors', $data)) {
+            $text = $data['authors'];
+
+            if (array_key_exists('published', $data)) {
+                $text .= ', ' . $data['published'];
+            }
+
+            $text .= '.';
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    private function renderPublication($data, $authors) {
+        $part = array();
+
+        if (array_key_exists('publisher', $data)) {
+            $part[] = $data['publisher'];
+        }
+
+        if (!$authors && array_key_exists('published', $data)) {
+            $part[] = $data['published'];
+        }
+
+        if (array_key_exists('pages', $data)) {
+            $part[] = $data['pages'];
+        }
+
+        if (array_key_exists('isbn', $data)) {
+            $part[] = 'ISBN ' . $data['isbn'];
+        }
+        elseif (array_key_exists('issn', $data)) {
+            $part[] = 'ISSN ' . $data['issn'];
+        }
+
+        $text = implode(', ', $part);
+
+        if ($text != '') {
+            $text = rtrim($text, '.') . '.';
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    private function renderJournal($data) {
+        $text = '//' . $data['journal'] . '//';
+
+        if (array_key_exists('volume', $data)) {
+            $text .= ', ' . $data['volume'];
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    private function renderBook($data, $title) {
+        $text = '//' . $title . '//';
+
+        if (array_key_exists('chapter', $data)) {
+            $text = $data['chapter'] . '. ' . refnotes_localization::getInstance()->getLang('txt_in_cap') . ' ' . $text;
+        }
+
+        if (array_key_exists('edition', $data)) {
+            $text .= ' ' . $data['edition'] . '.';
+        }
+
+        return $text;
     }
 }
