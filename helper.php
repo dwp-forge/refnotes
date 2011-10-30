@@ -418,8 +418,26 @@ class refnotes_reference {
     /**
      *
      */
+    public function getId() {
+        return $this->id;
+    }
+
+    /**
+     *
+     */
     public function getNamespace() {
         return $this->namespace;
+    }
+
+    /**
+     *
+     */
+    public function getAnchorName() {
+        $result = 'refnotes';
+        $result .= $this->scope->getName();
+        $result .= ':ref' . $this->id;
+
+        return $result;
     }
 
     /**
@@ -450,7 +468,7 @@ class refnotes_reference {
         if (($note != NULL) && !$this->hidden && !$this->inline) {
             $this->id = $scope->getReferenceId();
 
-            $note->addReference($this->id);
+            $note->addReference($this);
         }
 
         $this->scope = $scope;
@@ -464,7 +482,7 @@ class refnotes_reference {
         $html = '';
 
         if (($this->note != NULL) && !$this->hidden) {
-            $html = $this->note->renderReference();
+            $html = $this->note->renderReference($this);
         }
 
         return $html;
@@ -489,7 +507,6 @@ class refnotes_note {
     private $name;
     private $inline;
     private $reference;
-    private $references;
     private $text;
     private $rendered;
 
@@ -509,7 +526,6 @@ class refnotes_note {
 
         $this->inline = $inline;
         $this->reference = array();
-        $this->references = 0;
         $this->text = '';
         $this->rendered = false;
     }
@@ -531,8 +547,26 @@ class refnotes_note {
     /**
      *
      */
-    public function addReference($referenceId) {
-        $this->reference[++$this->references] = $referenceId;
+    public function getAnchorName() {
+        $result = 'refnotes';
+        $result .= $this->scope->getName();
+        $result .= ':note' . $this->id;
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    public function addReference($reference) {
+        $this->reference[] = $reference;
+    }
+
+    /**
+     *
+     */
+    public function getReferenceCount() {
+        return count($this->reference);
     }
 
     /**
@@ -548,19 +582,19 @@ class refnotes_note {
      * Checks if the note should be rendered
      */
     public function isRenderable() {
-        return !$this->rendered && ($this->references > 0) && ($this->text != '');
+        return !$this->rendered && ($this->getReferenceCount() > 0) && ($this->text != '');
     }
 
     /**
      *
      */
-    public function renderReference() {
+    public function renderReference($reference) {
         if ($this->inline) {
             $html = '<sup>' . $this->text . '</sup>';
         }
         else {
-            $noteName = $this->renderAnchorName();
-            $referenceName = $this->renderAnchorName($this->references);
+            $noteName = $this->getAnchorName();
+            $referenceName = $reference->getAnchorName();
             $class = $this->renderReferenceClass();
 
             list($baseOpen, $baseClose) = $this->renderReferenceBase();
@@ -569,7 +603,7 @@ class refnotes_note {
 
             $html = $baseOpen . $fontOpen;
             $html .= '<a href="#' . $noteName . '" name="' . $referenceName . '" class="' . $class . '">';
-            $html .= $formatOpen . $this->renderReferenceId() . $formatClose;
+            $html .= $formatOpen . $this->renderReferenceId($reference) . $formatClose;
             $html .= '</a>';
             $html .= $fontClose . $baseClose;
         }
@@ -583,7 +617,7 @@ class refnotes_note {
     public function render() {
         $html = '<div class="' . $this->renderNoteClass() . '">' . DOKU_LF;
         $html .= $this->renderBackReferences();
-        $html .= '<span id="' . $this->renderAnchorName() . ':text">' . DOKU_LF;
+        $html .= '<span id="' . $this->getAnchorName() . ':text">' . DOKU_LF;
         $html .= $this->text . DOKU_LF;
         $html .= '</span></div>' . DOKU_LF;
 
@@ -596,7 +630,7 @@ class refnotes_note {
      *
      */
     private function renderBackReferences() {
-        $nameAttribute = ' name="' . $this->renderAnchorName() .'"';
+        $nameAttribute = ' name="' . $this->getAnchorName() .'"';
         $backRefFormat = $this->getStyle('back-ref-format');
         $backRefCaret = '';
         list($formatOpen, $formatClose) = $this->renderNoteIdFormat();
@@ -624,18 +658,19 @@ class refnotes_note {
 
             $html .= $baseOpen . $backRefCaret;
 
-            for ($r = 1; $r <= $this->references; $r++) {
-                $referenceName = $this->renderAnchorName($r);
+            $references = $this->getReferenceCount();
+            for ($r = 0; $r < $references; $r++) {
+                $referenceName = $this->reference[$r]->getAnchorName();
+
+                if ($r > 0) {
+                    $html .= $separator . DOKU_LF;
+                }
 
                 $html .= $fontOpen;
                 $html .= '<a href="#' . $referenceName . '"' . $nameAttribute .' class="backref">';
                 $html .= $formatOpen . $this->renderBackRefId($r, $backRefFormat) . $formatClose;
                 $html .= '</a>';
                 $html .= $fontClose;
-
-                if ($r < $this->references) {
-                    $html .= $separator . DOKU_LF;
-                }
 
                 $nameAttribute = '';
             }
@@ -644,21 +679,6 @@ class refnotes_note {
         }
 
         return $html;
-    }
-
-    /**
-     *
-     */
-    private function renderAnchorName($reference = 0) {
-        $result = 'refnotes';
-        $result .= $this->scope->getName();
-        $result .= ':note' . $this->id;
-
-        if ($reference > 0) {
-            $result .= ':ref' . $reference;
-        }
-
-        return $result;
     }
 
     /**
@@ -706,7 +726,7 @@ class refnotes_note {
     /**
      *
      */
-    private function renderReferenceId($reference = 0) {
+    private function renderReferenceId($reference) {
         $idStyle = $this->getStyle('refnote-id');
         if ($idStyle == 'name') {
             $html = $this->name;
@@ -718,12 +738,7 @@ class refnotes_note {
                     break;
 
                 default:
-                    if ($reference > 0) {
-                        $id = $this->reference[$reference];
-                    }
-                    else {
-                        $id = end($this->reference);
-                    }
+                    $id = $reference->getId();
                     break;
             }
             $html = $this->convertToStyle($id, $idStyle);
@@ -814,7 +829,7 @@ class refnotes_note {
                 break;
 
             case 'merge':
-                $result = ($this->references > 1) ? '^ ' : '';
+                $result = ($this->getReferenceCount() > 1) ? '^ ' : '';
                 break;
 
             default:
@@ -856,14 +871,14 @@ class refnotes_note {
     /**
      *
      */
-    private function renderBackRefId($reference, $style) {
+    private function renderBackRefId($referenceIndex, $style) {
         switch ($style) {
             case 'a':
-                $result = $this->convertToLatin($reference, $style);
+                $result = $this->convertToLatin($referenceIndex + 1, $style);
                 break;
 
             case '1':
-                $result = $reference;
+                $result = $referenceIndex + 1;
                 break;
 
             case 'caret':
@@ -875,11 +890,11 @@ class refnotes_note {
                 break;
 
             default:
-                $result = $this->renderReferenceId($reference);
+                $result = $this->renderReferenceId($this->reference[$referenceIndex]);
                 break;
         }
 
-        if (($this->references == 1) && ($this->getStyle('back-ref-caret') == 'merge')) {
+        if (($this->getReferenceCount() == 1) && ($this->getStyle('back-ref-caret') == 'merge')) {
             $result = '^';
         }
 
