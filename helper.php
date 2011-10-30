@@ -222,7 +222,7 @@ class refnotes_namespace {
      */
     public function getDataRenderer() {
         if ($this->dataRenderer == NULL) {
-            switch ($this->getStyle('data-renderer')) {
+            switch ($this->getStyle('data-presentation')) {
                 case 'harvard':
                     $this->dataRenderer = new refnotes_harvard_data_renderer();
                     break;

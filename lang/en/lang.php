@@ -63,16 +63,19 @@ $lang['lbl_back-ref-font-weight'] = 'Back reference font weight';
 $lang['lbl_back-ref-font-style'] = 'Back reference font style';
 $lang['lbl_back-ref-format'] = 'Back reference formatting';
 $lang['lbl_back-ref-separator'] = 'Back reference separator';
+$lang['lbl_data-presentation'] = 'Structured data presentation';
 $lang['lbl_scoping'] = 'Scoping behavior';
 
 $lang['lbl_inline'] = 'Inline';
 
 $lang['opt_arrow'] = 'Up arrow';
+$lang['opt_basic'] = 'Plain text';
 $lang['opt_bold'] = 'Bold';
 $lang['opt_brackets'] = 'Brackets';
 $lang['opt_caret'] = 'Circumflex';
 $lang['opt_comma'] = 'Comma';
 $lang['opt_dot'] = 'Dot';
+$lang['opt_harvard'] = 'Harvard system of referencing';
 $lang['opt_inherit'] = 'Inherit';
 $lang['opt_italic'] = 'Italic';
 $lang['opt_justify'] = 'Justify';
