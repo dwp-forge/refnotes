@@ -187,6 +187,10 @@ class refnotes_namespace {
 
         if (array_key_exists($property, $this->style)) {
             $result = $this->style[$property];
+        } else {
+            if (($property == 'reference-id') || ($property == 'note-id')) {
+                $result = $this->getStyle('refnote-id');
+            }
         }
 
         return $result;
@@ -727,7 +731,7 @@ class refnotes_note {
      *
      */
     private function renderReferenceId($reference) {
-        $idStyle = $this->getStyle('refnote-id');
+        $idStyle = $this->getStyle('reference-id');
         if ($idStyle == 'name') {
             $html = $this->name;
         }
@@ -808,7 +812,7 @@ class refnotes_note {
      *
      */
     private function renderNoteId() {
-        $idStyle = $this->getStyle('refnote-id');
+        $idStyle = $this->getStyle('note-id');
         if ($idStyle == 'name') {
             $html = $this->name;
         }

@@ -369,7 +369,7 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
      */
     protected function getFieldDefinitions() {
         static $field = array(
-            'refnote-id' => array(
+            'reference-id' => array(
                 'class' => 'select',
                 'option' => array('numeric', 'latin-lower', 'latin-upper', 'roman-lower', 'roman-upper', 'stars', 'note-name', 'inherit')
             ),
@@ -407,6 +407,10 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
             'note-font-size' => array(
                 'class' => 'select',
                 'option' => array('normal', 'small', 'inherit')
+            ),
+            'note-id' => array(
+                'class' => 'select',
+                'option' => array('numeric', 'latin-lower', 'latin-upper', 'roman-lower', 'roman-upper', 'stars', 'note-name', 'inherit')
             ),
             'note-id-base' => array(
                 'class' => 'select',

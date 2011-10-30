@@ -42,7 +42,7 @@ $lang['lbl_replace-footnotes'] = 'Use footnotes syntax';
 $lang['lbl_reference-db-enable'] = 'Enable reference database';
 $lang['lbl_reference-db-namespace'] = 'Reference database namespace';
 
-$lang['lbl_refnote-id'] = 'Reference/note identifier style';
+$lang['lbl_reference-id'] = 'Reference identifier style';
 $lang['lbl_reference-base'] = 'Reference baseline';
 $lang['lbl_reference-font-weight'] = 'Reference font weight';
 $lang['lbl_reference-font-style'] = 'Reference font style';
@@ -52,6 +52,7 @@ $lang['lbl_note-preview'] = 'Note preview';
 $lang['lbl_notes-separator'] = 'Notes block separator';
 $lang['lbl_note-text-align'] = 'Note text alignment';
 $lang['lbl_note-font-size'] = 'Note font size';
+$lang['lbl_note-id'] = 'Note identifier style';
 $lang['lbl_note-id-base'] = 'Note identifier baseline';
 $lang['lbl_note-id-font-weight'] = 'Note identifier font weight';
 $lang['lbl_note-id-font-style'] = 'Note identifier font style';

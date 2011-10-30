@@ -424,6 +424,7 @@ class refnotes_before_ajax_call_unknown {
      */
     private function sendConfig() {
         $namespace = refnotes_configuration::load('namespaces');
+        $namespace = $this->upgradeStyles($namespace);
         $namespace = $this->translateStyles($namespace, 'dw', 'js');
 
         $config['cookie'] = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
@@ -468,6 +469,22 @@ class refnotes_before_ajax_call_unknown {
     /**
      *
      */
+    private function upgradeStyles($namespace) {
+        foreach ($namespace as &$ns) {
+            if (array_key_exists('refnote-id', $ns)) {
+                $ns['reference-id'] = $ns['refnote-id'];
+                $ns['note-id'] = $ns['refnote-id'];
+
+                unset($ns['refnote-id']);
+            }
+        }
+
+        return $namespace;
+    }
+
+    /**
+     *
+     */
     private function translateStyles($namespace, $from, $to) {
         foreach ($namespace as &$ns) {
             foreach ($ns as $styleName => &$style) {
@@ -483,7 +500,7 @@ class refnotes_before_ajax_call_unknown {
      */
     private function translateStyle($styleName, $style, $from, $to) {
         static $dictionary = array(
-            'refnote-id' => array(
+            'reference-id' => array(
                 'dw' => array('1'      , 'a'          , 'A'          , 'i'          , 'I'          , '*'    , 'name'     ),
                 'js' => array('numeric', 'latin-lower', 'latin-upper', 'roman-lower', 'roman-upper', 'stars', 'note-name')
             ),
@@ -498,6 +515,10 @@ class refnotes_before_ajax_call_unknown {
             'multi-ref-id' => array(
                 'dw' => array('ref'        , 'note'   ),
                 'js' => array('ref-counter', 'note-counter')
+            ),
+            'note-id' => array(
+                'dw' => array('1'      , 'a'          , 'A'          , 'i'          , 'I'          , '*'    , 'name'     ),
+                'js' => array('numeric', 'latin-lower', 'latin-upper', 'roman-lower', 'roman-upper', 'stars', 'note-name')
             ),
             'note-id-base' => array(
                 'dw' => array('sup'  , 'text'       ),
