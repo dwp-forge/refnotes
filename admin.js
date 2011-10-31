@@ -438,7 +438,7 @@ var admin_refnotes = (function () {
         var namespaces = new NameHash(new DefaultNamespace());
         var current    = namespaces.getItem('');
         var defaults   = new Hash(
-            'reference-id'         , 'numeric',
+            'refnote-id'         , 'numeric',
             'reference-base'       , 'super',
             'reference-font-weight', 'normal',
             'reference-font-style' , 'normal',
@@ -448,7 +448,6 @@ var admin_refnotes = (function () {
             'notes-separator'      , '100%',
             'note-text-align'      , 'justify',
             'note-font-size'       , 'normal',
-            'note-id'              , 'numeric',
             'note-id-base'         , 'super',
             'note-id-font-weight'  , 'normal',
             'note-id-font-style'   , 'normal',
@@ -656,7 +655,7 @@ var admin_refnotes = (function () {
         }
 
         function initialize() {
-            fields.push(new SelectField('reference-id'));
+            fields.push(new SelectField('refnote-id'));
             fields.push(new SelectField('reference-base'));
             fields.push(new SelectField('reference-font-weight'));
             fields.push(new SelectField('reference-font-style'));
@@ -671,7 +670,6 @@ var admin_refnotes = (function () {
             }));
             fields.push(new SelectField('note-text-align'));
             fields.push(new SelectField('note-font-size'));
-            fields.push(new SelectField('note-id'));
             fields.push(new SelectField('note-id-base'));
             fields.push(new SelectField('note-id-font-weight'));
             fields.push(new SelectField('note-id-font-style'));
