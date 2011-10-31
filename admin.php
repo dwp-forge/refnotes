@@ -451,9 +451,13 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
                 'class' => 'select',
                 'option' => array('comma', 'none', 'inherit')
             ),
-            'data-presentation' => array(
+            'struct-render' => array(
                 'class' => 'select',
                 'option' => array('basic', 'harvard', 'inherit')
+            ),
+            'struct-refs' => array(
+                'class' => 'select',
+                'option' => array('disable', 'enable', 'inherit')
             ),
             'scoping' => array(
                 'class' => 'select',

@@ -509,6 +509,10 @@ class refnotes_before_ajax_call_unknown {
             'back-ref-separator' => array(
                 'dw' => array(','    ),
                 'js' => array('comma')
+            ),
+            'struct-refs' => array(
+                'dw' => array('off'    , 'on'    ),
+                'js' => array('disable', 'enable')
             )
         );
 

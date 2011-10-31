@@ -458,7 +458,8 @@ var admin_refnotes = (function () {
             'back-ref-font-style'  , 'normal',
             'back-ref-format'      , 'note-id',
             'back-ref-separator'   , 'comma',
-            'data-presentation'    , 'basic',
+            'struct-render'        , 'basic',
+            'struct-refs'          , 'disable',
             'scoping'              , 'reset'
         );
 

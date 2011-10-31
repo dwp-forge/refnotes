@@ -218,7 +218,7 @@ class refnotes_namespace {
      */
     public function getRenderer() {
         if ($this->renderer == NULL) {
-            switch ($this->getStyle('data-presentation')) {
+            switch ($this->getStyle('struct-render')) {
                 case 'harvard':
                     $this->renderer = new refnotes_harvard_renderer($this);
                     break;
@@ -444,6 +444,13 @@ class refnotes_reference {
      */
     public function getId() {
         return $this->id;
+    }
+
+    /**
+     *
+     */
+    public function getData() {
+        return $this->data;
     }
 
     /**
@@ -1316,5 +1323,31 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
         }
 
         return $text;
+    }
+
+    /**
+     *
+     */
+    public function renderReference($reference) {
+        if (($this->getStyle('struct-refs') == 'on') && $this->checkReferenceData($reference)) {
+            $html = '[structured reference placeholder]';
+        }
+        else {
+            $html = parent::renderReference($reference);
+        }
+
+        return $html;
+    }
+
+    /**
+     *
+     */
+    private function checkReferenceData($reference) {
+        $data = $reference->getData();
+        $authors = array_key_exists('authors', $data) || array_key_exists('authors-short', $data);
+        $year = array_key_exists('published', $data);
+        $page = array_key_exists('page', $data);
+
+        return $authors && ($year || $page);
     }
 }
