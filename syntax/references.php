@@ -244,8 +244,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         }
 
         if (!$note->isEmpty()) {
-            $namespace = $parsingContext->getCore()->getNamespace($reference->getNamespace());
-            $text = $namespace->getRenderer()->renderNoteText($note->getData());
+            $text = $parsingContext->getCore()->renderNoteText($reference->getNamespace(), $note->getData());
 
             if ($text != '') {
                 $this->parseNestedText($text, $pos, $handler);

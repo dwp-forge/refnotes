@@ -142,4 +142,11 @@ class refnotes_syntax_core extends refnotes_core {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_action_core extends refnotes_core {
+
+    /**
+     * Returns wiki markup rendered according to the namespace style
+     */
+    public function renderNoteText($namespaceName, $data) {
+        return $this->getNamespace($namespaceName)->getRenderer()->renderNoteText($data);
+    }
 }
