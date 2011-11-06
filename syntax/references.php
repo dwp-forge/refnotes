@@ -15,7 +15,7 @@ require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
-require_once(DOKU_PLUGIN . 'refnotes/helper.php');
+require_once(DOKU_PLUGIN . 'refnotes/core.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
@@ -241,7 +241,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         }
 
         if (!$note->isEmpty()) {
-            $core = helper_plugin_refnotes::getInstance();
+            $core = refnotes_core::getInstance();
             $namespace = $core->getNamespace($reference->getNamespace());
             $text = $namespace->getRenderer()->renderNoteText($note->getData());
 
@@ -309,7 +309,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Stops renderer output capture and renders the reference link
      */
     private function renderXhtmlExit($renderer, $info) {
-        $core = helper_plugin_refnotes::getInstance();
+        $core = refnotes_core::getInstance();
         $reference = $core->addReference($info);
         $text = $this->noteCapture->stop();
 

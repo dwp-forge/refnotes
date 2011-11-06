@@ -1,23 +1,18 @@
 <?php
 
 /**
- * Plugin RefNotes: Notes collection
+ * Plugin RefNotes: Core functionality
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
  */
 
-/* Must be run within Dokuwiki */
-if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
-
-require_once(DOKU_INC . 'inc/plugin.php');
-require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class helper_plugin_refnotes extends DokuWiki_Plugin {
+class refnotes_core {
 
     private static $instance = NULL;
 
@@ -29,10 +24,7 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      */
     public static function getInstance() {
         if (self::$instance == NULL) {
-            self::$instance = plugin_load('helper', 'refnotes');
-            if (self::$instance == NULL) {
-                throw new Exception('Helper plugin "refnotes" is not available or invalid.');
-            }
+            self::$instance = new refnotes_core();
         }
 
         return self::$instance;
@@ -42,24 +34,8 @@ class helper_plugin_refnotes extends DokuWiki_Plugin {
      * Constructor
      */
     public function __construct() {
-        refnotes_localization::initialize($this);
-
         $this->namespaceStyle = refnotes_configuration::load('namespaces');
         $this->namespace = array();
-    }
-
-    /**
-     * Return some info
-     */
-    public function getInfo() {
-        return refnotes_getInfo('notes collection');
-    }
-
-    /**
-     * Don't publish any methods (it's not a public helper)
-     */
-    public function getMethods() {
-        return array();
     }
 
     /**

@@ -13,7 +13,7 @@ if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 require_once(DOKU_PLUGIN . 'syntax.php');
 require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
-require_once(DOKU_PLUGIN . 'refnotes/helper.php');
+require_once(DOKU_PLUGIN . 'refnotes/core.php');
 
 class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
 
@@ -184,7 +184,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      *
      */
     private function styleNamespace($renderer, $attribute, $style) {
-        helper_plugin_refnotes::getInstance()->styleNamespace($attribute['ns'], $style);
+        refnotes_core::getInstance()->styleNamespace($attribute['ns'], $style);
     }
 
     /**
@@ -192,7 +192,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      */
     private function renderNotes($renderer, $attribute) {
         $limit = array_key_exists('limit', $attribute) ? $attribute['limit'] : '';
-        $html = helper_plugin_refnotes::getInstance()->renderNotes($attribute['ns'], $limit);
+        $html = refnotes_core::getInstance()->renderNotes($attribute['ns'], $limit);
         if ($html != '') {
             $renderer->doc .= '<div class="refnotes">' . DOKU_LF;
             $renderer->doc .= $html;
