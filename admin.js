@@ -681,7 +681,8 @@ var admin_refnotes = (function () {
             fields.push(new SelectField('back-ref-font-style'));
             fields.push(new SelectField('back-ref-format'));
             fields.push(new SelectField('back-ref-separator'));
-            fields.push(new SelectField('data-presentation'));
+            fields.push(new SelectField('struct-render'));
+            fields.push(new SelectField('struct-refs'));
             fields.push(new SelectField('scoping'));
 
             list = new List('select-namespaces');
