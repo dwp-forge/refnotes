@@ -18,21 +18,8 @@ require_once(DOKU_PLUGIN . 'refnotes/renderer.php');
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_core {
 
-    private static $instance = NULL;
-
-    private $namespaceStyle;
-    private $namespace;
-
-    /**
-     *
-     */
-    public static function getInstance() {
-        if (self::$instance == NULL) {
-            self::$instance = new refnotes_core();
-        }
-
-        return self::$instance;
-    }
+    protected $namespaceStyle;
+    protected $namespace;
 
     /**
      * Constructor
@@ -40,6 +27,71 @@ class refnotes_core {
     public function __construct() {
         $this->namespaceStyle = refnotes_configuration::load('namespaces');
         $this->namespace = array();
+    }
+
+    /**
+     * Returns a namespace given it's name. The namespace is created if it doesn't exist yet.
+     */
+    public function getNamespace($name) {
+        $result = $this->findNamespace($name);
+
+        if ($result == NULL) {
+            $result = $this->createNamespace($name);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Finds a namespace given it's name
+     */
+    protected function findNamespace($name) {
+        $result = NULL;
+        if (array_key_exists($name, $this->namespace)) {
+            $result = $this->namespace[$name];
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    protected function createNamespace($name) {
+        if ($name != ':') {
+            $parentName = refnotes_getParentNamespace($name);
+            $parent = $this->getNamespace($parentName);
+            $this->namespace[$name] = new refnotes_namespace($name, $parent);
+        }
+        else {
+            $this->namespace[$name] = new refnotes_namespace($name);
+        }
+
+        if (array_key_exists($name, $this->namespaceStyle)) {
+            $this->namespace[$name]->style($this->namespaceStyle[$name]);
+        }
+
+        return $this->namespace[$name];
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_syntax_core extends refnotes_core {
+
+    private static $instance = NULL;
+
+    /**
+     * The syntax core is used by both references and notes syntax plugins during the rendering
+     * stage. The instance has to be shared between the plugins, and since there should be no
+     * more than one rendering pass during a DW page request, a single instance of the syntax
+     * core should be enough.
+     */
+    public static function getInstance() {
+        if (self::$instance == NULL) {
+            self::$instance = new refnotes_syntax_core();
+        }
+
+        return self::$instance;
     }
 
     /**
@@ -86,49 +138,8 @@ class refnotes_core {
 
         return $html;
     }
+}
 
-    /**
-     * Returns a namespace given it's name. The namespace is created if it doesn't exist yet.
-     */
-    public function getNamespace($name) {
-        $result = $this->findNamespace($name);
-
-        if ($result == NULL) {
-            $result = $this->createNamespace($name);
-        }
-
-        return $result;
-    }
-
-    /**
-     * Finds a namespace given it's name
-     */
-    private function findNamespace($name) {
-        $result = NULL;
-        if (array_key_exists($name, $this->namespace)) {
-            $result = $this->namespace[$name];
-        }
-
-        return $result;
-    }
-
-    /**
-     *
-     */
-    private function createNamespace($name) {
-        if ($name != ':') {
-            $parentName = refnotes_getParentNamespace($name);
-            $parent = $this->getNamespace($parentName);
-            $this->namespace[$name] = new refnotes_namespace($name, $parent);
-        }
-        else {
-            $this->namespace[$name] = new refnotes_namespace($name);
-        }
-
-        if (array_key_exists($name, $this->namespaceStyle)) {
-            $this->namespace[$name]->style($this->namespaceStyle[$name]);
-        }
-
-        return $this->namespace[$name];
-    }
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_action_core extends refnotes_core {
 }

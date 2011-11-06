@@ -161,7 +161,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Handle the match
      */
     public function handle($match, $state, $pos, $handler) {
-        $result = $this->parsingContext->canHandle($state);
+        $result = $this->parsingContext->getCurrent()->canHandle($state);
 
         if ($result) {
             switch ($state) {
@@ -217,7 +217,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $data = ($match[2] == '>>') ? $match[3] : '';
         $exitPos = $pos + strlen($syntax);
 
-        $this->parsingContext->enterReference($match[1], $data, $exitPos);
+        $this->parsingContext->getCurrent()->enterReference($match[1], $data, $exitPos);
 
         return array(DOKU_LEXER_ENTER);
     }
@@ -226,9 +226,11 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      *
      */
     private function handleExit($pos, $handler) {
-        $textDefined = $this->parsingContext->isTextDefined($pos);
-        $reference = $this->parsingContext->getReferenceInfo();
-        $note = $this->parsingContext->getNoteData();
+        $parsingContext = $this->parsingContext->getCurrent();
+
+        $textDefined = $parsingContext->isTextDefined($pos);
+        $reference = $parsingContext->getReferenceInfo();
+        $note = $parsingContext->getNoteData();
 
         if (!$textDefined && $reference->isNamed()) {
             $database = $this->getDatabase();
@@ -242,8 +244,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         }
 
         if (!$note->isEmpty()) {
-            $core = refnotes_core::getInstance();
-            $namespace = $core->getNamespace($reference->getNamespace());
+            $namespace = $parsingContext->getCore()->getNamespace($reference->getNamespace());
             $text = $namespace->getRenderer()->renderNoteText($note->getData());
 
             if ($text != '') {
@@ -253,7 +254,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             $reference->setData($note->getData());
         }
 
-        $this->parsingContext->exitReference();
+        $parsingContext->exitReference();
 
         return array(DOKU_LEXER_EXIT, $reference->getInfo());
     }
@@ -310,8 +311,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Stops renderer output capture and renders the reference link
      */
     private function renderXhtmlExit($renderer, $info) {
-        $core = refnotes_core::getInstance();
-        $reference = $core->addReference($info);
+        $reference = refnotes_syntax_core::getInstance()->addReference($info);
         $text = $this->noteCapture->stop();
 
         if ($text != '') {
@@ -385,49 +385,15 @@ class refnotes_parsing_context_stack {
     /**
      *
      */
-    public function canHandle($state) {
-        return end($this->context)->canHandle($state);
-    }
-
-    /**
-     *
-     */
-    public function enterReference($name, $data, $exitPos) {
-        end($this->context)->enterReference($name, $data, $exitPos);
-    }
-
-    /**
-     *
-     */
-    public function exitReference() {
-        end($this->context)->exitReference();
-    }
-
-    /**
-     *
-     */
-    public function isTextDefined($pos) {
-        return end($this->context)->isTextDefined($pos);
-    }
-
-    /**
-     *
-     */
-    public function getReferenceInfo() {
-        return end($this->context)->getReferenceInfo();
-    }
-
-    /**
-     *
-     */
-    public function getNoteData() {
-        return end($this->context)->getNoteData();
+    public function getCurrent() {
+        return end($this->context);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_parsing_context {
 
+    private $core;
     private $handling;
     private $exitPos;
     private $info;
@@ -444,10 +410,18 @@ class refnotes_parsing_context {
      *
      */
     private function initialize() {
+        $this->core = new refnotes_action_core();
         $this->handling = false;
         $this->exitPos = -1;
         $this->info = NULL;
         $this->data = NULL;
+    }
+
+    /**
+     *
+     */
+    public function getCore() {
+        return $this->core;
     }
 
     /**

@@ -184,7 +184,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      *
      */
     private function styleNamespace($renderer, $attribute, $style) {
-        refnotes_core::getInstance()->styleNamespace($attribute['ns'], $style);
+        refnotes_syntax_core::getInstance()->styleNamespace($attribute['ns'], $style);
     }
 
     /**
@@ -192,7 +192,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      */
     private function renderNotes($renderer, $attribute) {
         $limit = array_key_exists('limit', $attribute) ? $attribute['limit'] : '';
-        $html = refnotes_core::getInstance()->renderNotes($attribute['ns'], $limit);
+        $html = refnotes_syntax_core::getInstance()->renderNotes($attribute['ns'], $limit);
         if ($html != '') {
             $renderer->doc .= '<div class="refnotes">' . DOKU_LF;
             $renderer->doc .= $html;
