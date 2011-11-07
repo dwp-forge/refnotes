@@ -406,7 +406,7 @@ class refnotes_reference_database_note {
      */
     public function initializeConfigNote($info) {
         $this->info = $info;
-        $this->data = new refnotes_note_data(array('note-text' => $info['text']));
+        $this->data = array('note-text' => $info['text']);
 
         unset($this->info['text']);
     }
@@ -425,7 +425,7 @@ class refnotes_reference_database_note {
         }
 
         $this->info = array();
-        $this->data = new refnotes_note_data($data);
+        $this->data = $data;
     }
 
     /**

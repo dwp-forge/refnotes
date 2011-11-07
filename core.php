@@ -10,6 +10,7 @@
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
+require_once(DOKU_PLUGIN . 'refnotes/database.php');
 require_once(DOKU_PLUGIN . 'refnotes/scope.php');
 require_once(DOKU_PLUGIN . 'refnotes/reference.php');
 require_once(DOKU_PLUGIN . 'refnotes/note.php');
@@ -82,12 +83,19 @@ class refnotes_core {
         $note = $scope->findNote($noteName);
 
         if (($note == NULL) && !is_int($noteName)) {
-            $note = new refnotes_note($scope, $noteName);
+            $note = $this->createNote($scope, $noteName);
 
             $scope->addNote($note);
         }
 
         return $note;
+    }
+
+    /**
+     *
+     */
+    protected function createNote($scope, $name) {
+        return new refnotes_note($scope, $name);
     }
 }
 
@@ -165,9 +173,23 @@ class refnotes_syntax_core extends refnotes_core {
 class refnotes_action_core extends refnotes_core {
 
     /**
+     *
+     */
+    public function getDatabaseNote($info) {
+        return parent::getNote($info['ns'], $info['name']);
+    }
+
+    /**
      * Returns wiki markup rendered according to the namespace style
      */
     public function renderNoteText($namespaceName, $data) {
         return $this->getNamespace($namespaceName)->getRenderer()->renderNoteText($data);
+    }
+
+    /**
+     *
+     */
+    protected function createNote($scope, $name) {
+        return new refnotes_note($scope, $name, true);
     }
 }

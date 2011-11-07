@@ -16,7 +16,6 @@ require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 require_once(DOKU_PLUGIN . 'refnotes/core.php');
-require_once(DOKU_PLUGIN . 'refnotes/database.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
@@ -214,27 +213,26 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $textDefined = $parsingContext->isTextDefined($pos);
         $reference = $parsingContext->getReferenceInfo();
-        $note = $parsingContext->getNoteData();
+        $noteData = $parsingContext->getNoteData();
 
         if (!$textDefined && $reference->isNamed()) {
-            $database = refnotes_reference_database::getInstance();
-            $name = $reference->getFullName();
+            $note = $parsingContext->getCore()->getDatabaseNote($reference->getInfo());
 
-            if ($database->isDefined($name)) {
-                $reference->updateInfo($database->getNoteInfo($name));
+            $reference->updateInfo($note->getInfo());
 
-                $note = $database->getNoteData($name)->updateData($note);
-            }
+            $noteDbData = new refnotes_note_data($note->getData());
+
+            $noteData = $noteDbData->updateData($noteData);
         }
 
-        if (!$note->isEmpty()) {
-            $text = $parsingContext->getCore()->renderNoteText($reference->getNamespace(), $note->getData());
+        if (!$noteData->isEmpty()) {
+            $text = $parsingContext->getCore()->renderNoteText($reference->getNamespace(), $noteData->getData());
 
             if ($text != '') {
                 $this->parseNestedText($text, $pos, $handler);
             }
 
-            $reference->setData($note->getData());
+            $reference->setData($noteData->getData());
         }
 
         $parsingContext->exitReference();

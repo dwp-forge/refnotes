@@ -25,20 +25,28 @@ class refnotes_note {
     private $name;
     private $inline;
     private $reference;
+    private $info;
+    private $data;
     private $text;
     private $rendered;
 
     /**
      * Constructor
      */
-    public function __construct($scope, $name) {
+    public function __construct($scope, $name, $useDatabase = false) {
         $this->scope = $scope;
         $this->id = -1;
         $this->name = $name;
         $this->inline = false;
         $this->reference = array();
+        $this->info = array();
+        $this->data = array();
         $this->text = '';
         $this->rendered = false;
+
+        if ($useDatabase) {
+            $this->loadDatabaseDefinition();
+        }
     }
 
     /**
@@ -50,6 +58,21 @@ class refnotes_note {
         if ($this->name == '') {
             $this->name = '#' . $this->id;
         }
+    }
+
+    /**
+     *
+     */
+    private function loadDatabaseDefinition() {
+        $database = refnotes_reference_database::getInstance();
+        $name = $this->scope->getNamespaceName() . $this->name;
+
+        if ($database->isDefined($name)) {
+            $this->info = $database->getNoteInfo($name);
+            $this->data = $database->getNoteData($name);
+        }
+
+        return $note;
     }
 
     /**
@@ -80,22 +103,15 @@ class refnotes_note {
     /**
      *
      */
-    public function addReference($info) {
-        $reference = new refnotes_reference($this->scope, $this, $info);
+    public function getInfo() {
+        return $this->info;
+    }
 
-        if ($this->id == -1 && !$this->inline) {
-            $this->inline = $reference->isInline();
-
-            if (!$this->inline) {
-                $this->initId();
-            }
-        }
-
-        if ($reference->isBackReferenced()) {
-            $this->reference[] = $reference;
-        }
-
-        return $reference;
+    /**
+     *
+     */
+    public function getData() {
+        return $this->data;
     }
 
     /**
@@ -112,6 +128,27 @@ class refnotes_note {
      */
     public function getText() {
         return $this->text;
+    }
+
+    /**
+     *
+     */
+    public function addReference($info) {
+        $reference = new refnotes_reference($this->scope, $this, $info);
+
+        if ($this->id == -1 && !$this->inline) {
+            $this->inline = $reference->isInline();
+
+            if (!$this->inline) {
+                $this->initId();
+            }
+        }
+
+        if ($reference->isBackReferenced()) {
+            $this->reference[] = $reference;
+        }
+
+        return $reference;
     }
 
     /**

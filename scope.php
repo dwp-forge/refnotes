@@ -37,6 +37,13 @@ class refnotes_scope {
     /**
      *
      */
+    public function getNamespaceName() {
+        return $this->namespace->getName();
+    }
+
+    /**
+     *
+     */
     public function getRenderer() {
         return $this->namespace->getRenderer();
     }
