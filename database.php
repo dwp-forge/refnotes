@@ -25,10 +25,28 @@ class refnotes_reference_database_mock {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_reference_database {
 
+    private static $instance = NULL;
+
     private $note;
     private $key;
     private $page;
     private $namespace;
+
+    /**
+     *
+     */
+    public static function getInstance() {
+        if (self::$instance == NULL) {
+            /* Loading of the database can trigger parsing of the database pages, which in turn can
+             * result in the database access. To prevent infinite recursion, before loading the database
+             * we first set the instance pointer to a database mock.
+             */
+            self::$instance = new refnotes_reference_database_mock();
+            self::$instance = new refnotes_reference_database();
+        }
+
+        return self::$instance;
+    }
 
     /**
      * Constructor

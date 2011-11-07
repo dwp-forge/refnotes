@@ -27,8 +27,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     private $entryPattern;
     private $exitPattern;
     private $handlePattern;
-    private $noteRenderer;
-    private $database;
     private $parsingContext;
     private $noteCapture;
 
@@ -53,8 +51,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         refnotes_localization::initialize($this);
 
         $this->mode = substr(get_class($this), 7);
-        $this->noteRenderer = NULL;
-        $this->database = NULL;
         $this->parsingContext = new refnotes_parsing_context_stack();
         $this->noteCapture = new refnotes_note_capture();
 
@@ -94,18 +90,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->entryPattern = $entry . '(?:' . $nameEntry . '|' . $structuredEntry . '|' . $defineEntry . ')';
         $this->exitPattern = $exit;
         $this->handlePattern = '/' . $entry . '\s*(' . $optionalFullName . ')\s*(>>)?(.*)/s';
-    }
-
-    /**
-     *
-     */
-    private function getDatabase() {
-        if ($this->database == NULL) {
-            $this->database = new refnotes_reference_database_mock();
-            $this->database = new refnotes_reference_database();
-        }
-
-        return $this->database;
     }
 
     /**
@@ -233,7 +217,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $note = $parsingContext->getNoteData();
 
         if (!$textDefined && $reference->isNamed()) {
-            $database = $this->getDatabase();
+            $database = refnotes_reference_database::getInstance();
             $name = $reference->getFullName();
 
             if ($database->isDefined($name)) {
