@@ -478,6 +478,10 @@ class refnotes_reference_info {
     public function __construct($name) {
         list($namespace, $name) = refnotes_parseName($name);
 
+        if (preg_match('/(?:@@FNT|#)(\d+)/', $name, $match) == 1) {
+            $name = intval($match[1]);
+        }
+
         $this->info = array('ns' => $namespace, 'name' => $name);
     }
 
@@ -485,7 +489,7 @@ class refnotes_reference_info {
      *
      */
     public function isNamed() {
-        return ($this->info['name'] != '') && ($this->info['name']{0} != '#');
+        return !is_int($this->info['name']) && ($this->info['name'] != '');
     }
 
     /**

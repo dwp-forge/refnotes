@@ -73,6 +73,22 @@ class refnotes_core {
 
         return $this->namespace[$name];
     }
+
+    /**
+     *
+     */
+    protected function getNote($namespaceName, $noteName) {
+        $scope = $this->getNamespace($namespaceName)->getCurrentScope();
+        $note = $scope->findNote($noteName);
+
+        if (($note == NULL) && !is_int($noteName)) {
+            $note = new refnotes_note($scope, $noteName);
+
+            $scope->addNote($note);
+        }
+
+        return $note;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,10 +111,10 @@ class refnotes_syntax_core extends refnotes_core {
     }
 
     /**
-    *
-    */
+     *
+     */
     public function addReference($info) {
-        $note = $this->getNamespace($info['ns'])->getCurrentScope()->getNote($info['name']);
+        $note = $this->getNote($info['ns'], $info['name']);
 
         if ($note != NULL) {
             $reference = $note->addReference($info);
