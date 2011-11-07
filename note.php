@@ -34,16 +34,21 @@ class refnotes_note {
     public function __construct($scope, $name) {
         $this->scope = $scope;
         $this->id = -1;
+        $this->name = $name;
         $this->inline = false;
         $this->reference = array();
         $this->text = '';
         $this->rendered = false;
+    }
 
-        if ($name != '') {
-            $this->name = $name;
-        }
-        else {
-            $this->name = '#' . $id;
+    /**
+     *
+     */
+    private function initId() {
+        $this->id = $this->scope->getNoteId();
+
+        if ($this->name == '') {
+            $this->name = '#' . $this->id;
         }
     }
 
@@ -82,7 +87,7 @@ class refnotes_note {
             $this->inline = $reference->isInline();
 
             if (!$this->inline) {
-                $this->id = $this->scope->getNoteId();
+                $this->initId();
             }
         }
 
