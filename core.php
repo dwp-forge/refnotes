@@ -95,12 +95,17 @@ class refnotes_syntax_core extends refnotes_core {
     }
 
     /**
-     * Adds a reference to the notes array
-     */
+    *
+    */
     public function addReference($info) {
-        $reference = new refnotes_reference($info);
+        $note = $this->getNamespace($info['ns'])->getCurrentScope()->getNote($info['name']);
 
-        $this->getNamespace($reference->getNamespace())->addReference($reference);
+        if ($note != NULL) {
+            $reference = $note->addReference($info);
+        }
+        else {
+            $reference = new refnotes_reference_mock();
+        }
 
         return $reference;
     }

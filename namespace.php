@@ -117,16 +117,16 @@ class refnotes_namespace {
     }
 
     /**
-     * Adds a reference to the current scope
+     *
      */
-    public function addReference($reference) {
+    public function getCurrentScope() {
         if ($this->newScope) {
             $id = count($this->scope) + 1;
             $this->scope[] = new refnotes_scope($this, $id);
             $this->newScope = false;
         }
 
-        $reference->joinScope(end($this->scope));
+        return end($this->scope);
     }
 
     /**

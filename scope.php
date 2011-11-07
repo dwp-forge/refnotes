@@ -103,11 +103,17 @@ class refnotes_scope {
     /**
      * Finds a note given it's name or id
      */
-    public function findNote($name) {
+    public function getNote($name) {
         $result = NULL;
 
         if ($name != '') {
-            $getter = is_int($name) ? 'getId' : 'getName';
+            if (preg_match('/(?:@@FNT|#)(\d+)/', $name, $match) == 1) {
+                $name = intval($match[1]);
+                $getter = 'getId';
+            }
+            else {
+                $getter = 'getName';
+            }
 
             foreach ($this->note as $note) {
                 if ($note->$getter() == $name) {
@@ -115,6 +121,12 @@ class refnotes_scope {
                     break;
                 }
             }
+        }
+
+        if (($result == NULL) && !is_int($name)) {
+            $this->note[] = new refnotes_note($this, $name);
+
+            $result = end($this->note);
         }
 
         return $result;

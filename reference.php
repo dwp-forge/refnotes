@@ -8,10 +8,35 @@
  */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_reference_mock {
+
+    private $note;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->note = new refnotes_note_mock();
+    }
+
+    /**
+     *
+     */
+    public function getNote() {
+        return $this->note;
+    }
+
+    /**
+     *
+     */
+    public function render() {
+        return '';
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_reference {
 
-    private $namespace;
-    private $name;
     private $inline;
     private $hidden;
     private $data;
@@ -22,18 +47,16 @@ class refnotes_reference {
     /**
      * Constructor
      */
-    public function __construct($info) {
-        $this->namespace = $info['ns'];
-        $this->name = $info['name'];
+    public function __construct($scope, $note, $info) {
         $this->inline = isset($info['inline']) ? $info['inline'] : false;
         $this->hidden = isset($info['hidden']) ? $info['hidden'] : false;
         $this->data = $info;
-        $this->scope = NULL;
-        $this->note = NULL;
-        $this->id = 0;
+        $this->scope = $scope;
+        $this->note = $note;
+        $this->id = -1;
 
-        if (preg_match('/(?:@@FNT|#)(\d+)/', $this->name, $match) == 1) {
-            $this->name = intval($match[1]);
+        if ($this->isBackReferenced()) {
+            $this->id = $scope->getReferenceId();
         }
     }
 
@@ -52,10 +75,24 @@ class refnotes_reference {
     }
 
     /**
-     *
-     */
-    public function getNamespace() {
-        return $this->namespace;
+    *
+    */
+    public function getNote() {
+        return $this->note;
+    }
+
+    /**
+    *
+    */
+    public function isInline() {
+        return $this->inline;
+    }
+
+    /**
+    *
+    */
+    public function isBackReferenced() {
+        return !$this->inline && !$this->hidden;
     }
 
     /**
@@ -72,45 +109,10 @@ class refnotes_reference {
     /**
      *
      */
-    public function getNote() {
-        $result = $this->note;
-
-        if ($result == NULL) {
-            $result = new refnotes_note_mock();
-        }
-
-        return $result;
-    }
-
-    /**
-     *
-     */
-    public function joinScope($scope) {
-        $note = $scope->findNote($this->name);
-
-        if (($note == NULL) && !is_int($this->name)) {
-            $note = new refnotes_note($scope, $this->name, $this->inline);
-
-            $scope->addNote($note);
-        }
-
-        if (($note != NULL) && !$this->hidden && !$this->inline) {
-            $this->id = $scope->getReferenceId();
-
-            $note->addReference($this);
-        }
-
-        $this->scope = $scope;
-        $this->note = $note;
-    }
-
-    /**
-     *
-     */
     public function render() {
         $html = '';
 
-        if (($this->note != NULL) && !$this->hidden) {
+        if (!$this->hidden) {
             if ($this->inline) {
                 $html = '<sup>' . $this->note->getText() . '</sup>';
             }

@@ -31,9 +31,13 @@ class refnotes_note {
     /**
      * Constructor
      */
-    public function __construct($scope, $name, $inline) {
+    public function __construct($scope, $name) {
         $this->scope = $scope;
-        $this->id = $inline ? 0 : $scope->getNoteId();
+        $this->id = -1;
+        $this->inline = false;
+        $this->reference = array();
+        $this->text = '';
+        $this->rendered = false;
 
         if ($name != '') {
             $this->name = $name;
@@ -41,11 +45,6 @@ class refnotes_note {
         else {
             $this->name = '#' . $id;
         }
-
-        $this->inline = $inline;
-        $this->reference = array();
-        $this->text = '';
-        $this->rendered = false;
     }
 
     /**
@@ -76,8 +75,22 @@ class refnotes_note {
     /**
      *
      */
-    public function addReference($reference) {
-        $this->reference[] = $reference;
+    public function addReference($info) {
+        $reference = new refnotes_reference($this->scope, $this, $info);
+
+        if ($this->id == -1 && !$this->inline) {
+            $this->inline = $reference->isInline();
+
+            if (!$this->inline) {
+                $this->id = $this->scope->getNoteId();
+            }
+        }
+
+        if ($reference->isBackReferenced()) {
+            $this->reference[] = $reference;
+        }
+
+        return $reference;
     }
 
     /**
