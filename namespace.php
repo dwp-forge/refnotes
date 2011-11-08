@@ -71,17 +71,17 @@ class refnotes_namespace {
     /**
      *
      */
-    public function style($style) {
-        foreach ($style as $property => $value) {
-            $this->style[$property] = $value;
-        }
+    public function inheritStyle($source) {
+        $this->style = $source->style;
     }
 
     /**
      *
      */
-    public function inheritStyle($source) {
-        $this->style = $source->style;
+    public function setStyle($style) {
+        foreach ($style as $property => $value) {
+            $this->style[$property] = $value;
+        }
     }
 
     /**

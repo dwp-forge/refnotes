@@ -69,7 +69,7 @@ class refnotes_core {
         }
 
         if (array_key_exists($name, $this->namespaceStyle)) {
-            $this->namespace[$name]->style($this->namespaceStyle[$name]);
+            $this->namespace[$name]->setStyle($this->namespaceStyle[$name]);
         }
 
         return $this->namespace[$name];
@@ -145,7 +145,7 @@ class refnotes_syntax_core extends refnotes_core {
             $namespace->inheritStyle($source);
         }
 
-        $namespace->style($style);
+        $namespace->setStyle($style);
     }
 
     /**
