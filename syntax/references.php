@@ -210,32 +210,22 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     private function handleExit($pos, $handler) {
         $parsingContext = $this->parsingContext->getCurrent();
+        $reference = $parsingContext->exitReference();
 
-        $textDefined = $parsingContext->isTextDefined($pos);
-        $reference = $parsingContext->getReferenceInfo();
-        $noteData = $parsingContext->getNoteData();
-
-        if (!$textDefined && $reference->isNamed()) {
+        if (!$reference->isTextDefined($pos) && $reference->isNamed()) {
             $note = $parsingContext->getCore()->getDatabaseNote($reference->getInfo());
 
             $reference->updateInfo($note->getInfo());
-
-            $noteDbData = new refnotes_note_data($note->getData());
-
-            $noteData = $noteDbData->updateData($noteData);
+            $reference->updateData($note->getData());
         }
 
-        if (!$noteData->isEmpty()) {
-            $text = $parsingContext->getCore()->renderNoteText($reference->getNamespace(), $noteData->getData());
+        if ($reference->hasData()) {
+            $text = $parsingContext->getCore()->renderNoteText($reference->getNamespace(), $reference->getData());
 
             if ($text != '') {
                 $this->parseNestedText($text, $pos, $handler);
             }
-
-            $reference->setData($noteData->getData());
         }
-
-        $parsingContext->exitReference();
 
         return array(DOKU_LEXER_EXIT, $reference->getInfo());
     }
@@ -376,14 +366,14 @@ class refnotes_parsing_context {
 
     private $core;
     private $handling;
-    private $exitPos;
-    private $info;
-    private $data;
+    private $reference;
 
     /**
      * Constructor
      */
     public function __construct() {
+        $this->core = new refnotes_action_core();
+
         $this->initialize();
     }
 
@@ -391,11 +381,8 @@ class refnotes_parsing_context {
      *
      */
     private function initialize() {
-        $this->core = new refnotes_action_core();
         $this->handling = false;
-        $this->exitPos = -1;
-        $this->info = NULL;
-        $this->data = NULL;
+        $this->reference = NULL;
     }
 
     /**
@@ -431,37 +418,18 @@ class refnotes_parsing_context {
      */
     public function enterReference($name, $data, $exitPos) {
         $this->handling = true;
-        $this->exitPos = $exitPos;
-        $this->info = new refnotes_reference_info($name);
-        $this->data = new refnotes_note_data($data);
+        $this->reference = new refnotes_reference_info($name, $data, $exitPos);
     }
 
     /**
      *
      */
     public function exitReference() {
+        $reference = $this->reference;
+
         $this->initialize();
-    }
 
-    /**
-     *
-     */
-    public function isTextDefined($pos) {
-        return $pos > $this->exitPos;
-    }
-
-    /**
-     *
-     */
-    public function getReferenceInfo() {
-        return $this->info;
-    }
-
-    /**
-     *
-     */
-    public function getNoteData() {
-        return $this->data;
+        return $reference;
     }
 }
 
@@ -469,11 +437,13 @@ class refnotes_parsing_context {
 class refnotes_reference_info {
 
     private $info;
+    private $data;
+    private $startOfText;
 
     /**
      * Constructor
      */
-    public function __construct($name) {
+    public function __construct($name, $data, $startOfText) {
         list($namespace, $name) = refnotes_parseName($name);
 
         if (preg_match('/(?:@@FNT|#)(\d+)/', $name, $match) == 1) {
@@ -481,6 +451,23 @@ class refnotes_reference_info {
         }
 
         $this->info = array('ns' => $namespace, 'name' => $name);
+        $this->data = array();
+        $this->startOfText = $startOfText;
+
+        if ($data != '') {
+            $this->parseStructuredData($data);
+        }
+    }
+
+    /**
+     *
+     */
+    private function parseStructuredData($syntax) {
+        preg_match_all('/([-\w]+)\s*[:=]\s*(.+?)\s*?(:?[\n|;]|$)/', $syntax, $match, PREG_SET_ORDER);
+
+        foreach ($match as $m) {
+            $this->data[$m[1]] = $m[2];
+        }
     }
 
     /**
@@ -500,8 +487,15 @@ class refnotes_reference_info {
     /**
      *
      */
-    public function getFullName() {
-        return $this->info['ns'] . $this->info['name'];
+    public function isTextDefined($endOfText) {
+        return $endOfText > $this->startOfText;
+    }
+
+    /**
+     *
+     */
+    public function hasData() {
+        return !empty($this->data);
     }
 
     /**
@@ -517,77 +511,30 @@ class refnotes_reference_info {
         }
     }
 
-
     /**
-     *
-     */
-    public function setData($data) {
-        static $key = array('authors', 'page');
-
-        foreach ($key as $k) {
-            if (isset($data[$k])) {
-                $this->info[$k] = $data[$k];
-            }
-        }
+    *
+    */
+    public function updateData($data) {
+        $this->data = array_merge($data, $this->data);
     }
 
     /**
      *
      */
     public function getInfo() {
-        return $this->info;
-    }
-}
+        $info = $this->info;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_note_data {
+        if ($this->hasData()) {
+            static $key = array('authors', 'page');
 
-    private $data;
-
-    /**
-     * Constructor
-     */
-    public function __construct($data) {
-        if (is_array($data)) {
-            $this->data = $data;
-        }
-        elseif ($data != '') {
-            $this->data = $this->parseStructuredData($data);
-        }
-        else {
-            $this->data = array();
-        }
-    }
-
-    /**
-     *
-     */
-    private function parseStructuredData($syntax) {
-        preg_match_all('/([-\w]+)\s*[:=]\s*(.+?)\s*?(:?[\n|;]|$)/', $syntax, $match, PREG_SET_ORDER);
-
-        $data = array();
-
-        foreach ($match as $m) {
-            $data[$m[1]] = $m[2];
+            foreach ($key as $k) {
+                if (isset($this->data[$k])) {
+                    $info[$k] = $this->data[$k];
+                }
+            }
         }
 
-        return $data;
-    }
-
-    /**
-     *
-     */
-    public function updateData($data) {
-        $this->data = array_merge($this->data, $data->getData());
-
-        return $this;
-    }
-
-    /**
-     *
-     */
-    public function isEmpty() {
-        return empty($this->data);
+        return $info;
     }
 
     /**
