@@ -213,7 +213,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $reference = $parsingContext->exitReference();
 
         if (!$reference->isTextDefined($pos) && $reference->isNamed()) {
-            $note = $parsingContext->getCore()->getDatabaseNote($reference->getInfo());
+            $note = $parsingContext->getCore()->getDatabaseNote($reference->getInfo(false));
 
             $reference->updateInfo($note->getInfo());
             $reference->updateData($note->getData());
@@ -227,7 +227,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             }
         }
 
-        return array(DOKU_LEXER_EXIT, $reference->getInfo());
+        return array(DOKU_LEXER_EXIT, $reference->getInfo(true));
     }
 
     /**
@@ -512,8 +512,8 @@ class refnotes_reference_info {
     }
 
     /**
-    *
-    */
+     *
+     */
     public function updateData($data) {
         $this->data = array_merge($data, $this->data);
     }
@@ -521,15 +521,15 @@ class refnotes_reference_info {
     /**
      *
      */
-    public function getInfo() {
+    public function getInfo($includeData) {
         $info = $this->info;
 
-        if ($this->hasData()) {
+        if ($includeData && $this->hasData()) {
             static $key = array('authors', 'page');
 
             foreach ($key as $k) {
                 if (isset($this->data[$k])) {
-                    $info[$k] = $this->data[$k];
+                    $info['data'][$k] = $this->data[$k];
                 }
             }
         }

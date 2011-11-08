@@ -50,7 +50,7 @@ class refnotes_reference {
     public function __construct($scope, $note, $info) {
         $this->inline = isset($info['inline']) ? $info['inline'] : false;
         $this->hidden = isset($info['hidden']) ? $info['hidden'] : false;
-        $this->data = $info;
+        $this->data = isset($info['data']) ? $info['data'] : array();
         $this->scope = $scope;
         $this->note = $note;
         $this->id = -1;
