@@ -105,14 +105,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         return 'formatting';
     }
 
-    public function accepts($mode) {
-        if ($mode == $this->mode) {
-            return true;
-        }
-
-        return parent::accepts($mode);
-    }
-
     /**
      * What modes are allowed within our mode?
      */
