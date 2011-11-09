@@ -62,12 +62,6 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_after_parser_handler_done {
 
-    private $scopeStart;
-    private $scopeEnd;
-    private $style;
-    private $hidden;
-    private $inReference;
-
     /**
      * Register callback
      */
@@ -81,7 +75,39 @@ class refnotes_after_parser_handler_done {
     public function handle($event, $param) {
         syntax_plugin_refnotes_references::getInstance()->exitParsingContext();
 
-        $this->reset();
+        /* We need a new instance of mangler for each event because we can trigger it recursively
+         * by loading reference database or by parsing structured notes.
+         */
+        $mangler = new refnotes_instruction_mangler();
+
+        $mangler->process($event);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_instruction_mangler {
+
+    private $scopeStart;
+    private $scopeEnd;
+    private $style;
+    private $hidden;
+    private $inReference;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->scopeStart = array();
+        $this->scopeEnd = array();
+        $this->style = array();
+        $this->hidden = true;
+        $this->inReference = false;
+    }
+
+    /**
+     *
+     */
+    public function process($event) {
         $this->scanInstructions($event);
 
         if (count($this->style) > 0) {
@@ -92,17 +118,6 @@ class refnotes_after_parser_handler_done {
         if (count($this->scopeStart) > 0) {
             $this->renderLeftovers($event);
         }
-    }
-
-    /**
-     * Reset internal state
-     */
-    private function reset() {
-        $this->scopeStart = array();
-        $this->scopeEnd = array();
-        $this->style = array();
-        $this->hidden = true;
-        $this->inReference = false;
     }
 
     /**
