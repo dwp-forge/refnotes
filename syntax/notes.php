@@ -53,8 +53,8 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
 
     public function connectTo($mode) {
         $this->Lexer->addSpecialPattern('~~REFNOTES.*?~~', $mode, $this->mode);
-        $this->Lexer->addSpecialPattern('<refnotes.*?\/>', $mode, $this->mode);
-        $this->Lexer->addSpecialPattern('<refnotes(?:.*?[^/])?>.*?<\/refnotes>', $mode, $this->mode);
+        $this->Lexer->addSpecialPattern('<refnotes[^>]*?\/>', $mode, $this->mode);
+        $this->Lexer->addSpecialPattern('<refnotes(?:[^>]*?[^/>])?>.*?<\/refnotes>', $mode, $this->mode);
     }
 
     /**
