@@ -8,10 +8,32 @@
  */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_scope_limits {
+    public $start;
+    public $end;
+
+    /**
+     * Constructor
+     */
+    public function __construct($start, $end = -1000) {
+        $this->start = $start;
+        $this->end = $end;
+    }
+
+    /**
+     *
+     */
+    public function isOpen() {
+        return $this->end == -1000;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_scope {
 
     private $namespace;
     private $id;
+    private $limits;
     private $note;
     private $notes;
     private $references;
@@ -19,9 +41,10 @@ class refnotes_scope {
     /**
      * Constructor
      */
-    public function __construct($namespace, $id) {
+    public function __construct($namespace, $id, $start = -1, $end = -1000) {
         $this->namespace = $namespace;
         $this->id = $id;
+        $this->limits = new refnotes_scope_limits($start, $end);
         $this->note = array();
         $this->notes = 0;
         $this->references = 0;
@@ -39,6 +62,20 @@ class refnotes_scope {
      */
     public function getNamespaceName() {
         return $this->namespace->getName();
+    }
+
+    /**
+     *
+     */
+    public function getLimits() {
+        return $this->limits;
+    }
+
+    /**
+     *
+     */
+    public function isOpen() {
+        return $this->limits->end == -1000;
     }
 
     /**

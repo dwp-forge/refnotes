@@ -173,6 +173,55 @@ class refnotes_syntax_core extends refnotes_core {
 class refnotes_action_core extends refnotes_core {
 
     /**
+     * Constructor
+     */
+    public function __construct() {
+        parent::__construct();
+
+        $this->namespace[''] = new refnotes_namespace_mock();
+    }
+
+    /**
+     *
+     */
+    public function getNamespaceCount() {
+        /* Remove dummy namespace from the count */
+        return count($this->namespace) - 1;
+    }
+
+    /**
+     *
+     */
+    public function markScopeStart($namespaceName, $callIndex) {
+        $this->getNamespace($namespaceName)->markScopeStart($callIndex);
+    }
+
+    /**
+     *
+     */
+    public function markScopeEnd($namespaceName, $callIndex) {
+        $this->getNamespace($namespaceName)->markScopeEnd($callIndex);
+    }
+
+    /**
+     * Returns instruction index where the style instruction has to be inserted
+     */
+    public function getStyleIndex($namespaceName, $parent) {
+        $namespace = $this->getNamespace($namespaceName);
+
+        if (($parent == '') && ($namespace->getScopesCount() == 1)) {
+            /* Default inheritance for the first scope */
+            $parent = refnotes_getParentNamespace($namespaceName);
+        }
+
+        while (!array_key_exists($parent, $this->namespace)) {
+            $parent = refnotes_getParentNamespace($parent);
+        }
+
+        return $namespace->getStyleIndex($this->namespace[$parent]);
+    }
+
+    /**
      *
      */
     public function getDatabaseNote($info) {

@@ -38,6 +38,17 @@ function refnotes_parseName($name) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_namespace_mock {
+
+    /**
+     *
+     */
+    public function findScopeEnd($start, $end) {
+        return -1;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_namespace {
 
     private $name;
@@ -53,7 +64,7 @@ class refnotes_namespace {
         $this->name = $name;
         $this->style = array();
         $this->renderer = NULL;
-        $this->scope = array();
+        $this->scope = array(new refnotes_scope($this, 0, -1, -1));
         $this->newScope = true;
 
         if ($parent != NULL) {
@@ -66,6 +77,14 @@ class refnotes_namespace {
      */
     public function getName() {
         return $this->name;
+    }
+
+    /**
+     *
+     */
+    public function getScopesCount() {
+        /* Remove dummy [-1,-1] scope from the count */
+        return count($this->scope) - 1;
     }
 
     /**
@@ -119,10 +138,16 @@ class refnotes_namespace {
     /**
      *
      */
-    public function getCurrentScope() {
-        if ($this->newScope) {
-            $id = count($this->scope) + 1;
-            $this->scope[] = new refnotes_scope($this, $id);
+    private function getPreviousScope() {
+        return $this->scope[count($this->scope) - 2];
+    }
+
+    /**
+     *
+     */
+    public function getCurrentScope($create = true) {
+        if ($create && $this->newScope) {
+            $this->scope[] = new refnotes_scope($this, count($this->scope));
             $this->newScope = false;
         }
 
@@ -132,10 +157,56 @@ class refnotes_namespace {
     /**
      *
      */
+    public function markScopeStart($callIndex) {
+        if (!$this->getCurrentScope(false)->isOpen()) {
+            $this->scope[] = new refnotes_scope(NULL, 0, $callIndex);
+        }
+    }
+
+    /**
+     *
+     */
+    public function markScopeEnd($callIndex) {
+        /* Create an empty scope if there is no open one */
+        $this->markScopeStart($callIndex - 1);
+        $this->getCurrentScope(false)->getLimits()->end = $callIndex;
+    }
+
+
+    /**
+     * Find last scope end within specified range
+     */
+    private function findScopeEnd($start, $end) {
+        for ($i = count($this->scope) - 1; $i > 0; $i--) {
+            $scopeEnd = $this->scope[$i]->getLimits()->end;
+
+            if (($scopeEnd > $start) && ($scopeEnd < $end)) {
+                return $scopeEnd;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     *
+     */
+    public function getStyleIndex($parent) {
+        $previousEnd = $this->getPreviousScope()->getLimits()->end;
+        $currentStart = $this->getCurrentScope(false)->getLimits()->start;
+        $parentEnd = $parent->findScopeEnd($previousEnd, $currentStart);
+
+        return max($parentEnd, $previousEnd) + 1;
+    }
+
+    /**
+     *
+     */
     public function renderNotes($limit = '') {
         $this->resetScope();
         $html = '';
-        if (count($this->scope) > 0) {
+
+        if (count($this->scope) > 1) {
             $scope = end($this->scope);
             $limit = $this->getRenderLimit($limit, $scope);
             $html = $scope->renderNotes($limit);
