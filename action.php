@@ -85,10 +85,181 @@ class refnotes_after_parser_handler_done {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_scope_limits {
+    public $start;
+    public $end;
+
+    /**
+     * Constructor
+     */
+    public function __construct($start, $end = -1000) {
+        $this->start = $start;
+        $this->end = $end;
+    }
+
+    /**
+     *
+     */
+    public function isOpen() {
+        return $this->end == -1000;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_namespace_scope_limits_mock {
+
+    /**
+     *
+     */
+    public function findScopeEnd($start, $end) {
+        return -1;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_namespace_scope_limits {
+    private $limits;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->limits = array(new refnotes_scope_limits(-1, -1));
+    }
+
+    /**
+     *
+     */
+    public function getCount() {
+        /* Remove dummy [-1,-1] scope from the count */
+        return count($this->limits) - 1;
+    }
+
+    /**
+     *
+     */
+    private function getPreviousScope() {
+        return $this->limits[$this->getCount() - 1];
+    }
+
+    /**
+     *
+     */
+    private function getCurrentScope() {
+        return end($this->limits);
+    }
+
+    /**
+     *
+     */
+    public function markScopeStart($callIndex) {
+        if (!$this->getCurrentScope()->isOpen()) {
+            $this->limits[] = new refnotes_scope_limits($callIndex);
+        }
+    }
+
+    /**
+     *
+     */
+    public function markScopeEnd($callIndex) {
+        /* Create an empty scope if there is no open one */
+        $this->markScopeStart($callIndex - 1);
+
+        $this->getCurrentScope()->end = $callIndex;
+    }
+
+    /**
+     * Find last scope end within specified range
+     */
+    public function findScopeEnd($start, $end) {
+        for ($i = $this->getCount(); $i > 0; $i--) {
+            if (($this->limits[$i]->end > $start) && ($this->limits[$i]->end < $end)) {
+                return $this->limits[$i]->end;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     *
+     */
+    public function getStyleIndex($parent) {
+        $previous = $this->getPreviousScope();
+        $current = $this->getCurrentScope();
+        $parentEnd = $parent->findScopeEnd($previous->end, $current->start);
+
+        return max($parentEnd, $previous->end) + 1;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_page_scope_limits {
+    private $namespace;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->namespace = array('' => new refnotes_namespace_scope_limits_mock());
+    }
+
+    /**
+     *
+     */
+    public function getCount() {
+        /* Remove dummy namespace from the count */
+        return count($this->namespace) - 1;
+    }
+
+    /**
+     *
+     */
+    private function getNamespaceScopes($namespace) {
+        if (!array_key_exists($namespace, $this->namespace)) {
+            $this->namespace[$namespace] = new refnotes_namespace_scope_limits();
+        }
+
+        return $this->namespace[$namespace];
+    }
+
+    /**
+     *
+     */
+    public function markScopeStart($namespace, $callIndex) {
+        $this->getNamespaceScopes($namespace)->markScopeStart($callIndex);
+    }
+
+    /**
+     *
+     */
+    public function markScopeEnd($namespace, $callIndex) {
+        $this->getNamespaceScopes($namespace)->markScopeEnd($callIndex);
+    }
+
+    /**
+     * Returns instruction index where the style instruction has to be inserted
+     */
+    public function getStyleIndex($namespace, $parent) {
+        $scopes = $this->getNamespaceScopes($namespace);
+
+        if (($parent == '') && ($scopes->getCount() == 1)) {
+            /* Default inheritance for the first scope */
+            $parent = refnotes_getParentNamespace($namespace);
+        }
+
+        while (!array_key_exists($parent, $this->namespace)) {
+            $parent = refnotes_getParentNamespace($parent);
+        }
+
+        return $scopes->getStyleIndex($this->namespace[$parent]);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_instruction_mangler {
 
-    private $scopeStart;
-    private $scopeEnd;
+    private $scopes;
     private $style;
     private $hidden;
     private $inReference;
@@ -97,8 +268,7 @@ class refnotes_instruction_mangler {
      * Constructor
      */
     public function __construct() {
-        $this->scopeStart = array();
-        $this->scopeEnd = array();
+        $this->scopes = new refnotes_page_scope_limits();
         $this->style = array();
         $this->hidden = true;
         $this->inReference = false;
@@ -115,7 +285,7 @@ class refnotes_instruction_mangler {
             $this->insertStyles($event);
         }
 
-        if (count($this->scopeStart) > 0) {
+        if ($this->scopes->getCount() > 0) {
             $this->renderLeftovers($event);
         }
     }
@@ -181,51 +351,14 @@ class refnotes_instruction_mangler {
         switch ($name) {
             case 'plugin_refnotes_references':
                 if ($callData[0] == DOKU_LEXER_EXIT) {
-                    $this->markScopeStart($callData[1]['ns'], $callIndex);
+                    $this->scopes->markScopeStart($callData[1]['ns'], $callIndex);
                 }
                 break;
 
             case 'plugin_refnotes_notes':
-                $this->markScopeEnd($callData[1]['ns'], $callIndex);
+                $this->scopes->markScopeEnd($callData[1]['ns'], $callIndex);
                 break;
         }
-    }
-
-    /**
-     *
-     */
-    private function initializeNamespaceScoping($namespace) {
-        $this->scopeStart[$namespace] = array();
-        $this->scopeEnd[$namespace] = array(-1);
-    }
-
-    /**
-     * Mark instruction that starts a scope
-     */
-    private function markScopeStart($namespace, $callIndex) {
-        if (!array_key_exists($namespace, $this->scopeStart)) {
-            $this->initializeNamespaceScoping($namespace);
-        }
-
-        if (count($this->scopeStart[$namespace]) < count($this->scopeEnd[$namespace])) {
-            $this->scopeStart[$namespace][] = $callIndex;
-        }
-    }
-
-    /**
-     * Mark instruction that ends a scope
-     */
-    private function markScopeEnd($namespace, $callIndex) {
-        if (!array_key_exists($namespace, $this->scopeEnd)) {
-            $this->initializeNamespaceScoping($namespace);
-        }
-
-        if (count($this->scopeStart[$namespace]) < count($this->scopeEnd[$namespace])) {
-            /* Create an empty scope */
-            $this->scopeStart[$namespace][] = $callIndex - 1;
-        }
-
-        $this->scopeEnd[$namespace][] = $callIndex;
     }
 
     /**
@@ -234,53 +367,13 @@ class refnotes_instruction_mangler {
     private function extractStyles($name, &$callData) {
         if (($name == 'plugin_refnotes_notes') && ($callData[0] == 'split')) {
             $namespace = $callData[1]['ns'];
-
-            if (array_key_exists('inherit', $callData[2])) {
-                $index = $this->getStyleIndex($namespace, $callData[2]['inherit']);
-            }
-            else {
-                $index = $this->getStyleIndex($namespace);
-            }
+            $parent = array_key_exists('inherit', $callData[2]) ? $callData[2]['inherit'] : '';
+            $index = $this->scopes->getStyleIndex($namespace, $parent);
 
             $this->style[] = array('idx' => $index, 'ns' => $namespace, 'data' => $callData[2]);
             $callData[0] = 'render';
             unset($callData[2]);
         }
-    }
-
-    /**
-     * Returns instruction index where the style instruction has to be inserted
-     */
-    private function getStyleIndex($namespace, $parent = '') {
-        $scopes = count($this->scopeStart[$namespace]);
-
-        if (($parent == '') && ($scopes == 1)) {
-            /* Default inheritance for the first scope */
-            $parent = refnotes_getParentNamespace($namespace);
-        }
-
-        $index = $this->scopeEnd[$namespace][$scopes - 1] + 1;
-
-        if ($parent != '') {
-            $start = $this->scopeStart[$namespace][$scopes - 1];
-            $end = $this->scopeEnd[$namespace][$scopes - 1];
-
-            while ($parent != '') {
-                if (array_key_exists($parent, $this->scopeEnd)) {
-                    for ($i = count($this->scopeEnd[$parent]) - 1; $i >= 0; $i--) {
-                        $parentEnd = $this->scopeEnd[$parent][$i];
-                        if (($parentEnd >= $end) && ($parentEnd < $start)) {
-                            $index = $parentEnd + 1;
-                            break 2;
-                        }
-                    }
-                }
-
-                $parent = refnotes_getParentNamespace($parent);
-            }
-        }
-
-        return $index;
     }
 
     /**
@@ -293,6 +386,7 @@ class refnotes_instruction_mangler {
             $index[$key] = $style['idx'];
             $namespace[$key] = $style['ns'];
         }
+
         array_multisort($index, SORT_ASC, $namespace, SORT_ASC, $this->style);
 
         /* Sort to ensure explicit enheritance */
@@ -304,6 +398,7 @@ class refnotes_instruction_mangler {
 
         foreach ($bucket as $b) {
             $inherit = array();
+
             foreach ($b as $style) {
                 if (array_key_exists('inherit', $style['data'])) {
                     $inherit[] = $style;
@@ -314,6 +409,7 @@ class refnotes_instruction_mangler {
             }
 
             $inherits = count($inherit);
+
             if ($inherits > 0) {
                 if ($inherits > 1) {
                     /* Perform simplified topological sorting */
@@ -331,6 +427,7 @@ class refnotes_instruction_mangler {
                                 break;
                             }
                         }
+
                         $this->style[] = $inherit[$index];
                         unset($target[$index]);
                         unset($source[$index]);
