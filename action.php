@@ -88,7 +88,6 @@ class refnotes_after_parser_handler_done {
 class refnotes_instruction_mangler {
 
     private $core;
-    private $style;
     private $hidden;
     private $inReference;
 
@@ -97,7 +96,6 @@ class refnotes_instruction_mangler {
      */
     public function __construct() {
         $this->core = new refnotes_action_core();
-        $this->style = array();
         $this->hidden = true;
         $this->inReference = false;
     }
@@ -108,9 +106,8 @@ class refnotes_instruction_mangler {
     public function process($event) {
         $this->scanInstructions($event);
 
-        if (count($this->style) > 0) {
-            $this->sortStyles();
-            $this->insertStyles($event);
+        if ($this->core->getStyleCount() > 0) {
+            $this->insertStyles($this->core->getStyles(), $event);
         }
 
         if ($this->core->getNamespaceCount() > 0) {
@@ -194,99 +191,40 @@ class refnotes_instruction_mangler {
      */
     private function extractStyles($name, &$callData) {
         if (($name == 'plugin_refnotes_notes') && ($callData[0] == 'split')) {
-            $namespace = $callData[1]['ns'];
-            $parent = array_key_exists('inherit', $callData[2]) ? $callData[2]['inherit'] : '';
-            $index = $this->core->getStyleIndex($namespace, $parent);
+            $this->core->addStyle($callData[1]['ns'], $callData[2]);
 
-            $this->style[] = array('idx' => $index, 'ns' => $namespace, 'data' => $callData[2]);
             $callData[0] = 'render';
+
             unset($callData[2]);
-        }
-    }
-
-    /**
-     * Sort the style blocks so that the namespaces with inherited style go after
-     * the namespaces they inherit from
-     */
-    private function sortStyles() {
-        /* Sort in ascending order to ensure the default enheritance */
-        foreach ($this->style as $key => $style) {
-            $index[$key] = $style['idx'];
-            $namespace[$key] = $style['ns'];
-        }
-
-        array_multisort($index, SORT_ASC, $namespace, SORT_ASC, $this->style);
-
-        /* Sort to ensure explicit enheritance */
-        foreach ($this->style as $style) {
-            $bucket[$style['idx']][] = $style;
-        }
-
-        $this->style = array();
-
-        foreach ($bucket as $b) {
-            $inherit = array();
-
-            foreach ($b as $style) {
-                if (array_key_exists('inherit', $style['data'])) {
-                    $inherit[] = $style;
-                }
-                else {
-                    $this->style[] = $style;
-                }
-            }
-
-            $inherits = count($inherit);
-
-            if ($inherits > 0) {
-                if ($inherits > 1) {
-                    /* Perform simplified topological sorting */
-                    $target = array();
-                    $source = array();
-
-                    for ($i = 0; $i < $inherits; $i++) {
-                        $target[$i] = $inherit[$i]['ns'];
-                        $source[$i] = $inherit[$i]['data']['inherit'];
-                    }
-
-                    for ($i = 0; $i < $inherits; $i++) {
-                        foreach ($source as $index => $s) {
-                            if (!in_array($s, $target)) {
-                                break;
-                            }
-                        }
-
-                        $this->style[] = $inherit[$index];
-                        unset($target[$index]);
-                        unset($source[$index]);
-                    }
-                }
-                else {
-                    $this->style[] = $inherit[0];
-                }
-            }
         }
     }
 
     /**
      * Insert style instructions
      */
-    private function insertStyles($event) {
-        $calls = count($event->data->calls);
-        $styles = count($this->style);
-        $call = array();
+    private function insertStyles($styles, $event) {
+        $styles->sort();
 
-        for ($c = 0, $s = 0; $c < $calls; $c++) {
-            while (($s < $styles) && ($this->style[$s]['idx'] == $c)) {
-                $attribute['ns'] = $this->style[$s]['ns'];
-                $data[0] = 'style';
-                $data[1] = $attribute;
-                $data[2] = $this->style[$s]['data'];
-                $call[] = $this->getInstruction($data, $event->data->calls[$c][2]);
-                $s++;
+        $call = array();
+        $callIndex = 0;
+
+        foreach ($styles->getIndex() as $styleIndex) {
+            while ($callIndex < $styleIndex) {
+                $call[] = $event->data->calls[$callIndex++];
             }
 
-            $call[] = $event->data->calls[$c];
+            foreach ($styles->getAt($styleIndex) as $style) {
+                $data[0] = 'style';
+                $data[1] = array('ns' => $style->getNamespace());
+                $data[2] = $style->getData();
+                $call[] = $this->getInstruction($data, $event->data->calls[$c][2]);
+            }
+        }
+
+        $calls = count($event->data->calls);
+
+        while ($callIndex < $calls) {
+            $call[] = $event->data->calls[$callIndex++];
         }
 
         $event->data->calls = $call;
@@ -296,9 +234,8 @@ class refnotes_instruction_mangler {
      * Insert render call at the very bottom of the page
      */
     private function renderLeftovers($event) {
-        $attribute['ns'] = '*';
         $data[0] = 'render';
-        $data[1] = $attribute;
+        $data[1] = array('ns' => '*');
         $lastCall = end($event->data->calls);
         $call = $this->getInstruction($data, $lastCall[2]);
 

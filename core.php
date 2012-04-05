@@ -19,15 +19,22 @@ require_once(DOKU_PLUGIN . 'refnotes/renderer.php');
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_core {
 
-    protected $namespaceStyle;
+    protected $presetStyle;
     protected $namespace;
 
     /**
      * Constructor
      */
     public function __construct() {
-        $this->namespaceStyle = refnotes_configuration::load('namespaces');
+        $this->presetStyle = refnotes_configuration::load('namespaces');
         $this->namespace = array();
+    }
+
+    /**
+     *
+     */
+    public function getNamespaceCount() {
+        return count($this->namespace);
     }
 
     /**
@@ -48,11 +55,23 @@ class refnotes_core {
      */
     protected function findNamespace($name) {
         $result = NULL;
+
         if (array_key_exists($name, $this->namespace)) {
             $result = $this->namespace[$name];
         }
 
         return $result;
+    }
+
+    /**
+     *  Finds a namespace or it's parent
+     */
+    public function findParentNamespace($name) {
+        while (($name != '') && !array_key_exists($name, $this->namespace)) {
+            $name = refnotes_getParentNamespace($name);
+        }
+
+        return ($name != '') ? $this->namespace[$name] : NULL;
     }
 
     /**
@@ -68,8 +87,8 @@ class refnotes_core {
             $this->namespace[$name] = new refnotes_namespace($name);
         }
 
-        if (array_key_exists($name, $this->namespaceStyle)) {
-            $this->namespace[$name]->setStyle($this->namespaceStyle[$name]);
+        if (array_key_exists($name, $this->presetStyle)) {
+            $this->namespace[$name]->setStyle($this->presetStyle[$name]);
         }
 
         return $this->namespace[$name];
@@ -171,6 +190,7 @@ class refnotes_syntax_core extends refnotes_core {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_action_core extends refnotes_core {
+    private $pageStyles;
 
     /**
      * Constructor
@@ -178,15 +198,7 @@ class refnotes_action_core extends refnotes_core {
     public function __construct() {
         parent::__construct();
 
-        $this->namespace[''] = new refnotes_namespace_mock();
-    }
-
-    /**
-     *
-     */
-    public function getNamespaceCount() {
-        /* Remove dummy namespace from the count */
-        return count($this->namespace) - 1;
+        $this->pageStyles = new refnotes_namespace_style_stash($this);
     }
 
     /**
@@ -204,21 +216,24 @@ class refnotes_action_core extends refnotes_core {
     }
 
     /**
-     * Returns instruction index where the style instruction has to be inserted
+     * Collect styling information from the page
      */
-    public function getStyleIndex($namespaceName, $parent) {
-        $namespace = $this->getNamespace($namespaceName);
+    public function addStyle($namespaceName, $style) {
+        $this->pageStyles->add($this->getNamespace($namespaceName), $style);
+    }
 
-        if (($parent == '') && ($namespace->getScopesCount() == 1)) {
-            /* Default inheritance for the first scope */
-            $parent = refnotes_getParentNamespace($namespaceName);
-        }
+    /**
+     *
+     */
+    public function getStyleCount() {
+        return $this->pageStyles->getCount();
+    }
 
-        while (!array_key_exists($parent, $this->namespace)) {
-            $parent = refnotes_getParentNamespace($parent);
-        }
-
-        return $namespace->getStyleIndex($this->namespace[$parent]);
+    /**
+     *
+     */
+    public function getStyles() {
+        return $this->pageStyles;
     }
 
     /**
