@@ -306,20 +306,27 @@ class refnotes_namespace {
     /**
      *
      */
-    public function getCurrentScope($create = true) {
-        if ($create && $this->newScope) {
-            $this->scope[] = new refnotes_scope($this, count($this->scope));
-            $this->newScope = false;
-        }
-
+    private function getCurrentScope() {
         return end($this->scope);
     }
 
     /**
      *
      */
+    public function getActiveScope() {
+        if ($this->newScope) {
+            $this->scope[] = new refnotes_scope($this, count($this->scope));
+            $this->newScope = false;
+        }
+
+        return $this->getCurrentScope();
+    }
+
+    /**
+     *
+     */
     public function markScopeStart($callIndex) {
-        if (!$this->getCurrentScope(false)->isOpen()) {
+        if (!$this->getCurrentScope()->isOpen()) {
             $this->scope[] = new refnotes_scope(NULL, 0, $callIndex);
         }
     }
@@ -330,7 +337,7 @@ class refnotes_namespace {
     public function markScopeEnd($callIndex) {
         /* Create an empty scope if there is no open one */
         $this->markScopeStart($callIndex - 1);
-        $this->getCurrentScope(false)->getLimits()->end = $callIndex;
+        $this->getCurrentScope()->getLimits()->end = $callIndex;
     }
 
 
@@ -354,7 +361,7 @@ class refnotes_namespace {
      */
     public function getStyleIndex($parent) {
         $previousEnd = $this->getPreviousScope()->getLimits()->end;
-        $currentStart = $this->getCurrentScope(false)->getLimits()->start;
+        $currentStart = $this->getCurrentScope()->getLimits()->start;
         $parentEnd = ($parent != NULL) ? $parent->findScopeEnd($previousEnd, $currentStart) : -1;
 
         return max($parentEnd, $previousEnd) + 1;
@@ -368,9 +375,7 @@ class refnotes_namespace {
         $html = '';
 
         if (count($this->scope) > 1) {
-            $scope = end($this->scope);
-            $limit = $this->getRenderLimit($limit, $scope);
-            $html = $scope->renderNotes($limit);
+            $html = $this->getCurrentScope()->renderNotes($limit);
         }
 
         return $html;
@@ -388,25 +393,5 @@ class refnotes_namespace {
                 $this->newScope = true;
             break;
         }
-    }
-
-    /**
-     *
-     */
-    private function getRenderLimit($limit, $scope) {
-        if (preg_match('/(\/?)(\d+)/', $limit, $match) == 1) {
-            if ($match[1] != '') {
-                $devider = intval($match[2]);
-                $result = ceil($scope->getRenderableCount() / $devider);
-            }
-            else {
-                $result = intval($match[2]);
-            }
-        }
-        else {
-            $result = 0;
-        }
-
-        return $result;
     }
 }

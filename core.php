@@ -98,7 +98,7 @@ class refnotes_core {
      *
      */
     protected function getNote($namespaceName, $noteName) {
-        $scope = $this->getNamespace($namespaceName)->getCurrentScope();
+        $scope = $this->getNamespace($namespaceName)->getActiveScope();
         $note = $scope->findNote($noteName);
 
         if ($note == NULL) {
@@ -168,7 +168,7 @@ class refnotes_syntax_core extends refnotes_core {
     /**
      *
      */
-    public function renderNotes($namespaceName, $limit = '') {
+    public function renderNotes($namespaceName, $limit) {
         $html = '';
         if ($namespaceName == '*') {
             foreach ($this->namespace as $namespace) {

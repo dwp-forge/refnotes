@@ -93,20 +93,6 @@ class refnotes_scope {
     }
 
     /**
-     * Returns the number of renderable notes in the scope
-     */
-    public function getRenderableCount() {
-        $result = 0;
-        foreach ($this->note as $note) {
-            if ($note->isRenderable()) {
-                ++$result;
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      *
      */
     public function addNote($note) {
@@ -117,12 +103,15 @@ class refnotes_scope {
      *
      */
     public function renderNotes($limit) {
+        $limit = $this->getRenderLimit($limit);
         $html = '';
         $count = 0;
+
         foreach ($this->note as $note) {
             if ($note->isRenderable()) {
                 $html .= $note->render();
-                if (($limit != 0) && (++$count == $limit)) {
+
+                if (++$count == $limit) {
                     break;
                 }
             }
@@ -135,6 +124,40 @@ class refnotes_scope {
         }
 
         return $html;
+    }
+
+    /**
+     *
+     */
+    private function getRenderLimit($limit) {
+        if (preg_match('/(\/?)(\d+)/', $limit, $match) == 1) {
+            if ($match[1] != '') {
+                $devider = intval($match[2]);
+                $result = ceil($this->getRenderableCount() / $devider);
+            }
+            else {
+                $result = intval($match[2]);
+            }
+        }
+        else {
+            $result = 0;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Returns the number of renderable notes in the scope
+     */
+    private function getRenderableCount() {
+        $result = 0;
+        foreach ($this->note as $note) {
+            if ($note->isRenderable()) {
+                ++$result;
+            }
+        }
+
+        return $result;
     }
 
     /**
