@@ -16,6 +16,8 @@ require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
+require_once(DOKU_PLUGIN . 'refnotes/instructions.php');
+require_once(DOKU_PLUGIN . 'refnotes/core.php');
 require_once(DOKU_PLUGIN . 'refnotes/syntax/references.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -78,9 +80,9 @@ class refnotes_after_parser_handler_done {
         /* We need a new instance of mangler for each event because we can trigger it recursively
          * by loading reference database or by parsing structured notes.
          */
-        $mangler = new refnotes_instruction_mangler();
+        $mangler = new refnotes_instruction_mangler($event);
 
-        $mangler->process($event);
+        $mangler->process();
     }
 }
 
@@ -88,14 +90,16 @@ class refnotes_after_parser_handler_done {
 class refnotes_instruction_mangler {
 
     private $core;
+    private $calls;
     private $hidden;
     private $inReference;
 
     /**
      * Constructor
      */
-    public function __construct() {
+    public function __construct($event) {
         $this->core = new refnotes_action_core();
+        $this->calls = new refnotes_instruction_list($event);
         $this->hidden = true;
         $this->inReference = false;
     }
@@ -103,50 +107,48 @@ class refnotes_instruction_mangler {
     /**
      *
      */
-    public function process($event) {
-        $this->scanInstructions($event);
+    public function process() {
+        $this->scanInstructions();
 
         if ($this->core->getStyleCount() > 0) {
-            $this->insertStyles($this->core->getStyles(), $event);
+            $this->insertStyles($this->core->getStyles());
         }
 
         if ($this->core->getNamespaceCount() > 0) {
-            $this->renderLeftovers($event);
+            $this->renderLeftovers();
+        }
+
+        $this->calls->applyChanges();
+    }
+
+    /**
+     *
+     */
+    private function scanInstructions() {
+        foreach ($this->calls as $call) {
+            $this->markHiddenReferences($call);
+            $this->markScopeLimits($call);
+            $this->extractStyles($call);
         }
     }
 
     /**
      *
      */
-    private function scanInstructions($event) {
-        $count = count($event->data->calls);
-        for ($i = 0; $i < $count; $i++) {
-            $call =& $event->data->calls[$i];
-            $name = ($call[0] == 'plugin') ? 'plugin_' . $call[1][0] : $call[0];
-
-            $this->markHiddenReferences($name, $call);
-            $this->markScopeLimits($name, $i, $call[1][1]);
-            $this->extractStyles($name, $call[1][1]);
-        }
-    }
-
-    /**
-     *
-     */
-    private function markHiddenReferences($name, &$call) {
-        switch ($name) {
+    private function markHiddenReferences($call) {
+        switch ($call->getName()) {
             case 'p_open':
                 $this->hidden = true;
                 break;
 
             case 'cdata':
-                if (!$this->inReference && (trim($call[1][0]) != '')) {
+                if (!$this->inReference && (trim($call->getData(0)) != '')) {
                     $this->hidden = false;
                 }
                 break;
 
             case 'plugin_refnotes_references':
-                switch ($call[1][1][0]) {
+                switch ($call->getPluginData(0)) {
                     case DOKU_LEXER_ENTER:
                         $this->inReference = true;
                         break;
@@ -155,7 +157,7 @@ class refnotes_instruction_mangler {
                         $this->inReference = false;
 
                         if ($this->hidden) {
-                            $call[1][1][1]['hidden'] = true;
+                            $call->setRefnotesAttribute('hidden', true);
                         }
                         break;
                 }
@@ -172,16 +174,16 @@ class refnotes_instruction_mangler {
     /**
      *
      */
-    private function markScopeLimits($name, $callIndex, $callData) {
-        switch ($name) {
+    private function markScopeLimits($call) {
+        switch ($call->getName()) {
             case 'plugin_refnotes_references':
-                if ($callData[0] == DOKU_LEXER_EXIT) {
-                    $this->core->markScopeStart($callData[1]['ns'], $callIndex);
+                if ($call->getPluginData(0) == DOKU_LEXER_EXIT) {
+                    $this->core->markScopeStart($call->getRefnotesAttribute('ns'), $call->getIndex());
                 }
                 break;
 
             case 'plugin_refnotes_notes':
-                $this->core->markScopeEnd($callData[1]['ns'], $callIndex);
+                $this->core->markScopeEnd($call->getRefnotesAttribute('ns'), $call->getIndex());
                 break;
         }
     }
@@ -189,66 +191,33 @@ class refnotes_instruction_mangler {
     /**
      * Extract style data and replace "split" instructions with "render"
      */
-    private function extractStyles($name, &$callData) {
-        if (($name == 'plugin_refnotes_notes') && ($callData[0] == 'split')) {
-            $this->core->addStyle($callData[1]['ns'], $callData[2]);
+    private function extractStyles($call) {
+        if (($call->getName() == 'plugin_refnotes_notes') && ($call->getPluginData(0) == 'split')) {
+            $this->core->addStyle($call->getRefnotesAttribute('ns'), $call->getPluginData(2));
 
-            $callData[0] = 'render';
-
-            unset($callData[2]);
+            $call->setPluginData(0, 'render');
+            $call->unsetPluginData(2);
         }
     }
 
     /**
      * Insert style instructions
      */
-    private function insertStyles($styles, $event) {
+    private function insertStyles($styles) {
         $styles->sort();
 
-        $call = array();
-        $callIndex = 0;
-
-        foreach ($styles->getIndex() as $styleIndex) {
-            while ($callIndex < $styleIndex) {
-                $call[] = $event->data->calls[$callIndex++];
-            }
-
-            foreach ($styles->getAt($styleIndex) as $style) {
-                $data[0] = 'style';
-                $data[1] = array('ns' => $style->getNamespace());
-                $data[2] = $style->getData();
-                $call[] = $this->getInstruction($data, $event->data->calls[$c][2]);
+        foreach ($styles->getIndex() as $index) {
+            foreach ($styles->getAt($index) as $style) {
+                $this->calls->insert($index, new refnotes_notes_style_instruction($style->getNamespace(), $style->getData()));
             }
         }
-
-        $calls = count($event->data->calls);
-
-        while ($callIndex < $calls) {
-            $call[] = $event->data->calls[$callIndex++];
-        }
-
-        $event->data->calls = $call;
     }
 
     /**
      * Insert render call at the very bottom of the page
      */
-    private function renderLeftovers($event) {
-        $data[0] = 'render';
-        $data[1] = array('ns' => '*');
-        $lastCall = end($event->data->calls);
-        $call = $this->getInstruction($data, $lastCall[2]);
-
-        $event->data->calls[] = $call;
-    }
-
-    /**
-     * Format data into plugin instruction
-     */
-    private function getInstruction($data, $offset) {
-        $parameters = array('refnotes_notes', $data, DOKU_LEXER_SPECIAL, '');
-
-        return array('plugin', $parameters, $offset);
+    private function renderLeftovers() {
+        $this->calls->append(new refnotes_notes_render_instruction('*'));
     }
 }
 
