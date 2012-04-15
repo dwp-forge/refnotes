@@ -15,8 +15,8 @@ class refnotes_reference_mock {
     /**
      * Constructor
      */
-    public function __construct() {
-        $this->note = new refnotes_note_mock();
+    public function __construct($note) {
+        $this->note = $note;
     }
 
     /**

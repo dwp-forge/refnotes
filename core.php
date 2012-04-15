@@ -101,10 +101,15 @@ class refnotes_core {
         $scope = $this->getNamespace($namespaceName)->getCurrentScope();
         $note = $scope->findNote($noteName);
 
-        if (($note == NULL) && !is_int($noteName)) {
-            $note = $this->createNote($scope, $noteName);
+        if ($note == NULL) {
+            if (!is_int($noteName)) {
+                $note = $this->createNote($scope, $noteName);
 
-            $scope->addNote($note);
+                $scope->addNote($note);
+            }
+            else {
+                $note = new refnotes_note_mock();
+            }
         }
 
         return $note;
@@ -143,14 +148,7 @@ class refnotes_syntax_core extends refnotes_core {
     public function addReference($info) {
         $note = $this->getNote($info['ns'], $info['name']);
 
-        if ($note != NULL) {
-            $reference = $note->addReference($info);
-        }
-        else {
-            $reference = new refnotes_reference_mock();
-        }
-
-        return $reference;
+        return $note->addReference($info);
     }
 
     /**

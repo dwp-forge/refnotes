@@ -15,6 +15,13 @@ class refnotes_note_mock {
      */
     public function setText($text) {
     }
+
+    /**
+     *
+     */
+    public function addReference($info) {
+        return new refnotes_reference_mock($this);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
