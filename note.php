@@ -146,6 +146,7 @@ class refnotes_note {
 
         if ($reference->isBackReferenced()) {
             $this->reference[] = $reference;
+            $this->rendered = false;
         }
 
         return $reference;
@@ -164,6 +165,7 @@ class refnotes_note {
     public function render() {
         $html = $this->scope->getRenderer()->renderNote($this, $this->reference);
 
+        $this->reference = array();
         $this->rendered = true;
 
         return $html;
