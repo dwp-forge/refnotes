@@ -19,13 +19,6 @@ class refnotes_scope_limits {
         $this->start = $start;
         $this->end = $end;
     }
-
-    /**
-     *
-     */
-    public function isOpen() {
-        return $this->end == -1000;
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
