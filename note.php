@@ -8,6 +8,79 @@
  */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_note_block_iterator extends FilterIterator {
+    private $note;
+    private $limit;
+    private $count;
+
+    /**
+    * Constructor
+    */
+    public function __construct($note, $limit) {
+        $this->note = new ArrayObject($note);
+        $this->limit = $this->getRenderLimit($limit);
+        $this->count = 0;
+
+        parent::__construct($this->note->getIterator());
+    }
+
+    /**
+     *
+     */
+    function accept() {
+        $result = $this->current()->isRenderable();
+
+        if ($result) {
+            ++$this->count;
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    function valid() {
+        return parent::valid() && (($this->limit == 0) || ($this->count <= $this->limit));
+    }
+
+    /**
+     *
+     */
+    private function getRenderLimit($limit) {
+        if (preg_match('/(\/?)(\d+)/', $limit, $match) == 1) {
+            if ($match[1] != '') {
+                $devider = intval($match[2]);
+                $result = ceil($this->getRenderableCount() / $devider);
+            }
+            else {
+                $result = intval($match[2]);
+            }
+        }
+        else {
+            $result = 0;
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    private function getRenderableCount() {
+        $result = 0;
+
+        foreach ($this->note as $note) {
+            if ($note->isRenderable()) {
+                ++$result;
+            }
+        }
+
+        return $result;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_note_mock {
 
     /**
