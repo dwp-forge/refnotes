@@ -223,13 +223,6 @@ class refnotes_action_core extends refnotes_core {
     /**
      *
      */
-    public function getStyleCount() {
-        return $this->pageStyles->getCount();
-    }
-
-    /**
-     *
-     */
     public function getStyles() {
         return $this->pageStyles;
     }

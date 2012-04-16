@@ -110,15 +110,12 @@ class refnotes_instruction_mangler {
     public function process() {
         $this->scanInstructions();
 
-        if ($this->core->getStyleCount() > 0) {
-            $this->insertStyles($this->core->getStyles());
-        }
-
         if ($this->core->getNamespaceCount() > 0) {
+            $this->insertStyles();
             $this->renderLeftovers();
-        }
 
-        $this->calls->applyChanges();
+            $this->calls->applyChanges();
+        }
     }
 
     /**
@@ -203,7 +200,13 @@ class refnotes_instruction_mangler {
     /**
      * Insert style instructions
      */
-    private function insertStyles($styles) {
+    private function insertStyles() {
+        $styles = $this->core->getStyles();
+
+        if ($styles->getCount() == 0) {
+            return;
+        }
+
         $styles->sort();
 
         foreach ($styles->getIndex() as $index) {
