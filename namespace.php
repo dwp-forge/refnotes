@@ -258,9 +258,7 @@ class refnotes_namespace {
      *
      */
     public function setStyle($style) {
-        foreach ($style as $property => $value) {
-            $this->style[$property] = $value;
-        }
+        $this->style = array_merge($this->style, $style);
     }
 
     /**
