@@ -22,6 +22,24 @@ class refnotes_scope_limits {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_scope_mock {
+
+    /**
+     *
+     */
+    public function getLimits() {
+        return new refnotes_scope_limits(-1, -1);
+    }
+
+    /**
+     *
+     */
+    public function isOpen() {
+        return false;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_scope {
 
     private $namespace;

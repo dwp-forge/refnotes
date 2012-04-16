@@ -225,7 +225,7 @@ class refnotes_namespace {
         $this->name = $name;
         $this->style = array();
         $this->renderer = NULL;
-        $this->scope = array(new refnotes_scope($this, 0, -1, -1));
+        $this->scope = array();
         $this->newScope = true;
 
         if ($parent != NULL) {
@@ -244,8 +244,7 @@ class refnotes_namespace {
      *
      */
     public function getScopesCount() {
-        /* Remove dummy [-1,-1] scope from the count */
-        return count($this->scope) - 1;
+        return count($this->scope);
     }
 
     /**
@@ -299,15 +298,24 @@ class refnotes_namespace {
     /**
      *
      */
+    private function getScope($index) {
+        $index = count($this->scope) + $index;
+
+        return ($index >= 0) ? $this->scope[$index] : new refnotes_scope_mock();
+    }
+
+    /**
+     *
+     */
     private function getPreviousScope() {
-        return $this->scope[count($this->scope) - 2];
+        return $this->getScope(-2);
     }
 
     /**
      *
      */
     private function getCurrentScope() {
-        return end($this->scope);
+        return $this->getScope(-1);
     }
 
     /**
@@ -315,7 +323,7 @@ class refnotes_namespace {
      */
     public function getActiveScope() {
         if ($this->newScope) {
-            $this->scope[] = new refnotes_scope($this, count($this->scope));
+            $this->scope[] = new refnotes_scope($this, count($this->scope) + 1);
             $this->newScope = false;
         }
 
@@ -345,7 +353,7 @@ class refnotes_namespace {
      * Find last scope end within specified range
      */
     private function findScopeEnd($start, $end) {
-        for ($i = count($this->scope) - 1; $i > 0; $i--) {
+        for ($i = count($this->scope) - 1; $i >= 0; $i--) {
             $scopeEnd = $this->scope[$i]->getLimits()->end;
 
             if (($scopeEnd > $start) && ($scopeEnd < $end)) {
@@ -374,7 +382,7 @@ class refnotes_namespace {
         $this->resetScope();
         $html = '';
 
-        if (count($this->scope) > 1) {
+        if (count($this->scope) > 0) {
             $html = $this->getCurrentScope()->renderNotes($limit);
         }
 
