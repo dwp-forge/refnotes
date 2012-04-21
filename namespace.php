@@ -264,14 +264,8 @@ class refnotes_namespace {
     /**
      *
      */
-    public function getStyle($property) {
-        $result = '';
-
-        if (array_key_exists($property, $this->style)) {
-            $result = $this->style[$property];
-        }
-
-        return $result;
+    public function getStyle($name) {
+        return array_key_exists($name, $this->style) ? $this->style[$name] : '';
     }
 
     /**

@@ -158,8 +158,8 @@ class refnotes_basic_renderer {
     /**
      *
      */
-    protected function getStyle($property) {
-        return $this->namespace->getStyle($property);
+    protected function getStyle($name) {
+        return $this->namespace->getStyle($name);
     }
 
     /**
