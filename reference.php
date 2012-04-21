@@ -123,24 +123,22 @@ class refnotes_renderer_reference extends refnotes_refnote {
 
     private $inline;
     private $hidden;
-    private $scope;
     private $note;
     private $id;
 
     /**
      * Constructor
      */
-    public function __construct($scope, $note, $attributes, $data) {
+    public function __construct($note, $attributes, $data) {
         parent::__construct($attributes, $data);
 
         $this->inline = isset($this->attributes['inline']) ? $this->attributes['inline'] : false;
         $this->hidden = isset($this->attributes['hidden']) ? $this->attributes['hidden'] : false;
-        $this->scope = $scope;
         $this->note = $note;
         $this->id = -1;
 
         if ($this->isBackReferenced()) {
-            $this->id = $scope->getReferenceId();
+            $this->id = $this->note->getScope()->getReferenceId();
         }
     }
 
@@ -177,7 +175,7 @@ class refnotes_renderer_reference extends refnotes_refnote {
      */
     public function getAnchorName() {
         $result = 'refnotes';
-        $result .= $this->scope->getName();
+        $result .= $this->note->getScope()->getName();
         $result .= ':ref' . $this->id;
 
         return $result;
@@ -194,7 +192,7 @@ class refnotes_renderer_reference extends refnotes_refnote {
                 $html = '<sup>' . $this->note->getText() . '</sup>';
             }
             else {
-                $html = $this->scope->getRenderer()->renderReference($this);
+                $html = $this->note->getScope()->getRenderer()->renderReference($this);
             }
         }
 

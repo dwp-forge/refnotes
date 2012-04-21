@@ -92,26 +92,26 @@ class refnotes_note_mock {
     /**
      *
      */
-    public function addReference($attributes, $data) {
+    public function addReference($reference) {
         return new refnotes_reference_mock($this);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_note extends refnotes_refnote {
+class refnotes_renderer_note extends refnotes_refnote {
 
-    private $scope;
-    private $id;
-    private $name;
-    private $inline;
-    private $reference;
-    private $text;
-    private $rendered;
+    protected $scope;
+    protected $id;
+    protected $name;
+    protected $inline;
+    protected $reference;
+    protected $text;
+    protected $rendered;
 
     /**
      * Constructor
      */
-    public function __construct($scope, $name, $useDatabase = false) {
+    public function __construct($scope, $name) {
         parent::__construct();
 
         $this->scope = $scope;
@@ -121,10 +121,6 @@ class refnotes_note extends refnotes_refnote {
         $this->reference = array();
         $this->text = '';
         $this->rendered = false;
-
-        if ($useDatabase) {
-            $this->loadDatabaseDefinition();
-        }
     }
 
     /**
@@ -141,19 +137,6 @@ class refnotes_note extends refnotes_refnote {
     /**
      *
      */
-    private function loadDatabaseDefinition() {
-        $name = $this->scope->getNamespaceName() . $this->name;
-        $note = refnotes_reference_database::getInstance()->findNote($name);
-
-        if ($note != NULL) {
-            $this->attributes = $note->getAttributes();
-            $this->data = $note->getData();
-        }
-    }
-
-    /**
-     *
-     */
     public function getId() {
         return $this->id;
     }
@@ -163,6 +146,13 @@ class refnotes_note extends refnotes_refnote {
      */
     public function getName() {
         return $this->name;
+    }
+
+    /**
+     *
+     */
+    public function getScope() {
+        return $this->scope;
     }
 
     /**
@@ -195,9 +185,7 @@ class refnotes_note extends refnotes_refnote {
     /**
      *
      */
-    public function addReference($attributes, $data) {
-        $reference = new refnotes_renderer_reference($this->scope, $this, $attributes, $data);
-
+    public function addReference($reference) {
         if ($this->id == -1 && !$this->inline) {
             $this->inline = $reference->isInline();
 
@@ -209,8 +197,6 @@ class refnotes_note extends refnotes_refnote {
         if ($reference->isBackReferenced()) {
             $this->reference[] = $reference;
         }
-
-        return $reference;
     }
 
     /**
@@ -229,5 +215,31 @@ class refnotes_note extends refnotes_refnote {
         $this->rendered = true;
 
         return $html;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_action_note extends refnotes_renderer_note {
+
+    /**
+     * Constructor
+     */
+    public function __construct($scope, $name) {
+        parent::__construct($scope, $name);
+
+        $this->loadDatabaseDefinition();
+    }
+
+    /**
+     *
+     */
+    private function loadDatabaseDefinition() {
+        $name = $this->scope->getNamespaceName() . $this->name;
+        $note = refnotes_reference_database::getInstance()->findNote($name);
+
+        if ($note != NULL) {
+            $this->attributes = $note->getAttributes();
+            $this->data = $note->getData();
+        }
     }
 }

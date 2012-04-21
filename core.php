@@ -18,7 +18,7 @@ require_once(DOKU_PLUGIN . 'refnotes/note.php');
 require_once(DOKU_PLUGIN . 'refnotes/renderer.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_core {
+abstract class refnotes_core {
 
     protected $presetStyle;
     protected $namespace;
@@ -119,9 +119,7 @@ class refnotes_core {
     /**
      *
      */
-    protected function createNote($scope, $name) {
-        return new refnotes_note($scope, $name);
-    }
+    abstract protected function createNote($scope, $name);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -148,8 +146,11 @@ class refnotes_syntax_core extends refnotes_core {
      */
     public function addReference($attributes, $data) {
         $note = $this->getNote($attributes['ns'], $attributes['name']);
+        $reference = new refnotes_renderer_reference($note, $attributes, $data);
 
-        return $note->addReference($attributes, $data);
+        $note->addReference($reference);
+
+        return $reference;
     }
 
     /**
@@ -184,6 +185,13 @@ class refnotes_syntax_core extends refnotes_core {
         }
 
         return $html;
+    }
+
+    /**
+     *
+     */
+    protected function createNote($scope, $name) {
+        return new refnotes_renderer_note($scope, $name);
     }
 }
 
@@ -246,6 +254,6 @@ class refnotes_action_core extends refnotes_core {
      *
      */
     protected function createNote($scope, $name) {
-        return new refnotes_note($scope, $name, true);
+        return new refnotes_action_note($scope, $name);
     }
 }
