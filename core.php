@@ -145,10 +145,10 @@ class refnotes_syntax_core extends refnotes_core {
     /**
      *
      */
-    public function addReference($info) {
-        $note = $this->getNote($info['ns'], $info['name']);
+    public function addReference($attributes, $data) {
+        $note = $this->getNote($attributes['ns'], $attributes['name']);
 
-        return $note->addReference($info);
+        return $note->addReference($attributes, $data);
     }
 
     /**
@@ -230,8 +230,8 @@ class refnotes_action_core extends refnotes_core {
     /**
      *
      */
-    public function getDatabaseNote($info) {
-        return parent::getNote($info['ns'], $info['name']);
+    public function getDatabaseNote($attributes) {
+        return parent::getNote($attributes['ns'], $attributes['name']);
     }
 
     /**

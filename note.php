@@ -92,7 +92,7 @@ class refnotes_note_mock {
     /**
      *
      */
-    public function addReference($info) {
+    public function addReference($attributes, $data) {
         return new refnotes_reference_mock($this);
     }
 }
@@ -105,7 +105,7 @@ class refnotes_note {
     private $name;
     private $inline;
     private $reference;
-    private $info;
+    private $attributes;
     private $data;
     private $text;
     private $rendered;
@@ -119,7 +119,7 @@ class refnotes_note {
         $this->name = $name;
         $this->inline = false;
         $this->reference = array();
-        $this->info = array();
+        $this->attributes = array();
         $this->data = array();
         $this->text = '';
         $this->rendered = false;
@@ -144,15 +144,13 @@ class refnotes_note {
      *
      */
     private function loadDatabaseDefinition() {
-        $database = refnotes_reference_database::getInstance();
         $name = $this->scope->getNamespaceName() . $this->name;
+        $note = refnotes_reference_database::getInstance()->findNote($name);
 
-        if ($database->isDefined($name)) {
-            $this->info = $database->getNoteInfo($name);
-            $this->data = $database->getNoteData($name);
+        if ($note != NULL) {
+            $this->attributes = $note->getAttributes();
+            $this->data = $note->getData();
         }
-
-        return $note;
     }
 
     /**
@@ -183,8 +181,8 @@ class refnotes_note {
     /**
      *
      */
-    public function getInfo() {
-        return $this->info;
+    public function getAttributes() {
+        return $this->attributes;
     }
 
     /**
@@ -213,8 +211,8 @@ class refnotes_note {
     /**
      *
      */
-    public function addReference($info) {
-        $reference = new refnotes_reference($this->scope, $this, $info);
+    public function addReference($attributes, $data) {
+        $reference = new refnotes_reference($this->scope, $this, $attributes, $data);
 
         if ($this->id == -1 && !$this->inline) {
             $this->inline = $reference->isInline();

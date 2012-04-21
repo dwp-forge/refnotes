@@ -70,8 +70,8 @@ class refnotes_reference_database {
     private function loadNotesFromConfiguration() {
         $note = refnotes_configuration::load('notes');
 
-        foreach ($note as $name => $info) {
-            $this->note[$name] = new refnotes_reference_database_note('{configuration}', $info);
+        foreach ($note as $name => $data) {
+            $this->note[$name] = new refnotes_reference_database_note('{configuration}', $data);
         }
     }
 
@@ -146,20 +146,20 @@ class refnotes_reference_database {
     /**
      *
      */
-    public function isDefined($name) {
-        $result = array_key_exists($name, $this->note);
+    public function findNote($name) {
+        $found = array_key_exists($name, $this->note);
 
-        if (!$result) {
+        if (!$found) {
             list($namespace, $temp) = refnotes_parseName($name);
 
             if (array_key_exists($namespace, $this->namespace)) {
                 $this->loadNamespaceNotes($namespace);
 
-                $result = array_key_exists($name, $this->note);
+                $found = array_key_exists($name, $this->note);
             }
         }
 
-        return $result;
+        return $found ? $this->note[$name] : NULL;
     }
 
     /**
@@ -175,20 +175,6 @@ class refnotes_reference_database {
         }
 
         unset($this->namespace[$namespace]);
-    }
-
-    /**
-     *
-     */
-    public function getNoteInfo($name) {
-        return $this->note[$name]->getInfo();
-    }
-
-    /**
-     *
-     */
-    public function getNoteData($name) {
-        return $this->note[$name]->getData();
     }
 }
 
@@ -318,13 +304,13 @@ class refnotes_reference_database_page {
      */
     private function handleDataSheet($table, $columns, $rows, $key) {
         for ($r = 1; $r < $rows; $r++) {
-            $field = array();
+            $data = array();
 
             for ($c = 0; $c < $columns; $c++) {
-                $field[$key[$c]] = $table[$r][$c];
+                $data[$key[$c]] = $table[$r][$c];
             }
 
-            $this->handleNote($field);
+            $this->handleNote($data);
         }
     }
 
@@ -333,20 +319,20 @@ class refnotes_reference_database_page {
      * the caption, the second one contains the data.
      */
     private function handleDataCard($table, $rows, $key) {
-        $field = array();
+        $data = array();
 
         for ($r = 0; $r < $rows; $r++) {
-            $field[$key[$r]] = $table[$r][1];
+            $data[$key[$r]] = $table[$r][1];
         }
 
-        $this->handleNote($field);
+        $this->handleNote($data);
     }
 
     /**
      *
      */
-    private function handleNote($field) {
-        $note = new refnotes_reference_database_note($this->id, $field);
+    private function handleNote($data) {
+        $note = new refnotes_reference_database_note($this->id, $data);
 
         list($namespace, $name) = $note->getNameParts();
 
@@ -382,7 +368,7 @@ class refnotes_reference_database_page {
 class refnotes_reference_database_note {
 
     private $nameParts;
-    private $info;
+    private $attributes;
     private $data;
 
     /**
@@ -398,17 +384,17 @@ class refnotes_reference_database_note {
             $this->initializePageNote($data);
         }
 
-        $this->info['source'] = $source;
+        $this->attributes['source'] = $source;
     }
 
     /**
      *
      */
-    public function initializeConfigNote($info) {
-        $this->info = $info;
-        $this->data = array('note-text' => $info['text']);
+    public function initializeConfigNote($data) {
+        $this->attributes = $data;
+        $this->data = array('note-text' => $data['text']);
 
-        unset($this->info['text']);
+        unset($this->attributes['text']);
     }
 
 
@@ -424,7 +410,7 @@ class refnotes_reference_database_note {
             unset($data['note-name']);
         }
 
-        $this->info = array();
+        $this->attributes = array();
         $this->data = $data;
     }
 
@@ -438,8 +424,8 @@ class refnotes_reference_database_note {
     /**
      *
      */
-    public function getInfo() {
-        return $this->info;
+    public function getAttributes() {
+        return $this->attributes;
     }
 
     /**

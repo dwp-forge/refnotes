@@ -194,7 +194,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $this->parsingContext->getCurrent()->enterReference($match[1], $data, $exitPos);
 
-        return array(DOKU_LEXER_ENTER);
+        return array('start');
     }
 
     /**
@@ -205,9 +205,9 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $reference = $parsingContext->exitReference();
 
         if (!$reference->isTextDefined($pos) && $reference->isNamed()) {
-            $note = $parsingContext->getCore()->getDatabaseNote($reference->getInfo(false));
+            $note = $parsingContext->getCore()->getDatabaseNote($reference->getAttributes());
 
-            $reference->updateInfo($note->getInfo());
+            $reference->updateAttributes($note->getAttributes());
             $reference->updateData($note->getData());
         }
 
@@ -217,9 +217,12 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             if ($text != '') {
                 $this->parseNestedText($text, $pos, $handler);
             }
-        }
 
-        return array(DOKU_LEXER_EXIT, $reference->getInfo(true));
+            return array('render', $reference->getAttributes(), $reference->getData());
+        }
+        else {
+            return array('render', $reference->getAttributes());
+        }
     }
 
     /**
@@ -251,12 +254,12 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     public function renderXhtml($renderer, $data) {
         switch ($data[0]) {
-            case DOKU_LEXER_ENTER:
-                $this->renderXhtmlEnter($renderer);
+            case 'start':
+                $this->noteCapture->start($renderer);
                 break;
 
-            case DOKU_LEXER_EXIT:
-                $this->renderXhtmlExit($renderer, $data[1]);
+            case 'render':
+                $this->renderReference($renderer, $data[1], (count($data) > 2) ? $data[2] : array());
                 break;
         }
 
@@ -264,17 +267,10 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     }
 
     /**
-     * Starts renderer output capture
-     */
-    private function renderXhtmlEnter($renderer) {
-        $this->noteCapture->start($renderer);
-    }
-
-    /**
      * Stops renderer output capture and renders the reference link
      */
-    private function renderXhtmlExit($renderer, $info) {
-        $reference = refnotes_syntax_core::getInstance()->addReference($info);
+    private function renderReference($renderer, $attributes, $data) {
+        $reference = refnotes_syntax_core::getInstance()->addReference($attributes, $data);
         $text = $this->noteCapture->stop();
 
         if ($text != '') {
@@ -288,7 +284,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      *
      */
     public function renderMetadata($renderer, $data) {
-        if ($data[0] == DOKU_LEXER_EXIT) {
+        if ($data[0] == 'render') {
             $source = '';
 
             if (array_key_exists('source', $data[1])) {
@@ -428,7 +424,7 @@ class refnotes_parsing_context {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_reference_info {
 
-    private $info;
+    private $attributes;
     private $data;
     private $startOfText;
 
@@ -442,7 +438,7 @@ class refnotes_reference_info {
             $name = intval($match[1]);
         }
 
-        $this->info = array('ns' => $namespace, 'name' => $name);
+        $this->attributes = array('ns' => $namespace, 'name' => $name);
         $this->data = array();
         $this->startOfText = $startOfText;
 
@@ -466,14 +462,14 @@ class refnotes_reference_info {
      *
      */
     public function isNamed() {
-        return !is_int($this->info['name']) && ($this->info['name'] != '');
+        return !is_int($this->attributes['name']) && ($this->attributes['name'] != '');
     }
 
     /**
      *
      */
     public function getNamespace() {
-        return $this->info['ns'];
+        return $this->attributes['ns'];
     }
 
     /**
@@ -493,12 +489,12 @@ class refnotes_reference_info {
     /**
      *
      */
-    public function updateInfo($info) {
+    public function updateAttributes($attributes) {
         static $key = array('inline', 'source');
 
         foreach ($key as $k) {
-            if (isset($info[$k])) {
-                $this->info[$k] = $info[$k];
+            if (array_key_exists($k, $attributes)) {
+                $this->attributes[$k] = $attributes[$k];
             }
         }
     }
@@ -513,20 +509,8 @@ class refnotes_reference_info {
     /**
      *
      */
-    public function getInfo($includeData) {
-        $info = $this->info;
-
-        if ($includeData && $this->hasData()) {
-            static $key = array('authors', 'page');
-
-            foreach ($key as $k) {
-                if (isset($this->data[$k])) {
-                    $info['data'][$k] = $this->data[$k];
-                }
-            }
-        }
-
-        return $info;
+    public function getAttributes() {
+        return $this->attributes;
     }
 
     /**

@@ -146,11 +146,11 @@ class refnotes_instruction_mangler {
 
             case 'plugin_refnotes_references':
                 switch ($call->getPluginData(0)) {
-                    case DOKU_LEXER_ENTER:
+                    case 'start':
                         $this->inReference = true;
                         break;
 
-                    case DOKU_LEXER_EXIT:
+                    case 'render':
                         $this->inReference = false;
 
                         if ($this->hidden) {
@@ -174,7 +174,7 @@ class refnotes_instruction_mangler {
     private function markScopeLimits($call) {
         switch ($call->getName()) {
             case 'plugin_refnotes_references':
-                if ($call->getPluginData(0) == DOKU_LEXER_EXIT) {
+                if ($call->getPluginData(0) == 'render') {
                     $this->core->markScopeStart($call->getRefnotesAttribute('ns'), $call->getIndex());
                 }
                 break;

@@ -47,10 +47,10 @@ class refnotes_reference {
     /**
      * Constructor
      */
-    public function __construct($scope, $note, $info) {
-        $this->inline = isset($info['inline']) ? $info['inline'] : false;
-        $this->hidden = isset($info['hidden']) ? $info['hidden'] : false;
-        $this->data = isset($info['data']) ? $info['data'] : array();
+    public function __construct($scope, $note, $attributes, $data) {
+        $this->inline = isset($attributes['inline']) ? $attributes['inline'] : false;
+        $this->hidden = isset($attributes['hidden']) ? $attributes['hidden'] : false;
+        $this->data = $data;
         $this->scope = $scope;
         $this->note = $note;
         $this->id = -1;
