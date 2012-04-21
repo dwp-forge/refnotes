@@ -98,15 +98,13 @@ class refnotes_note_mock {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_note {
+class refnotes_note extends refnotes_refnote {
 
     private $scope;
     private $id;
     private $name;
     private $inline;
     private $reference;
-    private $attributes;
-    private $data;
     private $text;
     private $rendered;
 
@@ -114,13 +112,13 @@ class refnotes_note {
      * Constructor
      */
     public function __construct($scope, $name, $useDatabase = false) {
+        parent::__construct();
+
         $this->scope = $scope;
         $this->id = -1;
         $this->name = $name;
         $this->inline = false;
         $this->reference = array();
-        $this->attributes = array();
-        $this->data = array();
         $this->text = '';
         $this->rendered = false;
 
@@ -181,20 +179,6 @@ class refnotes_note {
     /**
      *
      */
-    public function getAttributes() {
-        return $this->attributes;
-    }
-
-    /**
-     *
-     */
-    public function getData() {
-        return $this->data;
-    }
-
-    /**
-     *
-     */
     public function setText($text) {
         if (($this->text == '') || !$this->inline) {
             $this->text = $text;
@@ -212,7 +196,7 @@ class refnotes_note {
      *
      */
     public function addReference($attributes, $data) {
-        $reference = new refnotes_reference($this->scope, $this, $attributes, $data);
+        $reference = new refnotes_renderer_reference($this->scope, $this, $attributes, $data);
 
         if ($this->id == -1 && !$this->inline) {
             $this->inline = $reference->isInline();

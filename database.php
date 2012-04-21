@@ -10,6 +10,7 @@
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
+require_once(DOKU_PLUGIN . 'refnotes/refnote.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_reference_database_mock {
@@ -365,16 +366,16 @@ class refnotes_reference_database_page {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_reference_database_note {
+class refnotes_reference_database_note extends refnotes_refnote {
 
     private $nameParts;
-    private $attributes;
-    private $data;
 
     /**
      * Constructor
      */
     public function __construct($source, $data) {
+        parent::__construct();
+
         $this->nameParts = array('', '');
 
         if ($source == '{configuration}') {
@@ -391,12 +392,12 @@ class refnotes_reference_database_note {
      *
      */
     public function initializeConfigNote($data) {
+        $this->data['note-text'] = $data['text'];
+
+        unset($data['text']);
+
         $this->attributes = $data;
-        $this->data = array('note-text' => $data['text']);
-
-        unset($this->attributes['text']);
     }
-
 
     /**
      *
@@ -410,7 +411,6 @@ class refnotes_reference_database_note {
             unset($data['note-name']);
         }
 
-        $this->attributes = array();
         $this->data = $data;
     }
 
@@ -419,20 +419,6 @@ class refnotes_reference_database_note {
      */
     public function getNameParts() {
         return $this->nameParts;
-    }
-
-    /**
-     *
-     */
-    public function getAttributes() {
-        return $this->attributes;
-    }
-
-    /**
-     *
-     */
-    public function getData() {
-        return $this->data;
     }
 }
 
