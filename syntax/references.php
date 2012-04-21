@@ -20,28 +20,11 @@ require_once(DOKU_PLUGIN . 'refnotes/core.php');
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
-    private static $instance = NULL;
-
     private $mode;
     private $entryPattern;
     private $exitPattern;
     private $handlePattern;
-    private $parsingContext;
     private $noteCapture;
-
-    /**
-     *
-     */
-    public static function getInstance() {
-        if (self::$instance == NULL) {
-            self::$instance = plugin_load('syntax', 'refnotes_references');
-            if (self::$instance == NULL) {
-                throw new Exception('Syntax plugin "refnotes_references" is not available or invalid.');
-            }
-        }
-
-        return self::$instance;
-    }
 
     /**
      * Constructor
@@ -50,7 +33,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         refnotes_localization::initialize($this);
 
         $this->mode = substr(get_class($this), 7);
-        $this->parsingContext = new refnotes_parsing_context_stack();
         $this->noteCapture = new refnotes_note_capture();
 
         $this->initializePatterns();
@@ -136,7 +118,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Handle the match
      */
     public function handle($match, $state, $pos, $handler) {
-        $result = $this->parsingContext->getCurrent()->canHandle($state);
+        $result = refnotes_parser_core::getInstance()->canHandle($state);
 
         if ($result) {
             switch ($state) {
@@ -192,7 +174,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $data = ($match[2] == '>>') ? $match[3] : '';
         $exitPos = $pos + strlen($syntax);
 
-        $this->parsingContext->getCurrent()->enterReference($match[1], $data, $exitPos);
+        refnotes_parser_core::getInstance()->enterReference($match[1], $data, $exitPos);
 
         return array('start');
     }
@@ -201,18 +183,18 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      *
      */
     private function handleExit($pos, $handler) {
-        $parsingContext = $this->parsingContext->getCurrent();
-        $reference = $parsingContext->exitReference();
+        $core = refnotes_parser_core::getInstance();
+        $reference = $core->exitReference();
 
         if (!$reference->isTextDefined($pos) && $reference->isNamed()) {
-            $note = $parsingContext->getCore()->getDatabaseNote($reference->getAttributes());
+            $note = $core->getDatabaseNote($reference->getAttributes());
 
             $reference->updateAttributes($note->getAttributes());
             $reference->updateData($note->getData());
         }
 
         if ($reference->hasData()) {
-            $text = $parsingContext->getCore()->renderNoteText($reference->getNamespace(), $reference->getData());
+            $text = $core->renderNoteText($reference->getNamespace(), $reference->getData());
 
             if ($text != '') {
                 $this->parseNestedText($text, $pos, $handler);
@@ -270,7 +252,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Stops renderer output capture and renders the reference link
      */
     private function renderReference($renderer, $attributes, $data) {
-        $reference = refnotes_syntax_core::getInstance()->addReference($attributes, $data);
+        $reference = refnotes_renderer_core::getInstance()->addReference($attributes, $data);
         $text = $this->noteCapture->stop();
 
         if ($text != '') {
@@ -297,127 +279,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         }
 
         return true;
-    }
-
-    /**
-     *
-     */
-    public function enterParsingContext() {
-        $this->parsingContext->enterContext();
-    }
-
-    /**
-     *
-     */
-    public function exitParsingContext() {
-        $this->parsingContext->exitContext();
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_parsing_context_stack {
-
-    private $context;
-
-    /**
-     * Constructor
-     */
-    public function __construct() {
-        /* Default context. Should never be used, but just in case... */
-        $this->context = array(new refnotes_parsing_context());
-    }
-
-    /**
-     *
-     */
-    public function enterContext() {
-        $this->context[] = new refnotes_parsing_context();
-    }
-
-    /**
-     *
-     */
-    public function exitContext() {
-        unset($this->context[count($this->context) - 1]);
-    }
-
-    /**
-     *
-     */
-    public function getCurrent() {
-        return end($this->context);
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_parsing_context {
-
-    private $core;
-    private $handling;
-    private $reference;
-
-    /**
-     * Constructor
-     */
-    public function __construct() {
-        $this->core = new refnotes_action_core();
-
-        $this->initialize();
-    }
-
-    /**
-     *
-     */
-    private function initialize() {
-        $this->handling = false;
-        $this->reference = NULL;
-    }
-
-    /**
-     *
-     */
-    public function getCore() {
-        return $this->core;
-    }
-
-    /**
-     *
-     */
-    public function canHandle($state) {
-        switch ($state) {
-            case DOKU_LEXER_ENTER:
-                $result = !$this->handling;
-                break;
-
-            case DOKU_LEXER_EXIT:
-                $result = $this->handling;
-                break;
-
-            default:
-                $result = false;
-                break;
-        }
-
-        return $result;
-    }
-
-    /**
-     *
-     */
-    public function enterReference($name, $data, $exitPos) {
-        $this->handling = true;
-        $this->reference = new refnotes_parser_reference($name, $data, $exitPos);
-    }
-
-    /**
-     *
-     */
-    public function exitReference() {
-        $reference = $this->reference;
-
-        $this->initialize();
-
-        return $reference;
     }
 }
 
