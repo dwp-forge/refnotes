@@ -37,12 +37,10 @@ class refnotes_reference_mock {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_parser_reference extends refnotes_refnote {
 
-    private $startOfText;
-
     /**
      * Constructor
      */
-    public function __construct($name, $data, $startOfText) {
+    public function __construct($name, $data) {
         list($namespace, $name) = refnotes_parseName($name);
 
         if (preg_match('/(?:@@FNT|#)(\d+)/', $name, $match) == 1) {
@@ -50,8 +48,6 @@ class refnotes_parser_reference extends refnotes_refnote {
         }
 
         parent::__construct(array('ns' => $namespace, 'name' => $name));
-
-        $this->startOfText = $startOfText;
 
         if ($data != '') {
             $this->parseStructuredData($data);
@@ -67,47 +63,6 @@ class refnotes_parser_reference extends refnotes_refnote {
         foreach ($match as $m) {
             $this->data[$m[1]] = $m[2];
         }
-    }
-
-    /**
-     *
-     */
-    public function isNamed() {
-        return !is_int($this->attributes['name']) && ($this->attributes['name'] != '');
-    }
-
-    /**
-     *
-     */
-    public function getNamespace() {
-        return $this->attributes['ns'];
-    }
-
-    /**
-     *
-     */
-    public function isTextDefined($endOfText) {
-        return $endOfText > $this->startOfText;
-    }
-
-    /**
-     *
-     */
-    public function updateAttributes($attributes) {
-        static $key = array('inline', 'source');
-
-        foreach ($key as $k) {
-            if (array_key_exists($k, $attributes)) {
-                $this->attributes[$k] = $attributes[$k];
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    public function updateData($data) {
-        $this->data = array_merge($data, $this->data);
     }
 }
 
@@ -194,5 +149,83 @@ class refnotes_renderer_reference extends refnotes_reference {
         }
 
         return $html;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_action_reference extends refnotes_reference {
+
+    private $call;
+
+    /**
+     * Constructor
+     */
+    public function __construct($note, $attributes, $data, $call) {
+        parent::__construct($note, $attributes, $data);
+
+        $this->call = $call;
+    }
+
+    /**
+     *
+     */
+    public function updateAttributes($attributes) {
+        static $key = array('inline', 'source');
+
+        foreach ($key as $k) {
+            if (array_key_exists($k, $attributes)) {
+                $this->attributes[$k] = $attributes[$k];
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public function updateData($data) {
+        static $key = array('authors', 'published');
+
+        foreach ($key as $k) {
+            if (array_key_exists($k, $data) && !array_key_exists($k, $this->data)) {
+                $this->data[$k] = $data[$k];
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public function rewrite() {
+        $this->call->setPluginData(1, $this->attributes);
+
+        if ($this->hasData()) {
+            $this->call->setPluginData(2, $this->data);
+        }
+    }
+
+    /**
+     *
+     */
+    public function setNoteText($text) {
+        if ($text != '') {
+            $calls = p_get_instructions($text);
+
+            /* Remove document and parsgraph open/close instructions */
+            $calls = array_slice($calls, 2, count($calls) - 4);
+
+            /* Trim white space */
+            $first = reset($calls);
+            $last = end($calls);
+
+            if (($first[0] == 'cdata') && (trim($first[1][0]) == '')) {
+                array_shift($calls);
+            }
+
+            if (($last[0] == 'cdata') && (trim($last[1][0]) == '')) {
+                array_pop($calls);
+            }
+
+            $this->call->insertBefore(new refnotes_nest_instruction($calls));
+        }
     }
 }

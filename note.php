@@ -232,6 +232,8 @@ class refnotes_action_note extends refnotes_note {
         parent::__construct($scope, $name);
 
         $this->loadDatabaseDefinition();
+
+        $this->inline = $this->getAttribute('inline', false);
     }
 
     /**
@@ -245,5 +247,40 @@ class refnotes_action_note extends refnotes_note {
             $this->attributes = $note->getAttributes();
             $this->data = $note->getData();
         }
+    }
+
+    /**
+     *
+     */
+    public function addReference($reference) {
+        parent::addReference($reference);
+
+        $this->data = array_merge($this->data, $reference->getData());
+    }
+
+    /**
+     * Checks if the note should be processed. Simple notes are also reported as valid so that
+     * scope limits will produce note blocks identical to ones during rendering.
+     */
+    public function isValid() {
+        return !$this->processed && (count($this->reference) > 0) && (($this->text != '') || $this->hasData());
+    }
+
+    /**
+     * Inject reference database data into references so that they can be properly rendered.
+     * Inject note text into the last reference.
+     */
+    public function rewriteReferences() {
+        if (($this->text == '') && $this->hasData()) {
+            foreach ($this->reference as $reference) {
+                $reference->updateAttributes($this->attributes);
+                $reference->updateData($this->data);
+                $reference->rewrite();
+            }
+
+            $this->reference[0]->setNoteText($this->scope->getRenderer()->renderNoteText($this->data));
+        }
+
+        $this->processed = true;
     }
 }

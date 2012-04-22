@@ -120,6 +120,17 @@ class refnotes_scope {
     /**
      *
      */
+    public function rewriteReferences($limit) {
+        $block = new refnotes_note_block_iterator($this->note, $limit);
+
+        foreach ($block as $note) {
+            $note->rewriteReferences();
+        }
+    }
+
+    /**
+     *
+     */
     public function renderNotes($limit) {
         $block = new refnotes_note_block_iterator($this->note, $limit);
         $html = '';

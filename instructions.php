@@ -31,6 +31,17 @@ class refnotes_instruction {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_nest_instruction extends refnotes_instruction {
+
+    /**
+     * Constructor
+     */
+    public function __construct($data) {
+        parent::__construct('nest', array($data));
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_plugin_instruction extends refnotes_instruction {
 
     /**
@@ -161,6 +172,13 @@ class refnotes_instruction_reference {
     public function getPrevious() {
         return $this->list->getAt($this->index - 1);
     }
+
+    /**
+     *
+     */
+    public function insertBefore($call) {
+        return $this->list->insert($this->index, $call);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -242,6 +260,8 @@ class refnotes_instruction_list implements Iterator {
         if (empty($this->extraCalls)) {
             return;
         }
+
+        ksort($this->extraCalls);
 
         $calls = array();
         $prevIndex = 0;

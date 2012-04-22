@@ -174,7 +174,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $data = ($match[2] == '>>') ? $match[3] : '';
         $exitPos = $pos + strlen($syntax);
 
-        refnotes_parser_core::getInstance()->enterReference($match[1], $data, $exitPos);
+        refnotes_parser_core::getInstance()->enterReference($match[1], $data);
 
         return array('start');
     }
@@ -183,52 +183,14 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      *
      */
     private function handleExit($pos, $handler) {
-        $core = refnotes_parser_core::getInstance();
-        $reference = $core->exitReference();
-
-        if (!$reference->isTextDefined($pos) && $reference->isNamed()) {
-            $note = $core->getDatabaseNote($reference->getAttributes());
-
-            $reference->updateAttributes($note->getAttributes());
-            $reference->updateData($note->getData());
-        }
+        $reference = refnotes_parser_core::getInstance()->exitReference();
 
         if ($reference->hasData()) {
-            $text = $core->renderNoteText($reference->getNamespace(), $reference->getData());
-
-            if ($text != '') {
-                $this->parseNestedText($text, $pos, $handler);
-            }
-
             return array('render', $reference->getAttributes(), $reference->getData());
         }
         else {
             return array('render', $reference->getAttributes());
         }
-    }
-
-    /**
-     *
-     */
-    private function parseNestedText($text, $pos, $handler) {
-        $nestedWriter = new refnotes_nested_call_writer($handler->CallWriter);
-        $callWriterBackup = $handler->CallWriter;
-        $handler->CallWriter = $nestedWriter;
-
-        /*
-            HACK: If doku.php parses a number of pages during one call (it's common after the cache
-            clean-up) $this->Lexer can be a different instance from the one used in the current parser
-            pass. Here we ensure that $handler is linked to $this->Lexer while parsing the nested text.
-        */
-        $handlerBackup = $this->Lexer->_parser;
-        $this->Lexer->_parser = $handler;
-
-        $this->Lexer->parse($text);
-
-        $this->Lexer->_parser = $handlerBackup;
-        $handler->CallWriter = $callWriterBackup;
-
-        $nestedWriter->process($pos);
     }
 
     /**
@@ -279,17 +241,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         }
 
         return true;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_nested_call_writer extends Doku_Handler_Nest {
-
-    /**
-     *
-     */
-    public function process($pos) {
-        $this->CallWriter->writeCall(array("nest", array($this->calls), $pos));
     }
 }
 

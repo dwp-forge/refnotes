@@ -116,17 +116,23 @@ class refnotes_namespace_style_stash {
         return count($this->index);
     }
 
+    /**
+     *
+     */
     public function getIndex() {
         return array_keys($this->index);
     }
 
+    /**
+     *
+     */
     public function getAt($index) {
         return array_key_exists($index, $this->index) ? $this->index[$index] : array();
     }
 
     /**
      * Sort the style blocks so that the namespaces with inherited style go after
-     * the namespaces they inherit from
+     * the namespaces they inherit from.
      */
     public function sort() {
         $this->sortByIndex();
@@ -250,6 +256,13 @@ class refnotes_namespace {
     /**
      *
      */
+    public function clearScopes() {
+        $this->scope = array();
+    }
+
+    /**
+     *
+     */
     public function inheritStyle($source) {
         $this->style = $source->style;
     }
@@ -365,6 +378,17 @@ class refnotes_namespace {
         $parentEnd = ($parent != NULL) ? $parent->findScopeEnd($previousEnd, $currentStart) : -1;
 
         return max($parentEnd, $previousEnd) + 1;
+    }
+
+    /**
+     *
+     */
+    public function rewriteReferences($limit = '') {
+        $this->resetScope();
+
+        if (count($this->scope) > 0) {
+            $html = $this->getCurrentScope()->rewriteReferences($limit);
+        }
     }
 
     /**

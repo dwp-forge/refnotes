@@ -74,8 +74,8 @@ class refnotes_parser_core {
     /**
      *
      */
-    public function enterReference($name, $data, $exitPos) {
-        $this->getCurrentContext()->enterReference($name, $data, $exitPos);
+    public function enterReference($name, $data) {
+        $this->getCurrentContext()->enterReference($name, $data);
     }
 
     /**
@@ -84,26 +84,11 @@ class refnotes_parser_core {
     public function exitReference() {
         return $this->getCurrentContext()->exitReference();
     }
-
-    /**
-     *
-     */
-    public function getDatabaseNote($attributes) {
-        return $this->getCurrentContext()->getCore()->getDatabaseNote($attributes);
-    }
-
-    /**
-     * Returns wiki markup rendered according to the namespace style
-     */
-    public function renderNoteText($namespaceName, $data) {
-        return $this->getCurrentContext()->getCore()->renderNoteText($namespaceName, $data);
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_parsing_context {
 
-    private $core;
     private $handling;
     private $reference;
 
@@ -111,8 +96,6 @@ class refnotes_parsing_context {
      * Constructor
      */
     public function __construct() {
-        $this->core = new refnotes_action_core();
-
         $this->reset();
     }
 
@@ -122,13 +105,6 @@ class refnotes_parsing_context {
     private function reset() {
         $this->handling = false;
         $this->reference = NULL;
-    }
-
-    /**
-     *
-     */
-    public function getCore() {
-        return $this->core;
     }
 
     /**
@@ -155,9 +131,9 @@ class refnotes_parsing_context {
     /**
      *
      */
-    public function enterReference($name, $data, $exitPos) {
+    public function enterReference($name, $data) {
         $this->handling = true;
-        $this->reference = new refnotes_parser_reference($name, $data, $exitPos);
+        $this->reference = new refnotes_parser_reference($name, $data);
     }
 
     /**
@@ -228,6 +204,20 @@ abstract class refnotes_core {
         }
 
         return ($name != '') ? $this->namespace[$name] : NULL;
+    }
+
+    /**
+     *
+     */
+    public function styleNamespace($namespaceName, $style) {
+        $namespace = $this->getNamespace($namespaceName);
+
+        if (array_key_exists('inherit', $style)) {
+            $source = $this->getNamespace($style['inherit']);
+            $namespace->inheritStyle($source);
+        }
+
+        $namespace->setStyle($style);
     }
 
     /**
@@ -311,22 +301,9 @@ class refnotes_renderer_core extends refnotes_core {
     /**
      *
      */
-    public function styleNamespace($namespaceName, $style) {
-        $namespace = $this->getNamespace($namespaceName);
-
-        if (array_key_exists('inherit', $style)) {
-            $source = $this->getNamespace($style['inherit']);
-            $namespace->inheritStyle($source);
-        }
-
-        $namespace->setStyle($style);
-    }
-
-    /**
-     *
-     */
     public function renderNotes($namespaceName, $limit) {
         $html = '';
+
         if ($namespaceName == '*') {
             foreach ($this->namespace as $namespace) {
                 $html .= $namespace->renderNotes();
@@ -394,15 +371,39 @@ class refnotes_action_core extends refnotes_core {
     /**
      *
      */
-    public function getDatabaseNote($attributes) {
-        return parent::getNote($attributes['ns'], $attributes['name']);
+    public function clearScopes() {
+        foreach ($this->namespace as $namespace) {
+            $namespace->clearScopes();
+        }
     }
 
     /**
-     * Returns wiki markup rendered according to the namespace style
+     *
      */
-    public function renderNoteText($namespaceName, $data) {
-        return $this->getNamespace($namespaceName)->getRenderer()->renderNoteText($data);
+    public function addReference($attributes, $data, $call) {
+        $note = $this->getNote($attributes['ns'], $attributes['name']);
+        $reference = new refnotes_action_reference($note, $attributes, $data, $call);
+
+        $note->addReference($reference);
+
+        return $reference;
+    }
+
+    /**
+     *
+     */
+    public function rewriteReferences($namespaceName, $limit) {
+        if ($namespaceName == '*') {
+            foreach ($this->namespace as $namespace) {
+                $namespace->rewriteReferences();
+            }
+        }
+        else {
+            $namespace = $this->findNamespace($namespaceName);
+            if ($namespace != NULL) {
+                $namespace->rewriteReferences($limit);
+            }
+        }
     }
 
     /**

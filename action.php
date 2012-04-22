@@ -114,6 +114,10 @@ class refnotes_instruction_mangler {
             $this->renderLeftovers();
 
             $this->calls->applyChanges();
+
+            $this->renderStructuredNotes();
+
+            $this->calls->applyChanges();
         }
     }
 
@@ -220,6 +224,52 @@ class refnotes_instruction_mangler {
      */
     private function renderLeftovers() {
         $this->calls->append(new refnotes_notes_render_instruction('*'));
+    }
+
+    /**
+     *
+     */
+    private function renderStructuredNotes() {
+        $this->core->clearScopes();
+
+        foreach ($this->calls as $call) {
+            $this->styleNamespaces($call);
+            $this->addReferences($call);
+            $this->rewriteReferences($call);
+        }
+    }
+
+    /**
+     *
+     */
+    private function styleNamespaces($call) {
+        if (($call->getName() == 'plugin_refnotes_notes') && ($call->getPluginData(0) == 'style')) {
+            $this->core->styleNamespace($call->getRefnotesAttribute('ns'), $call->getPluginData(2));
+        }
+    }
+
+    /**
+     *
+     */
+    private function addReferences($call) {
+        if (($call->getName() == 'plugin_refnotes_references') && ($call->getPluginData(0) == 'render')) {
+            $attributes = $call->getPluginData(1);
+            $data = (count($call->getData(1)) > 2) ? $call->getPluginData(2) : array();
+            $reference = $this->core->addReference($attributes, $data, $call);
+
+            if ($call->getPrevious()->getName() != 'plugin_refnotes_references') {
+                $reference->getNote()->setText('defined');
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private function rewriteReferences($call) {
+        if (($call->getName() == 'plugin_refnotes_notes') && ($call->getPluginData(0) == 'render')) {
+            $this->core->rewriteReferences($call->getRefnotesAttribute('ns'), $call->getRefnotesAttribute('limit'));
+        }
     }
 }
 

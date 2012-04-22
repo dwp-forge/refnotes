@@ -30,7 +30,7 @@ class refnotes_reference_database {
         if (self::$instance == NULL) {
             self::$instance = new refnotes_reference_database();
 
-            // Loading has to be separated from construction to prevent infinite recursion
+            /* Loading has to be separated from construction to prevent infinite recursion */
             self::$instance->load();
         }
 
