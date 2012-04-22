@@ -20,28 +20,11 @@ require_once(DOKU_PLUGIN . 'refnotes/core.php');
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
-    private static $instance = NULL;
-
     private $mode;
     private $entryPattern;
     private $exitPattern;
     private $handlePattern;
-    private $parsingContext;
     private $noteCapture;
-
-    /**
-     *
-     */
-    public static function getInstance() {
-        if (self::$instance == NULL) {
-            self::$instance = plugin_load('syntax', 'refnotes_references');
-            if (self::$instance == NULL) {
-                throw new Exception('Syntax plugin "refnotes_references" is not available or invalid.');
-            }
-        }
-
-        return self::$instance;
-    }
 
     /**
      * Constructor
@@ -50,7 +33,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         refnotes_localization::initialize($this);
 
         $this->mode = substr(get_class($this), 7);
-        $this->parsingContext = new refnotes_parsing_context_stack();
         $this->noteCapture = new refnotes_note_capture();
 
         $this->initializePatterns();
@@ -136,7 +118,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      * Handle the match
      */
     public function handle($match, $state, $pos, $handler) {
-        $result = $this->parsingContext->getCurrent()->canHandle($state);
+        $result = refnotes_parser_core::getInstance()->canHandle($state);
 
         if ($result) {
             switch ($state) {
@@ -192,58 +174,23 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $data = ($match[2] == '>>') ? $match[3] : '';
         $exitPos = $pos + strlen($syntax);
 
-        $this->parsingContext->getCurrent()->enterReference($match[1], $data, $exitPos);
+        refnotes_parser_core::getInstance()->enterReference($match[1], $data);
 
-        return array(DOKU_LEXER_ENTER);
+        return array('start');
     }
 
     /**
      *
      */
     private function handleExit($pos, $handler) {
-        $parsingContext = $this->parsingContext->getCurrent();
-        $reference = $parsingContext->exitReference();
-
-        if (!$reference->isTextDefined($pos) && $reference->isNamed()) {
-            $note = $parsingContext->getCore()->getDatabaseNote($reference->getInfo(false));
-
-            $reference->updateInfo($note->getInfo());
-            $reference->updateData($note->getData());
-        }
+        $reference = refnotes_parser_core::getInstance()->exitReference();
 
         if ($reference->hasData()) {
-            $text = $parsingContext->getCore()->renderNoteText($reference->getNamespace(), $reference->getData());
-
-            if ($text != '') {
-                $this->parseNestedText($text, $pos, $handler);
-            }
+            return array('render', $reference->getAttributes(), $reference->getData());
         }
-
-        return array(DOKU_LEXER_EXIT, $reference->getInfo(true));
-    }
-
-    /**
-     *
-     */
-    private function parseNestedText($text, $pos, $handler) {
-        $nestedWriter = new refnotes_nested_call_writer($handler->CallWriter);
-        $callWriterBackup = $handler->CallWriter;
-        $handler->CallWriter = $nestedWriter;
-
-        /*
-            HACK: If doku.php parses a number of pages during one call (it's common after the cache
-            clean-up) $this->Lexer can be a different instance from the one used in the current parser
-            pass. Here we ensure that $handler is linked to $this->Lexer while parsing the nested text.
-        */
-        $handlerBackup = $this->Lexer->_parser;
-        $this->Lexer->_parser = $handler;
-
-        $this->Lexer->parse($text);
-
-        $this->Lexer->_parser = $handlerBackup;
-        $handler->CallWriter = $callWriterBackup;
-
-        $nestedWriter->process($pos);
+        else {
+            return array('render', $reference->getAttributes());
+        }
     }
 
     /**
@@ -251,12 +198,12 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      */
     public function renderXhtml($renderer, $data) {
         switch ($data[0]) {
-            case DOKU_LEXER_ENTER:
-                $this->renderXhtmlEnter($renderer);
+            case 'start':
+                $this->noteCapture->start($renderer);
                 break;
 
-            case DOKU_LEXER_EXIT:
-                $this->renderXhtmlExit($renderer, $data[1]);
+            case 'render':
+                $this->renderReference($renderer, $data[1], (count($data) > 2) ? $data[2] : array());
                 break;
         }
 
@@ -264,17 +211,10 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     }
 
     /**
-     * Starts renderer output capture
-     */
-    private function renderXhtmlEnter($renderer) {
-        $this->noteCapture->start($renderer);
-    }
-
-    /**
      * Stops renderer output capture and renders the reference link
      */
-    private function renderXhtmlExit($renderer, $info) {
-        $reference = refnotes_syntax_core::getInstance()->addReference($info);
+    private function renderReference($renderer, $attributes, $data) {
+        $reference = refnotes_renderer_core::getInstance()->addReference($attributes, $data);
         $text = $this->noteCapture->stop();
 
         if ($text != '') {
@@ -288,7 +228,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
      *
      */
     public function renderMetadata($renderer, $data) {
-        if ($data[0] == DOKU_LEXER_EXIT) {
+        if ($data[0] == 'render') {
             $source = '';
 
             if (array_key_exists('source', $data[1])) {
@@ -301,250 +241,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         }
 
         return true;
-    }
-
-    /**
-     *
-     */
-    public function enterParsingContext() {
-        $this->parsingContext->enterContext();
-    }
-
-    /**
-     *
-     */
-    public function exitParsingContext() {
-        $this->parsingContext->exitContext();
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_parsing_context_stack {
-
-    private $context;
-
-    /**
-     * Constructor
-     */
-    public function __construct() {
-        /* Default context. Should never be used, but just in case... */
-        $this->context = array(new refnotes_parsing_context());
-    }
-
-    /**
-     *
-     */
-    public function enterContext() {
-        $this->context[] = new refnotes_parsing_context();
-    }
-
-    /**
-     *
-     */
-    public function exitContext() {
-        unset($this->context[count($this->context) - 1]);
-    }
-
-    /**
-     *
-     */
-    public function getCurrent() {
-        return end($this->context);
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_parsing_context {
-
-    private $core;
-    private $handling;
-    private $reference;
-
-    /**
-     * Constructor
-     */
-    public function __construct() {
-        $this->core = new refnotes_action_core();
-
-        $this->initialize();
-    }
-
-    /**
-     *
-     */
-    private function initialize() {
-        $this->handling = false;
-        $this->reference = NULL;
-    }
-
-    /**
-     *
-     */
-    public function getCore() {
-        return $this->core;
-    }
-
-    /**
-     *
-     */
-    public function canHandle($state) {
-        switch ($state) {
-            case DOKU_LEXER_ENTER:
-                $result = !$this->handling;
-                break;
-
-            case DOKU_LEXER_EXIT:
-                $result = $this->handling;
-                break;
-
-            default:
-                $result = false;
-                break;
-        }
-
-        return $result;
-    }
-
-    /**
-     *
-     */
-    public function enterReference($name, $data, $exitPos) {
-        $this->handling = true;
-        $this->reference = new refnotes_reference_info($name, $data, $exitPos);
-    }
-
-    /**
-     *
-     */
-    public function exitReference() {
-        $reference = $this->reference;
-
-        $this->initialize();
-
-        return $reference;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_reference_info {
-
-    private $info;
-    private $data;
-    private $startOfText;
-
-    /**
-     * Constructor
-     */
-    public function __construct($name, $data, $startOfText) {
-        list($namespace, $name) = refnotes_parseName($name);
-
-        if (preg_match('/(?:@@FNT|#)(\d+)/', $name, $match) == 1) {
-            $name = intval($match[1]);
-        }
-
-        $this->info = array('ns' => $namespace, 'name' => $name);
-        $this->data = array();
-        $this->startOfText = $startOfText;
-
-        if ($data != '') {
-            $this->parseStructuredData($data);
-        }
-    }
-
-    /**
-     *
-     */
-    private function parseStructuredData($syntax) {
-        preg_match_all('/([-\w]+)\s*[:=]\s*(.+?)\s*?(:?[\n|;]|$)/', $syntax, $match, PREG_SET_ORDER);
-
-        foreach ($match as $m) {
-            $this->data[$m[1]] = $m[2];
-        }
-    }
-
-    /**
-     *
-     */
-    public function isNamed() {
-        return !is_int($this->info['name']) && ($this->info['name'] != '');
-    }
-
-    /**
-     *
-     */
-    public function getNamespace() {
-        return $this->info['ns'];
-    }
-
-    /**
-     *
-     */
-    public function isTextDefined($endOfText) {
-        return $endOfText > $this->startOfText;
-    }
-
-    /**
-     *
-     */
-    public function hasData() {
-        return !empty($this->data);
-    }
-
-    /**
-     *
-     */
-    public function updateInfo($info) {
-        static $key = array('inline', 'source');
-
-        foreach ($key as $k) {
-            if (isset($info[$k])) {
-                $this->info[$k] = $info[$k];
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    public function updateData($data) {
-        $this->data = array_merge($data, $this->data);
-    }
-
-    /**
-     *
-     */
-    public function getInfo($includeData) {
-        $info = $this->info;
-
-        if ($includeData && $this->hasData()) {
-            static $key = array('authors', 'page');
-
-            foreach ($key as $k) {
-                if (isset($this->data[$k])) {
-                    $info['data'][$k] = $this->data[$k];
-                }
-            }
-        }
-
-        return $info;
-    }
-
-    /**
-     *
-     */
-    public function getData() {
-        return $this->data;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_nested_call_writer extends Doku_Handler_Nest {
-
-    /**
-     *
-     */
-    public function process($pos) {
-        $this->CallWriter->writeCall(array("nest", array($this->calls), $pos));
     }
 }
 

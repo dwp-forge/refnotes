@@ -8,10 +8,43 @@
  */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_scope_limits {
+    public $start;
+    public $end;
+
+    /**
+     * Constructor
+     */
+    public function __construct($start, $end = -1000) {
+        $this->start = $start;
+        $this->end = $end;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_scope_mock {
+
+    /**
+     *
+     */
+    public function getLimits() {
+        return new refnotes_scope_limits(-1, -1);
+    }
+
+    /**
+     *
+     */
+    public function isOpen() {
+        return false;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_scope {
 
     private $namespace;
     private $id;
+    private $limits;
     private $note;
     private $notes;
     private $references;
@@ -19,9 +52,10 @@ class refnotes_scope {
     /**
      * Constructor
      */
-    public function __construct($namespace, $id) {
+    public function __construct($namespace, $id, $start = -1, $end = -1000) {
         $this->namespace = $namespace;
         $this->id = $id;
+        $this->limits = new refnotes_scope_limits($start, $end);
         $this->note = array();
         $this->notes = 0;
         $this->references = 0;
@@ -39,6 +73,20 @@ class refnotes_scope {
      */
     public function getNamespaceName() {
         return $this->namespace->getName();
+    }
+
+    /**
+     *
+     */
+    public function getLimits() {
+        return $this->limits;
+    }
+
+    /**
+     *
+     */
+    public function isOpen() {
+        return $this->limits->end == -1000;
     }
 
     /**
@@ -63,20 +111,6 @@ class refnotes_scope {
     }
 
     /**
-     * Returns the number of renderable notes in the scope
-     */
-    public function getRenderableCount() {
-        $result = 0;
-        foreach ($this->note as $note) {
-            if ($note->isRenderable()) {
-                ++$result;
-            }
-        }
-
-        return $result;
-    }
-
-    /**
      *
      */
     public function addNote($note) {
@@ -86,16 +120,23 @@ class refnotes_scope {
     /**
      *
      */
+    public function rewriteReferences($limit) {
+        $block = new refnotes_note_block_iterator($this->note, $limit);
+
+        foreach ($block as $note) {
+            $note->rewriteReferences();
+        }
+    }
+
+    /**
+     *
+     */
     public function renderNotes($limit) {
+        $block = new refnotes_note_block_iterator($this->note, $limit);
         $html = '';
-        $count = 0;
-        foreach ($this->note as $note) {
-            if ($note->isRenderable()) {
-                $html .= $note->render();
-                if (($limit != 0) && (++$count == $limit)) {
-                    break;
-                }
-            }
+
+        foreach ($block as $note) {
+            $html .= $note->render();
         }
 
         if ($html != '') {

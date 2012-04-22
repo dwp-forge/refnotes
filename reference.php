@@ -15,8 +15,8 @@ class refnotes_reference_mock {
     /**
      * Constructor
      */
-    public function __construct() {
-        $this->note = new refnotes_note_mock();
+    public function __construct($note) {
+        $this->note = $note;
     }
 
     /**
@@ -35,28 +35,58 @@ class refnotes_reference_mock {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_reference {
-
-    private $inline;
-    private $hidden;
-    private $data;
-    private $scope;
-    private $note;
-    private $id;
+class refnotes_parser_reference extends refnotes_refnote {
 
     /**
      * Constructor
      */
-    public function __construct($scope, $note, $info) {
-        $this->inline = isset($info['inline']) ? $info['inline'] : false;
-        $this->hidden = isset($info['hidden']) ? $info['hidden'] : false;
-        $this->data = isset($info['data']) ? $info['data'] : array();
-        $this->scope = $scope;
+    public function __construct($name, $data) {
+        list($namespace, $name) = refnotes_parseName($name);
+
+        if (preg_match('/(?:@@FNT|#)(\d+)/', $name, $match) == 1) {
+            $name = intval($match[1]);
+        }
+
+        parent::__construct(array('ns' => $namespace, 'name' => $name));
+
+        if ($data != '') {
+            $this->parseStructuredData($data);
+        }
+    }
+
+    /**
+     *
+     */
+    private function parseStructuredData($syntax) {
+        preg_match_all('/([-\w]+)\s*[:=]\s*(.+?)\s*?(:?[\n|;]|$)/', $syntax, $match, PREG_SET_ORDER);
+
+        foreach ($match as $m) {
+            $this->data[$m[1]] = $m[2];
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_reference extends refnotes_refnote {
+
+    protected $inline;
+    protected $hidden;
+    protected $note;
+    protected $id;
+
+    /**
+     * Constructor
+     */
+    public function __construct($note, $attributes, $data) {
+        parent::__construct($attributes, $data);
+
+        $this->inline = $this->getAttribute('inline', false);
+        $this->hidden = $this->getAttribute('hidden', false);
         $this->note = $note;
         $this->id = -1;
 
         if ($this->isBackReferenced()) {
-            $this->id = $scope->getReferenceId();
+            $this->id = $this->note->getScope()->getReferenceId();
         }
     }
 
@@ -70,37 +100,34 @@ class refnotes_reference {
     /**
      *
      */
-    public function getData() {
-        return $this->data;
-    }
-
-    /**
-    *
-    */
     public function getNote() {
         return $this->note;
     }
 
     /**
-    *
-    */
+     *
+     */
     public function isInline() {
         return $this->inline;
     }
 
     /**
-    *
-    */
+     *
+     */
     public function isBackReferenced() {
         return !$this->inline && !$this->hidden;
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_renderer_reference extends refnotes_reference {
 
     /**
      *
      */
     public function getAnchorName() {
         $result = 'refnotes';
-        $result .= $this->scope->getName();
+        $result .= $this->note->getScope()->getName();
         $result .= ':ref' . $this->id;
 
         return $result;
@@ -117,10 +144,88 @@ class refnotes_reference {
                 $html = '<sup>' . $this->note->getText() . '</sup>';
             }
             else {
-                $html = $this->scope->getRenderer()->renderReference($this);
+                $html = $this->note->getScope()->getRenderer()->renderReference($this);
             }
         }
 
         return $html;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_action_reference extends refnotes_reference {
+
+    private $call;
+
+    /**
+     * Constructor
+     */
+    public function __construct($note, $attributes, $data, $call) {
+        parent::__construct($note, $attributes, $data);
+
+        $this->call = $call;
+    }
+
+    /**
+     *
+     */
+    public function updateAttributes($attributes) {
+        static $key = array('inline', 'source');
+
+        foreach ($key as $k) {
+            if (array_key_exists($k, $attributes)) {
+                $this->attributes[$k] = $attributes[$k];
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public function updateData($data) {
+        static $key = array('authors', 'published');
+
+        foreach ($key as $k) {
+            if (array_key_exists($k, $data) && !array_key_exists($k, $this->data)) {
+                $this->data[$k] = $data[$k];
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public function rewrite() {
+        $this->call->setPluginData(1, $this->attributes);
+
+        if ($this->hasData()) {
+            $this->call->setPluginData(2, $this->data);
+        }
+    }
+
+    /**
+     *
+     */
+    public function setNoteText($text) {
+        if ($text != '') {
+            $calls = p_get_instructions($text);
+
+            /* Remove document and parsgraph open/close instructions */
+            $calls = array_slice($calls, 2, count($calls) - 4);
+
+            /* Trim white space */
+            $first = reset($calls);
+            $last = end($calls);
+
+            if (($first[0] == 'cdata') && (trim($first[1][0]) == '')) {
+                array_shift($calls);
+            }
+
+            if (($last[0] == 'cdata') && (trim($last[1][0]) == '')) {
+                array_pop($calls);
+            }
+
+            $this->call->insertBefore(new refnotes_nest_instruction($calls));
+        }
     }
 }

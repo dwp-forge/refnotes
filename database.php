@@ -10,17 +10,7 @@
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_reference_database_mock {
-
-    /**
-     *
-     */
-    public function isDefined($name) {
-        return false;
-    }
-}
+require_once(DOKU_PLUGIN . 'refnotes/refnote.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_reference_database {
@@ -31,18 +21,17 @@ class refnotes_reference_database {
     private $key;
     private $page;
     private $namespace;
+    private $enabled;
 
     /**
      *
      */
     public static function getInstance() {
         if (self::$instance == NULL) {
-            /* Loading of the database can trigger parsing of the database pages, which in turn can
-             * result in the database access. To prevent infinite recursion, before loading the database
-             * we first set the instance pointer to a database mock.
-             */
-            self::$instance = new refnotes_reference_database_mock();
             self::$instance = new refnotes_reference_database();
+
+            /* Loading has to be separated from construction to prevent infinite recursion */
+            self::$instance->load();
         }
 
         return self::$instance;
@@ -54,7 +43,13 @@ class refnotes_reference_database {
     public function __construct() {
         $this->page = array();
         $this->namespace = array();
+        $this->enabled = true;
+    }
 
+    /**
+     *
+     */
+    private function load() {
         $this->loadNotesFromConfiguration();
 
         if (refnotes_configuration::getSetting('reference-db-enable')) {
@@ -70,8 +65,8 @@ class refnotes_reference_database {
     private function loadNotesFromConfiguration() {
         $note = refnotes_configuration::load('notes');
 
-        foreach ($note as $name => $info) {
-            $this->note[$name] = new refnotes_reference_database_note('{configuration}', $info);
+        foreach ($note as $name => $data) {
+            $this->note[$name] = new refnotes_reference_database_note('{configuration}', $data);
         }
     }
 
@@ -124,7 +119,9 @@ class refnotes_reference_database {
                 $pageId = trim($pageId);
 
                 if ((preg_match($namespacePattern, $pageId) == 1) && file_exists(wikiFN($pageId))) {
+                    $this->enabled = false;
                     $this->page[$pageId] = new refnotes_reference_database_page($this, $cache, $pageId);
+                    $this->enabled = true;
                 }
             }
 
@@ -146,20 +143,24 @@ class refnotes_reference_database {
     /**
      *
      */
-    public function isDefined($name) {
-        $result = array_key_exists($name, $this->note);
+    public function findNote($name) {
+        if (!$this->enabled) {
+            return NULL;
+        }
 
-        if (!$result) {
+        $found = array_key_exists($name, $this->note);
+
+        if (!$found) {
             list($namespace, $temp) = refnotes_parseName($name);
 
             if (array_key_exists($namespace, $this->namespace)) {
                 $this->loadNamespaceNotes($namespace);
 
-                $result = array_key_exists($name, $this->note);
+                $found = array_key_exists($name, $this->note);
             }
         }
 
-        return $result;
+        return $found ? $this->note[$name] : NULL;
     }
 
     /**
@@ -168,27 +169,15 @@ class refnotes_reference_database {
     private function loadNamespaceNotes($namespace) {
         foreach ($this->namespace[$namespace] as $pageId) {
             if (array_key_exists($pageId, $this->page)) {
+                $this->enabled = false;
                 $this->note = array_merge($this->note, $this->page[$pageId]->getNotes());
+                $this->enabled = true;
 
                 unset($this->page[$pageId]);
             }
         }
 
         unset($this->namespace[$namespace]);
-    }
-
-    /**
-     *
-     */
-    public function getNoteInfo($name) {
-        return $this->note[$name]->getInfo();
-    }
-
-    /**
-     *
-     */
-    public function getNoteData($name) {
-        return $this->note[$name]->getData();
     }
 }
 
@@ -318,13 +307,13 @@ class refnotes_reference_database_page {
      */
     private function handleDataSheet($table, $columns, $rows, $key) {
         for ($r = 1; $r < $rows; $r++) {
-            $field = array();
+            $data = array();
 
             for ($c = 0; $c < $columns; $c++) {
-                $field[$key[$c]] = $table[$r][$c];
+                $data[$key[$c]] = $table[$r][$c];
             }
 
-            $this->handleNote($field);
+            $this->handleNote($data);
         }
     }
 
@@ -333,20 +322,20 @@ class refnotes_reference_database_page {
      * the caption, the second one contains the data.
      */
     private function handleDataCard($table, $rows, $key) {
-        $field = array();
+        $data = array();
 
         for ($r = 0; $r < $rows; $r++) {
-            $field[$key[$r]] = $table[$r][1];
+            $data[$key[$r]] = $table[$r][1];
         }
 
-        $this->handleNote($field);
+        $this->handleNote($data);
     }
 
     /**
      *
      */
-    private function handleNote($field) {
-        $note = new refnotes_reference_database_note($this->id, $field);
+    private function handleNote($data) {
+        $note = new refnotes_reference_database_note($this->id, $data);
 
         list($namespace, $name) = $note->getNameParts();
 
@@ -379,16 +368,16 @@ class refnotes_reference_database_page {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_reference_database_note {
+class refnotes_reference_database_note extends refnotes_refnote {
 
     private $nameParts;
-    private $info;
-    private $data;
 
     /**
      * Constructor
      */
     public function __construct($source, $data) {
+        parent::__construct();
+
         $this->nameParts = array('', '');
 
         if ($source == '{configuration}') {
@@ -398,19 +387,19 @@ class refnotes_reference_database_note {
             $this->initializePageNote($data);
         }
 
-        $this->info['source'] = $source;
+        $this->attributes['source'] = $source;
     }
 
     /**
      *
      */
-    public function initializeConfigNote($info) {
-        $this->info = $info;
-        $this->data = array('note-text' => $info['text']);
+    public function initializeConfigNote($data) {
+        $this->data['note-text'] = $data['text'];
 
-        unset($this->info['text']);
+        unset($data['text']);
+
+        $this->attributes = $data;
     }
-
 
     /**
      *
@@ -424,7 +413,6 @@ class refnotes_reference_database_note {
             unset($data['note-name']);
         }
 
-        $this->info = array();
         $this->data = $data;
     }
 
@@ -433,20 +421,6 @@ class refnotes_reference_database_note {
      */
     public function getNameParts() {
         return $this->nameParts;
-    }
-
-    /**
-     *
-     */
-    public function getInfo() {
-        return $this->info;
-    }
-
-    /**
-     *
-     */
-    public function getData() {
-        return $this->data;
     }
 }
 
