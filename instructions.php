@@ -12,6 +12,7 @@ if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_instruction {
+
     protected $call;
 
     /**
@@ -82,6 +83,8 @@ class refnotes_notes_render_instruction extends refnotes_notes_instruction {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_instruction_reference {
+
+    private $list;
     private $call;
     private $index;
     private $name;
@@ -89,7 +92,8 @@ class refnotes_instruction_reference {
     /**
      * Constructor
      */
-    public function __construct(&$call, $index) {
+    public function __construct($list, &$call, $index) {
+        $this->list = $list;
         $this->call =& $call;
         $this->index = $index;
         $this->name = ($call[0] == 'plugin') ? 'plugin_' . $call[1][0] : $call[0];
@@ -141,7 +145,7 @@ class refnotes_instruction_reference {
      *
      */
     public function getRefnotesAttribute($name) {
-        return $this->call[1][1][1][$name];
+        return array_key_exists($name, $this->call[1][1][1]) ? $this->call[1][1][1][$name] : '';
     }
 
     /**
@@ -161,6 +165,7 @@ class refnotes_instruction_reference {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_instruction_list implements Iterator {
+
     private $event;
     private $index;
     private $extraCalls;
@@ -177,63 +182,63 @@ class refnotes_instruction_list implements Iterator {
     /**
      * Implementation of Iterator interface
      */
-    function rewind() {
+    public function rewind() {
         $this->index = 0;
     }
 
     /**
      * Implementation of Iterator interface
      */
-    function current() {
-        return new refnotes_instruction_reference($this->event->data->calls[$this->index], $this->index);
+    public function current() {
+        return new refnotes_instruction_reference($this, $this->event->data->calls[$this->index], $this->index);
     }
 
     /**
      * Implementation of Iterator interface
      */
-    function key() {
+    public function key() {
         return $this->index;
     }
 
     /**
      * Implementation of Iterator interface
      */
-    function next() {
+    public function next() {
         ++$this->index;
     }
 
     /**
      * Implementation of Iterator interface
      */
-    function valid() {
-        return isset($this->event->data->calls[$this->index]);
+    public function valid() {
+        return array_key_exists($this->index, $this->event->data->calls);
     }
 
     /**
      *
      */
-    function getAt($index) {
-        return $this->valid($index) ? new refnotes_instruction_reference($this->event->data->calls[$index], $index) : NULL;
+    public function getAt($index) {
+        return new refnotes_instruction_reference($this, $this->event->data->calls[$index], $index);
     }
 
     /**
      *
      */
-    function insert($index, $call) {
+    public function insert($index, $call) {
         $this->extraCalls[$index][] = $call->getCall();
     }
 
     /**
      *
      */
-    function append($call) {
+    public function append($call) {
         $this->extraCalls[count($this->event->data->calls)][] = $call->getCall();
     }
 
     /**
      *
      */
-    function applyChanges() {
+    public function applyChanges() {
         if (empty($this->extraCalls)) {
             return;
         }
