@@ -18,7 +18,7 @@ class refnotes_note_block_iterator extends FilterIterator {
     */
     public function __construct($note, $limit) {
         $this->note = new ArrayObject($note);
-        $this->limit = $this->getRenderLimit($limit);
+        $this->limit = $this->getBlockLimit($limit);
         $this->count = 0;
 
         parent::__construct($this->note->getIterator());
@@ -28,7 +28,7 @@ class refnotes_note_block_iterator extends FilterIterator {
      *
      */
     function accept() {
-        $result = $this->current()->isRenderable();
+        $result = $this->current()->isValid();
 
         if ($result) {
             ++$this->count;
@@ -47,11 +47,11 @@ class refnotes_note_block_iterator extends FilterIterator {
     /**
      *
      */
-    private function getRenderLimit($limit) {
+    private function getBlockLimit($limit) {
         if (preg_match('/(\/?)(\d+)/', $limit, $match) == 1) {
             if ($match[1] != '') {
                 $devider = intval($match[2]);
-                $result = ceil($this->getRenderableCount() / $devider);
+                $result = ceil($this->getValidCount() / $devider);
             }
             else {
                 $result = intval($match[2]);
@@ -67,11 +67,11 @@ class refnotes_note_block_iterator extends FilterIterator {
     /**
      *
      */
-    private function getRenderableCount() {
+    private function getValidCount() {
         $result = 0;
 
         foreach ($this->note as $note) {
-            if ($note->isRenderable()) {
+            if ($note->isValid()) {
                 ++$result;
             }
         }
@@ -98,7 +98,7 @@ class refnotes_note_mock {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_renderer_note extends refnotes_refnote {
+class refnotes_note extends refnotes_refnote {
 
     protected $scope;
     protected $id;
@@ -106,7 +106,7 @@ class refnotes_renderer_note extends refnotes_refnote {
     protected $inline;
     protected $reference;
     protected $text;
-    protected $rendered;
+    protected $processed;
 
     /**
      * Constructor
@@ -120,7 +120,7 @@ class refnotes_renderer_note extends refnotes_refnote {
         $this->inline = false;
         $this->reference = array();
         $this->text = '';
-        $this->rendered = false;
+        $this->processed = false;
     }
 
     /**
@@ -158,17 +158,6 @@ class refnotes_renderer_note extends refnotes_refnote {
     /**
      *
      */
-    public function getAnchorName() {
-        $result = 'refnotes';
-        $result .= $this->scope->getName();
-        $result .= ':note' . $this->id;
-
-        return $result;
-    }
-
-    /**
-     *
-     */
     public function setText($text) {
         if (($this->text == '') || !$this->inline) {
             $this->text = $text;
@@ -200,10 +189,25 @@ class refnotes_renderer_note extends refnotes_refnote {
     }
 
     /**
-     * Checks if the note should be rendered
+     * Checks if the note should be processed
      */
-    public function isRenderable() {
-        return !$this->rendered && (count($this->reference) > 0) && ($this->text != '');
+    public function isValid() {
+        return !$this->processed && (count($this->reference) > 0) && ($this->text != '');
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_renderer_note extends refnotes_note {
+
+    /**
+     *
+     */
+    public function getAnchorName() {
+        $result = 'refnotes';
+        $result .= $this->scope->getName();
+        $result .= ':note' . $this->id;
+
+        return $result;
     }
 
     /**
@@ -212,14 +216,14 @@ class refnotes_renderer_note extends refnotes_refnote {
     public function render() {
         $html = $this->scope->getRenderer()->renderNote($this, $this->reference);
 
-        $this->rendered = true;
+        $this->processed = true;
 
         return $html;
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_action_note extends refnotes_renderer_note {
+class refnotes_action_note extends refnotes_note {
 
     /**
      * Constructor

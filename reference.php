@@ -119,12 +119,12 @@ class refnotes_parser_reference extends refnotes_refnote {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_renderer_reference extends refnotes_refnote {
+class refnotes_reference extends refnotes_refnote {
 
-    private $inline;
-    private $hidden;
-    private $note;
-    private $id;
+    protected $inline;
+    protected $hidden;
+    protected $note;
+    protected $id;
 
     /**
      * Constructor
@@ -169,6 +169,10 @@ class refnotes_renderer_reference extends refnotes_refnote {
     public function isBackReferenced() {
         return !$this->inline && !$this->hidden;
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_renderer_reference extends refnotes_reference {
 
     /**
      *
