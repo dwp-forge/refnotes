@@ -13,17 +13,6 @@ require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 require_once(DOKU_PLUGIN . 'refnotes/refnote.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_reference_database_mock {
-
-    /**
-     *
-     */
-    public function isDefined($name) {
-        return false;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_reference_database {
 
     private static $instance = NULL;
@@ -32,18 +21,17 @@ class refnotes_reference_database {
     private $key;
     private $page;
     private $namespace;
+    private $enabled;
 
     /**
      *
      */
     public static function getInstance() {
         if (self::$instance == NULL) {
-            /* Loading of the database can trigger parsing of the database pages, which in turn can
-             * result in the database access. To prevent infinite recursion, before loading the database
-             * we first set the instance pointer to a database mock.
-             */
-            self::$instance = new refnotes_reference_database_mock();
             self::$instance = new refnotes_reference_database();
+
+            // Loading has to be separated from construction to prevent infinite recursion
+            self::$instance->load();
         }
 
         return self::$instance;
@@ -55,7 +43,13 @@ class refnotes_reference_database {
     public function __construct() {
         $this->page = array();
         $this->namespace = array();
+        $this->enabled = true;
+    }
 
+    /**
+     *
+     */
+    private function load() {
         $this->loadNotesFromConfiguration();
 
         if (refnotes_configuration::getSetting('reference-db-enable')) {
@@ -125,7 +119,9 @@ class refnotes_reference_database {
                 $pageId = trim($pageId);
 
                 if ((preg_match($namespacePattern, $pageId) == 1) && file_exists(wikiFN($pageId))) {
+                    $this->enabled = false;
                     $this->page[$pageId] = new refnotes_reference_database_page($this, $cache, $pageId);
+                    $this->enabled = true;
                 }
             }
 
@@ -148,6 +144,10 @@ class refnotes_reference_database {
      *
      */
     public function findNote($name) {
+        if (!$this->enabled) {
+            return NULL;
+        }
+
         $found = array_key_exists($name, $this->note);
 
         if (!$found) {
@@ -169,7 +169,9 @@ class refnotes_reference_database {
     private function loadNamespaceNotes($namespace) {
         foreach ($this->namespace[$namespace] as $pageId) {
             if (array_key_exists($pageId, $this->page)) {
+                $this->enabled = false;
                 $this->note = array_merge($this->note, $this->page[$pageId]->getNotes());
+                $this->enabled = true;
 
                 unset($this->page[$pageId]);
             }
