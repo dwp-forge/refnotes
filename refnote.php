@@ -31,7 +31,21 @@ class refnotes_refnote {
     /**
      *
      */
+    public function getAttribute($name, $default = '') {
+        return array_key_exists($name, $this->attributes) ? $this->attributes : $default;
+    }
+
+    /**
+     *
+     */
     public function getData() {
         return $this->data;
+    }
+
+    /**
+     *
+     */
+    public function hasData() {
+        return !empty($this->data);
     }
 }

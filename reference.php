@@ -93,13 +93,6 @@ class refnotes_parser_reference extends refnotes_refnote {
     /**
      *
      */
-    public function hasData() {
-        return !empty($this->data);
-    }
-
-    /**
-     *
-     */
     public function updateAttributes($attributes) {
         static $key = array('inline', 'source');
 
@@ -132,8 +125,8 @@ class refnotes_reference extends refnotes_refnote {
     public function __construct($note, $attributes, $data) {
         parent::__construct($attributes, $data);
 
-        $this->inline = isset($this->attributes['inline']) ? $this->attributes['inline'] : false;
-        $this->hidden = isset($this->attributes['hidden']) ? $this->attributes['hidden'] : false;
+        $this->inline = $this->getAttribute('inline', false);
+        $this->hidden = $this->getAttribute('hidden', false);
         $this->note = $note;
         $this->id = -1;
 
