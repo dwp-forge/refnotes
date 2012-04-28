@@ -183,11 +183,9 @@ class refnotes_action_reference extends refnotes_reference {
      *
      */
     public function updateData($data) {
-        static $key = array('authors', 'published');
-
-        foreach ($key as $k) {
-            if (array_key_exists($k, $data) && !array_key_exists($k, $this->data)) {
-                $this->data[$k] = $data[$k];
+        foreach ($this->note->getScope()->getRenderer()->getReferenceDataSet() as $key) {
+            if (array_key_exists($key, $data) && !array_key_exists($key, $this->data)) {
+                $this->data[$key] = $data[$key];
             }
         }
     }

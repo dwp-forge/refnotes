@@ -265,6 +265,7 @@ class refnotes_namespace {
      */
     public function inheritStyle($source) {
         $this->style = $source->style;
+        $this->renderer = NULL;
     }
 
     /**
@@ -272,6 +273,7 @@ class refnotes_namespace {
      */
     public function setStyle($style) {
         $this->style = array_merge($this->style, $style);
+        $this->renderer = NULL;
     }
 
     /**
@@ -282,19 +284,11 @@ class refnotes_namespace {
     }
 
     /**
-     *
+     * Defer creation of renderer until namespace style is set.
      */
     public function getRenderer() {
         if ($this->renderer == NULL) {
-            switch ($this->getStyle('struct-render')) {
-                case 'harvard':
-                    $this->renderer = new refnotes_harvard_renderer($this);
-                    break;
-
-                default:
-                    $this->renderer = new refnotes_basic_renderer($this);
-                break;
-            }
+            $this->renderer = new refnotes_renderer($this);
         }
 
         return $this->renderer;

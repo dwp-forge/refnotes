@@ -8,9 +8,9 @@
  */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_basic_renderer {
+abstract class refnotes_renderer_base {
 
-    private $namespace;
+    protected $namespace;
 
     /**
      * Constructor
@@ -22,27 +22,117 @@ class refnotes_basic_renderer {
     /**
      *
      */
-    public function renderNoteText($data) {
-        if (array_key_exists('note-text', $data)) {
-            $text = $data['note-text'];
+    protected function getStyle($name) {
+        return $this->namespace->getStyle($name);
+    }
+
+    /**
+     *
+     */
+    abstract public function getReferenceDataSet();
+
+    /**
+     *
+     */
+    abstract public function renderReference($reference);
+
+    /**
+     *
+     */
+    abstract public function renderNoteText($note);
+
+    /**
+     *
+     */
+    abstract public function renderNote($note, $reference);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_renderer extends refnotes_renderer_base {
+
+    private $referenceRenderer;
+    private $noteRenderer;
+
+    /**
+     * Constructor
+     */
+    public function __construct($namespace) {
+        parent::__construct($namespace);
+
+        $this->referenceRenderer = $this->createRenderer(($this->getStyle('struct-refs') == 'on') ? $this->getStyle('struct-render') : 'basic');
+        $this->noteRenderer = $this->createRenderer($this->getStyle('struct-render'));
+    }
+
+    /**
+     *
+     */
+    private function createRenderer($style) {
+        switch ($style) {
+            case 'harvard':
+                $renderer = new refnotes_harvard_renderer($this->namespace);
+                break;
+
+            default:
+                $renderer = new refnotes_basic_renderer($this->namespace);
+                break;
         }
-        elseif (array_key_exists('title', $data)) {
-            $text = $data['title'];
-        }
-        else {
-            $text = '';
-            foreach($data as $value) {
-                if (strlen($text) < strlen($value)) {
-                    $text = $value;
-                }
+
+        return $renderer;
+    }
+
+    /**
+     *
+     */
+    public function getReferenceDataSet() {
+        return $this->referenceRenderer->getReferenceDataSet();
+    }
+
+    /**
+     *
+     */
+    public function renderReference($reference) {
+        return $this->referenceRenderer->renderReference($reference);
+    }
+
+    /**
+     *
+     */
+    public function renderNotesSeparator() {
+        $html = '';
+        $style = $this->getStyle('notes-separator');
+        if ($style != 'none') {
+            if ($style != '') {
+                $style = ' style="width: '. $style . '"';
             }
+            $html = '<hr' . $style . '>' . DOKU_LF;
         }
 
-        if (array_key_exists('url', $data)) {
-            $text = '[[' . $data['url'] . '|' . $text . ']]';
-        }
+        return $html;
+    }
 
-        return $text;
+    /**
+     *
+     */
+    public function renderNoteText($note) {
+        return $this->noteRenderer->renderNoteText($note);
+    }
+
+    /**
+     *
+     */
+    public function renderNote($note, $reference) {
+        return $this->noteRenderer->renderNote($note, $reference);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_basic_renderer extends refnotes_renderer_base {
+
+    /**
+     *
+     */
+    public function getReferenceDataSet() {
+        return array();
     }
 
     /**
@@ -71,17 +161,29 @@ class refnotes_basic_renderer {
     /**
      *
      */
-    public function renderNotesSeparator() {
-        $html = '';
-        $style = $this->getStyle('notes-separator');
-        if ($style != 'none') {
-            if ($style != '') {
-                $style = ' style="width: '. $style . '"';
+    public function renderNoteText($note) {
+        $data = $note->getData();
+
+        if (array_key_exists('note-text', $data)) {
+            $text = $data['note-text'];
+        }
+        elseif (array_key_exists('title', $data)) {
+            $text = $data['title'];
+        }
+        else {
+            $text = '';
+            foreach($data as $value) {
+                if (strlen($text) < strlen($value)) {
+                    $text = $value;
+                }
             }
-            $html = '<hr' . $style . '>' . DOKU_LF;
         }
 
-        return $html;
+        if (array_key_exists('url', $data)) {
+            $text = '[[' . $data['url'] . '|' . $text . ']]';
+        }
+
+        return $text;
     }
 
     /**
@@ -108,6 +210,7 @@ class refnotes_basic_renderer {
         $nameAttribute = ' name="' . $note->getAnchorName() .'"';
         $backRefFormat = $this->getStyle('back-ref-format');
         $backRefCaret = '';
+
         list($formatOpen, $formatClose) = $this->renderNoteIdFormat();
 
         if (($backRefFormat != 'note') && ($backRefFormat != '')) {
@@ -128,6 +231,7 @@ class refnotes_basic_renderer {
 
         if ($backRefFormat != 'none') {
             $separator = $this->renderBackRefSeparator();
+
             list($baseOpen, $baseClose) = $this->renderBackRefBase();
             list($fontOpen, $fontClose) = $this->renderBackRefFont();
 
@@ -153,13 +257,6 @@ class refnotes_basic_renderer {
         }
 
         return $html;
-    }
-
-    /**
-     *
-     */
-    protected function getStyle($name) {
-        return $this->namespace->getStyle($name);
     }
 
     /**
@@ -551,9 +648,20 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    public function renderNoteText($data) {
+    public function getReferenceDataSet() {
+        static $key = array('authors', 'authors-short', 'page', 'published');
+
+        return $key;
+    }
+
+    /**
+     *
+     */
+    public function renderNoteText($note) {
+        $data = $note->getData();
+
         if (!array_key_exists('title', $data)) {
-            return parent::renderNoteText($data);
+            return parent::renderNoteText($note);
         }
 
         // authors, published. //[[url|title.]]// edition. publisher, pages, isbn.
@@ -606,7 +714,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    private function renderTitle($data) {
+    protected function renderTitle($data) {
         $text = $data['title'] . '.';
 
         if (array_key_exists('url', $data)) {
@@ -619,7 +727,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    private function renderAuthors($data) {
+    protected function renderAuthors($data) {
         $text = '';
 
         if (array_key_exists('authors', $data)) {
@@ -638,7 +746,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    private function renderPublication($data, $authors) {
+    protected function renderPublication($data, $authors) {
         $part = array();
 
         if (array_key_exists('publisher', $data)) {
@@ -672,7 +780,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    private function renderJournal($data) {
+    protected function renderJournal($data) {
         $text = '//' . $data['journal'] . '//';
 
         if (array_key_exists('volume', $data)) {
@@ -685,7 +793,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    private function renderBook($data, $title) {
+    protected function renderBook($data, $title) {
         $text = '//' . $title . '//';
 
         if (array_key_exists('chapter', $data)) {
@@ -702,12 +810,12 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    public function renderReference($reference) {
-        if (($this->getStyle('struct-refs') == 'on') && $this->checkReferenceData($reference)) {
-            $html = '[structured reference placeholder]';
+    protected function renderReferenceId($reference) {
+        if ($this->checkReferenceData($reference)) {
+            $html = 'structured reference placeholder';
         }
         else {
-            $html = parent::renderReference($reference);
+            $html = parent::renderReferenceId($reference);
         }
 
         return $html;
@@ -716,7 +824,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    private function checkReferenceData($reference) {
+    protected function checkReferenceData($reference) {
         $data = $reference->getData();
         $authors = array_key_exists('authors', $data) || array_key_exists('authors-short', $data);
         $year = array_key_exists('published', $data);

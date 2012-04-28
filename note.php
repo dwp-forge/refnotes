@@ -280,7 +280,7 @@ class refnotes_action_note extends refnotes_note {
                 $reference->rewrite();
             }
 
-            $this->reference[0]->setNoteText($this->scope->getRenderer()->renderNoteText($this->data));
+            $this->reference[0]->setNoteText($this->scope->getRenderer()->renderNoteText($this));
         }
 
         $this->processed = true;
