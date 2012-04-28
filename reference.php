@@ -183,11 +183,9 @@ class refnotes_action_reference extends refnotes_reference {
      *
      */
     public function updateData($data) {
-        foreach ($this->note->getScope()->getRenderer()->getReferenceDataSet() as $key) {
-            if (array_key_exists($key, $data) && !array_key_exists($key, $this->data)) {
-                $this->data[$key] = $data[$key];
-            }
-        }
+        $include = $this->note->getScope()->getRenderer()->getReferenceSharedDataSet();
+        $data = array_intersect_key($data, array_flip($include));
+        $this->data = array_merge($data, $this->data);
     }
 
     /**

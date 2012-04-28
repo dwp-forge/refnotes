@@ -257,7 +257,9 @@ class refnotes_action_note extends refnotes_note {
     public function addReference($reference) {
         parent::addReference($reference);
 
-        $this->data = array_merge($this->data, $reference->getData());
+        $exclude = $this->scope->getRenderer()->getReferencePrivateDataSet();
+        $data = array_diff_key($reference->getData(), array_flip($exclude));
+        $this->data = array_merge($this->data, $data);
     }
 
     /**

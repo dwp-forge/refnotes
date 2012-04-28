@@ -27,9 +27,14 @@ abstract class refnotes_renderer_base {
     }
 
     /**
-     *
+     * Returns an array of keys for data that is shared between references and notes.
      */
-    abstract public function getReferenceDataSet();
+    abstract public function getReferenceSharedDataSet();
+
+    /**
+     * Returns an array of keys for data that is private to references.
+     */
+    abstract public function getReferencePrivateDataSet();
 
     /**
      *
@@ -83,8 +88,15 @@ class refnotes_renderer extends refnotes_renderer_base {
     /**
      *
      */
-    public function getReferenceDataSet() {
-        return $this->referenceRenderer->getReferenceDataSet();
+    public function getReferenceSharedDataSet() {
+        return $this->referenceRenderer->getReferenceSharedDataSet();
+    }
+
+    /**
+     *
+     */
+    public function getReferencePrivateDataSet() {
+        return $this->referenceRenderer->getReferencePrivateDataSet();
     }
 
     /**
@@ -131,7 +143,14 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
     /**
      *
      */
-    public function getReferenceDataSet() {
+    public function getReferenceSharedDataSet() {
+        return array();
+    }
+
+    /**
+     *
+     */
+    public function getReferencePrivateDataSet() {
         return array();
     }
 
@@ -633,6 +652,16 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
 
         return $result;
     }
+
+    /**
+     *
+     */
+    protected function isPositive($data)
+    {
+        static $lookup = array('y', 'yes', 'on', 'true', '1');
+
+        return in_array(strtolower($data), $lookup);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -648,8 +677,17 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    public function getReferenceDataSet() {
-        static $key = array('authors', 'authors-short', 'page', 'published');
+    public function getReferenceSharedDataSet() {
+        static $key = array('authors', 'authors-short', 'published');
+
+        return $key;
+    }
+
+    /**
+     *
+     */
+    public function getReferencePrivateDataSet() {
+        static $key = array('inline');
 
         return $key;
     }
@@ -674,7 +712,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
         // authors, published. chapter In //$title// edition. publisher, pages, isbn.
         // authors, published. $title //journal//, volume, publisher, pages, issn.
 
-        $authors = $this->renderAuthors($data);
+        $authors = $this->renderNoteAuthors($data);
 
         // $authors? //$title// edition. publisher, pages, isbn.
         // $authors? chapter In //$title// edition. publisher, pages, isbn.
@@ -727,7 +765,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    protected function renderAuthors($data) {
+    protected function renderNoteAuthors($data) {
         $text = '';
 
         if (array_key_exists('authors', $data)) {
@@ -757,8 +795,10 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
             $part[] = $data['published'];
         }
 
-        if (array_key_exists('pages', $data)) {
-            $part[] = $data['pages'];
+        $pages = $this->renderPages($data, array('note-pages', 'note-page', 'pages', 'page'));
+
+        if ($pages != '') {
+            $part[] = $pages;
         }
 
         if (array_key_exists('isbn', $data)) {
@@ -772,6 +812,27 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
 
         if ($text != '') {
             $text = rtrim($text, '.') . '.';
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    protected function renderPages($data, $key) {
+        $text = '';
+
+        foreach ($key as $k) {
+            if (array_key_exists($k, $data)) {
+                $text = $data[$k];
+
+                if (preg_match("/^[0-9]/", $text)) {
+                    $abbr_key = (substr($k, -1) == 's') ? 'txt_pages_abbr' : 'txt_page_abbr';
+                    $text = refnotes_localization::getInstance()->getLang($abbr_key) . $text;
+                }
+                break;
+            }
         }
 
         return $text;
@@ -811,11 +872,45 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
      *
      */
     protected function renderReferenceId($reference) {
-        if ($this->checkReferenceData($reference)) {
-            $html = 'structured reference placeholder';
+        $data = $reference->getData();
+
+        if (!$this->checkReferenceData($data)) {
+            return $this->renderBasicReferenceId($reference);
+        }
+
+        $authors = $this->renderReferenceAuthors($data);
+        $html = $this->renderReferenceExtra($data);
+
+        list($formatOpen, $formatClose) = $this->renderReferenceParentheses();
+
+        if (array_key_exists('inline', $data) && $this->isPositive($data['inline'])) {
+            $html = $authors . ' ' . $formatOpen . $html . $formatClose;
         }
         else {
-            $html = parent::renderReferenceId($reference);
+            $html = $formatOpen . $authors . ', ' . $html . $formatClose;
+        }
+
+        return htmlspecialchars($html);
+    }
+
+    /**
+     *
+     */
+    protected function renderBasicReferenceId($reference) {
+        list($formatOpen, $formatClose) = parent::renderReferenceFormat();
+
+        return $formatOpen . parent::renderReferenceId($reference) . $formatClose;
+    }
+
+    /**
+     *
+     */
+    protected function renderReferenceAuthors($data) {
+        if (array_key_exists('authors-short', $data)) {
+            $html = $data['authors-short'];
+        }
+        else {
+            $html = $data['authors'];
         }
 
         return $html;
@@ -824,11 +919,50 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    protected function checkReferenceData($reference) {
-        $data = $reference->getData();
+    protected function renderReferenceExtra($data) {
+        $html = '';
+
+        if (array_key_exists('published', $data)) {
+            $html .= $data['published'];
+        }
+
+        $pages = $this->renderPages($data, array('page', 'pages'));
+
+        if ($pages != '') {
+            if ($html != '') {
+                $html .= ', ';
+            }
+
+            $html .= $pages;
+        }
+
+        return $html;
+    }
+
+    /**
+     *
+     */
+    protected function renderReferenceParentheses() {
+        $style = $this->getStyle('reference-format');
+        $style = (($style == '[]') || ($style == ']')) ? '[]' : '()';
+
+        return $this->renderFormat($style);
+    }
+
+    /**
+     *
+     */
+    protected function renderReferenceFormat() {
+        return array('', '');
+    }
+
+    /**
+     *
+     */
+    protected function checkReferenceData($data) {
         $authors = array_key_exists('authors', $data) || array_key_exists('authors-short', $data);
         $year = array_key_exists('published', $data);
-        $page = array_key_exists('page', $data);
+        $page = array_key_exists('page', $data) || array_key_exists('pages', $data);
 
         return $authors && ($year || $page);
     }

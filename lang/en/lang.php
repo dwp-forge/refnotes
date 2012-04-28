@@ -27,6 +27,8 @@ $lang['dbk_url'] = 'URL';
 $lang['dbk_volume'] = 'Volume';
 
 $lang['txt_in_cap'] = 'In';
+$lang['txt_page_abbr'] = 'p.';
+$lang['txt_pages_abbr'] = 'pp.';
 
 // For admin plugins, the menu prompt to be displayed in the admin menu
 // if set here, the plugin doesn't need to override the getMenuText() method
