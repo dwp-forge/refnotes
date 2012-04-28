@@ -208,22 +208,7 @@ class refnotes_action_reference extends refnotes_reference {
      */
     public function setNoteText($text) {
         if ($text != '') {
-            $calls = p_get_instructions($text);
-
-            /* Remove document and parsgraph open/close instructions */
-            $calls = array_slice($calls, 2, count($calls) - 4);
-
-            /* Trim white space */
-            $first = reset($calls);
-            $last = end($calls);
-
-            if (($first[0] == 'cdata') && (trim($first[1][0]) == '')) {
-                array_shift($calls);
-            }
-
-            if (($last[0] == 'cdata') && (trim($last[1][0]) == '')) {
-                array_pop($calls);
-            }
+            $calls = refnotes_parser_core::getInstance()->getInstructions($text);
 
             $this->call->insertBefore(new refnotes_nest_instruction($calls));
         }

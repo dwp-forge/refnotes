@@ -107,6 +107,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     }
 
     public function connectTo($mode) {
+        refnotes_parser_core::getInstance()->registerLexer($this->Lexer);
+
         $this->Lexer->addEntryPattern($this->entryPattern, $mode, $this->mode);
     }
 
@@ -302,5 +304,36 @@ class refnotes_note_capture {
         $this->initialize();
 
         return $text;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_nested_call_writer extends Doku_Handler_Nest {
+
+    private $handler;
+    private $callWriterBackup;
+
+    /**
+     * Constructor
+     */
+    public function __construct($handler) {
+        $this->handler = $handler;
+
+        parent::__construct($this->handler->CallWriter);
+    }
+
+    /**
+     *
+     */
+    public function connect() {
+        $this->callWriterBackup = $this->handler->CallWriter;
+        $this->handler->CallWriter = $this;
+    }
+
+    /**
+     *
+     */
+    public function disconnect() {
+        $this->handler->CallWriter = $this->callWriterBackup;
     }
 }

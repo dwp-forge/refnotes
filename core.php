@@ -23,6 +23,8 @@ class refnotes_parser_core {
     private static $instance = NULL;
 
     private $context;
+    private $lexer;
+    private $handler;
 
     /**
      *
@@ -41,6 +43,15 @@ class refnotes_parser_core {
     public function __construct() {
         /* Default context. Should never be used, but just in case... */
         $this->context = array(new refnotes_parsing_context());
+        $this->lexer = NULL;
+        $this->handler = NULL;
+    }
+
+    /**
+     *
+     */
+    public function registerLexer($lexer) {
+        $this->lexer = $lexer;
     }
 
     /**
@@ -53,8 +64,23 @@ class refnotes_parser_core {
     /**
      *
      */
-    public function exitParsingContext() {
+    public function exitParsingContext($handler) {
+        $this->handler = $handler;
+
         unset($this->context[count($this->context) - 1]);
+    }
+
+    /**
+     *
+     */
+    public function getInstructions($text) {
+        $this->callWriter = new refnotes_nested_call_writer($this->handler);
+
+        $this->callWriter->connect();
+        $this->lexer->parse($text);
+        $this->callWriter->disconnect();
+
+        return $this->callWriter->calls;
     }
 
     /**

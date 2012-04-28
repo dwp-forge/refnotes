@@ -74,7 +74,7 @@ class refnotes_after_parser_handler_done {
      *
      */
     public function handle($event, $param) {
-        refnotes_parser_core::getInstance()->exitParsingContext();
+        refnotes_parser_core::getInstance()->exitParsingContext($event->data);
 
         /* We need a new instance of mangler for each event because we can trigger it recursively
          * by loading reference database or by parsing structured notes.
