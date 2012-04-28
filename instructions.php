@@ -13,20 +13,20 @@ if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 //////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_instruction {
 
-    protected $call;
+    protected $data;
 
     /**
      * Constructor
      */
     public function __construct($name, $data, $offset = -1) {
-        $this->call = array($name, $data, $offset);
+        $this->data = array($name, $data, $offset);
     }
 
     /**
      *
      */
-    public function getCall() {
-        return $this->call;
+    public function getData() {
+        return $this->data;
     }
 }
 
@@ -96,18 +96,18 @@ class refnotes_notes_render_instruction extends refnotes_notes_instruction {
 class refnotes_instruction_reference {
 
     private $list;
-    private $call;
+    private $data;
     private $index;
     private $name;
 
     /**
      * Constructor
      */
-    public function __construct($list, &$call, $index) {
+    public function __construct($list, &$data, $index) {
         $this->list = $list;
-        $this->call =& $call;
+        $this->data =& $data;
         $this->index = $index;
-        $this->name = ($call[0] == 'plugin') ? 'plugin_' . $call[1][0] : $call[0];
+        $this->name = ($data[0] == 'plugin') ? 'plugin_' . $data[1][0] : $data[0];
     }
 
     /**
@@ -128,42 +128,42 @@ class refnotes_instruction_reference {
      *
      */
     public function getData($index) {
-        return $this->call[1][$index];
+        return $this->data[1][$index];
     }
 
     /**
      *
      */
     public function getPluginData($index) {
-        return $this->call[1][1][$index];
+        return $this->data[1][1][$index];
     }
 
     /**
      *
      */
     public function setPluginData($index, $data) {
-        $this->call[1][1][$index] = $data;
+        $this->data[1][1][$index] = $data;
     }
 
     /**
      *
      */
     public function unsetPluginData($index) {
-        unset($this->call[1][1][$index]);
+        unset($this->data[1][1][$index]);
     }
 
     /**
      *
      */
     public function getRefnotesAttribute($name) {
-        return array_key_exists($name, $this->call[1][1][1]) ? $this->call[1][1][1][$name] : '';
+        return array_key_exists($name, $this->data[1][1][1]) ? $this->data[1][1][1][$name] : '';
     }
 
     /**
      *
      */
     public function setRefnotesAttribute($name, $value) {
-        $this->call[1][1][1][$name] = $value;
+        $this->data[1][1][1][$name] = $value;
     }
 
     /**
@@ -243,14 +243,14 @@ class refnotes_instruction_list implements Iterator {
      *
      */
     public function insert($index, $call) {
-        $this->extraCalls[$index][] = $call->getCall();
+        $this->extraCalls[$index][] = $call;
     }
 
     /**
      *
      */
     public function append($call) {
-        $this->extraCalls[count($this->event->data->calls)][] = $call->getCall();
+        $this->extraCalls[count($this->event->data->calls)][] = $call;
     }
 
     /**
@@ -272,7 +272,9 @@ class refnotes_instruction_list implements Iterator {
                 $calls = array_merge($calls, $slice);
             }
 
-            $calls = array_merge($calls, $extraCalls);
+            foreach ($extraCalls as $call) {
+                $calls[] = $call->getData();
+            }
 
             $prevIndex = $index;
         }
