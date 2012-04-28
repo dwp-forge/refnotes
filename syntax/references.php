@@ -70,7 +70,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
 
         $this->entryPattern = $entry . '(?:' . $nameEntry . '|' . $structuredEntry . '|' . $defineEntry . ')';
         $this->exitPattern = $exit;
-        $this->handlePattern = '/' . $entry . '\s*(' . $optionalFullName . ')\s*(>>)?(.*)/s';
+        $this->handlePattern = '/' . $entry . '\s*(' . $optionalFullName . ')\s*(?:>>(.*))?(.*)/s';
     }
 
     /**
@@ -123,11 +123,11 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         if ($result) {
             switch ($state) {
                 case DOKU_LEXER_ENTER:
-                    $result = $this->handleEnter($match, $pos, $handler);
+                    $result = $this->handleEnter($match);
                     break;
 
                 case DOKU_LEXER_EXIT:
-                    $result = $this->handleExit($pos, $handler);
+                    $result = $this->handleExit();
                     break;
             }
         }
@@ -166,15 +166,12 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    private function handleEnter($syntax, $pos, $handler) {
+    private function handleEnter($syntax) {
         if (preg_match($this->handlePattern, $syntax, $match) == 0) {
             return false;
         }
 
-        $data = ($match[2] == '>>') ? $match[3] : '';
-        $exitPos = $pos + strlen($syntax);
-
-        refnotes_parser_core::getInstance()->enterReference($match[1], $data);
+        refnotes_parser_core::getInstance()->enterReference($match[1], $match[2]);
 
         return array('start');
     }
@@ -182,7 +179,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    private function handleExit($pos, $handler) {
+    private function handleExit() {
         $reference = refnotes_parser_core::getInstance()->exitReference();
 
         if ($reference->hasData()) {
