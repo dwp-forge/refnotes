@@ -179,6 +179,7 @@ abstract class refnotes_core {
 
     protected $presetStyle;
     protected $namespace;
+    protected $mapping;
 
     /**
      * Constructor
@@ -186,6 +187,7 @@ abstract class refnotes_core {
     public function __construct() {
         $this->presetStyle = refnotes_configuration::load('namespaces');
         $this->namespace = array();
+        $this->mapping = array();
     }
 
     /**
@@ -249,6 +251,29 @@ abstract class refnotes_core {
     /**
      *
      */
+    public function setNamespaceMapping($namespaceName, $map) {
+        foreach ($map as $ns) {
+            $this->mapping[$ns] = $namespaceName;
+        }
+    }
+
+    /**
+     *
+     */
+    protected function clearNamespaceMapping($namespaceName) {
+        $this->mapping = array_diff($this->mapping, array($namespaceName));
+    }
+
+    /**
+     *
+     */
+    protected function getNamespaceMapping($namespaceName) {
+        return array_key_exists($namespaceName, $this->mapping) ? $this->mapping[$namespaceName] : $namespaceName;
+    }
+
+    /**
+     *
+     */
     protected function createNamespace($name) {
         if ($name != ':') {
             $parentName = refnotes_getParentNamespace($name);
@@ -270,12 +295,12 @@ abstract class refnotes_core {
      *
      */
     protected function getNote($namespaceName, $noteName) {
-        $scope = $this->getNamespace($namespaceName)->getActiveScope();
+        $scope = $this->getNamespace($this->getNamespaceMapping($namespaceName))->getActiveScope();
         $note = $scope->findNote($noteName);
 
         if ($note == NULL) {
             if (!is_int($noteName)) {
-                $note = $this->createNote($scope, $noteName);
+                $note = $this->createNote($scope, $namespaceName, $noteName);
 
                 $scope->addNote($note);
             }
@@ -290,7 +315,7 @@ abstract class refnotes_core {
     /**
      *
      */
-    abstract protected function createNote($scope, $name);
+    abstract protected function createNote($scope, $namespaceName, $noteName);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -328,6 +353,8 @@ class refnotes_renderer_core extends refnotes_core {
      *
      */
     public function renderNotes($namespaceName, $limit) {
+        $this->clearNamespaceMapping($namespaceName);
+
         $html = '';
 
         if ($namespaceName == '*') {
@@ -348,16 +375,16 @@ class refnotes_renderer_core extends refnotes_core {
     /**
      *
      */
-    protected function createNote($scope, $name) {
-        return new refnotes_renderer_note($scope, $name);
+    protected function createNote($scope, $namespaceName, $noteName) {
+        return new refnotes_renderer_note($scope, $noteName);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_action_core extends refnotes_core {
 
-    private $pageStyles;
-    private $mappings;
+    private $styleStash;
+    private $mappingStash;
 
     /**
      * Constructor
@@ -365,8 +392,8 @@ class refnotes_action_core extends refnotes_core {
     public function __construct() {
         parent::__construct();
 
-        $this->pageStyles = new refnotes_namespace_style_stash($this);
-        $this->mappings = new refnotes_namespace_mapping_stash();
+        $this->styleStash = new refnotes_namespace_style_stash($this);
+        $this->mappingStash = new refnotes_namespace_mapping_stash();
     }
 
     /**
@@ -387,28 +414,28 @@ class refnotes_action_core extends refnotes_core {
      * Collect styling information from the page
      */
     public function addStyle($namespaceName, $style) {
-        $this->pageStyles->add($this->getNamespace($namespaceName), $style);
+        $this->styleStash->add($this->getNamespace($namespaceName), $style);
     }
 
     /**
      *
      */
     public function getStyles() {
-        return $this->pageStyles;
+        return $this->styleStash;
     }
 
     /**
      * Collect mapping information from the page
      */
     public function addMapping($namespaceName, $map) {
-        $this->mappings->add($this->getNamespace($namespaceName), $map);
+        $this->mappingStash->add($this->getNamespace($namespaceName), $map);
     }
 
     /**
      *
      */
     public function getMappings() {
-        return $this->mappings;
+        return $this->mappingStash;
     }
 
     /**
@@ -436,6 +463,8 @@ class refnotes_action_core extends refnotes_core {
      *
      */
     public function rewriteReferences($namespaceName, $limit) {
+        $this->clearNamespaceMapping($namespaceName);
+
         if ($namespaceName == '*') {
             foreach ($this->namespace as $namespace) {
                 $namespace->rewriteReferences();
@@ -452,7 +481,7 @@ class refnotes_action_core extends refnotes_core {
     /**
      *
      */
-    protected function createNote($scope, $name) {
-        return new refnotes_action_note($scope, $name);
+    protected function createNote($scope, $namespaceName, $noteName) {
+        return new refnotes_action_note($scope, $namespaceName, $noteName);
     }
 }

@@ -230,10 +230,10 @@ class refnotes_action_note extends refnotes_note {
     /**
      * Constructor
      */
-    public function __construct($scope, $name) {
+    public function __construct($scope, $namespaceName, $name) {
         parent::__construct($scope, $name);
 
-        $this->loadDatabaseDefinition();
+        $this->loadDatabaseDefinition($namespaceName);
 
         $this->inline = $this->getAttribute('inline', false);
     }
@@ -241,8 +241,8 @@ class refnotes_action_note extends refnotes_note {
     /**
      *
      */
-    private function loadDatabaseDefinition() {
-        $name = $this->scope->getNamespaceName() . $this->name;
+    private function loadDatabaseDefinition($namespaceName) {
+        $name = $namespaceName . $this->name;
         $note = refnotes_reference_database::getInstance()->findNote($name);
 
         if ($note != NULL) {

@@ -71,13 +71,6 @@ class refnotes_scope {
     /**
      *
      */
-    public function getNamespaceName() {
-        return $this->namespace->getName();
-    }
-
-    /**
-     *
-     */
     public function getLimits() {
         return $this->limits;
     }

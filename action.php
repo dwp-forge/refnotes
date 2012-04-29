@@ -248,6 +248,7 @@ class refnotes_instruction_mangler {
 
         foreach ($this->calls as $call) {
             $this->styleNamespaces($call);
+            $this->setNamespaceMappings($call);
             $this->addReferences($call);
             $this->rewriteReferences($call);
         }
@@ -259,6 +260,15 @@ class refnotes_instruction_mangler {
     private function styleNamespaces($call) {
         if (($call->getName() == 'plugin_refnotes_notes') && ($call->getPluginData(0) == 'style')) {
             $this->core->styleNamespace($call->getRefnotesAttribute('ns'), $call->getPluginData(2));
+        }
+    }
+
+    /**
+     *
+     */
+    private function setNamespaceMappings($call) {
+        if (($call->getName() == 'plugin_refnotes_notes') && ($call->getPluginData(0) == 'map')) {
+            $this->core->setNamespaceMapping($call->getRefnotesAttribute('ns'), $call->getPluginData(2));
         }
     }
 

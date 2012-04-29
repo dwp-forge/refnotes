@@ -80,7 +80,11 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
             if($mode == 'xhtml') {
                 switch ($data[0]) {
                     case 'style':
-                        $this->styleNamespace($renderer, $data[1], $data[2]);
+                        refnotes_renderer_core::getInstance()->styleNamespace($data[1]['ns'], $data[2]);
+                        break;
+
+                    case 'map':
+                        refnotes_renderer_core::getInstance()->setNamespaceMapping($data[1]['ns'], $data[2]);
                         break;
 
                     case 'render':
@@ -198,16 +202,10 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    private function styleNamespace($renderer, $attribute, $style) {
-        refnotes_renderer_core::getInstance()->styleNamespace($attribute['ns'], $style);
-    }
-
-    /**
-     *
-     */
     private function renderNotes($renderer, $attribute) {
         $limit = array_key_exists('limit', $attribute) ? $attribute['limit'] : '';
         $html = refnotes_renderer_core::getInstance()->renderNotes($attribute['ns'], $limit);
+
         if ($html != '') {
             $renderer->doc .= '<div class="refnotes">' . DOKU_LF;
             $renderer->doc .= $html;
