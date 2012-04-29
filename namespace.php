@@ -38,76 +38,21 @@ function refnotes_parseName($name) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_namespace_style_info {
-    private $namespace;
-    private $data;
+abstract class refnotes_namespace_data_stash {
+
+    protected $index;
 
     /**
      * Constructor
      */
-    public function __construct($namespace, $data) {
-        $this->namespace = $namespace;
-        $this->data = $data;
-    }
-
-    /**
-     *
-     */
-    public function getNamespace() {
-        return $this->namespace->getName();
-    }
-
-    /**
-     *
-     */
-    public function getData() {
-        return $this->data;
-    }
-
-    /**
-     *
-     */
-    public function isDerived() {
-        return array_key_exists('inherit', $this->data);
-    }
-
-    /**
-     *
-     */
-    public function getInheritedNamespace() {
-        return $this->isDerived() ? $this->data['inherit'] : '';
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_namespace_style_stash {
-    private $page;
-    private $index;
-
-    /**
-     * Constructor
-     */
-    public function __construct($page) {
-        $this->page = $page;
+    public function __construct() {
         $this->index = array();
     }
 
     /**
      *
      */
-    public function add($namespace, $data) {
-        $style = new refnotes_namespace_style_info($namespace, $data);
-        $parent = $style->getInheritedNamespace();
-
-        if (($parent == '') && ($namespace->getScopesCount() == 1)) {
-            /* Default inheritance for the first scope */
-            $parent = refnotes_getParentNamespace($namespace->getName());
-        }
-
-        $index = $namespace->getStyleIndex($this->page->findParentNamespace($parent));
-
-        $this->index[$index][] = $style;
-    }
+    abstract public function add($namespace, $data);
 
     /**
      *
@@ -131,20 +76,81 @@ class refnotes_namespace_style_stash {
     }
 
     /**
-     * Sort the style blocks so that the namespaces with inherited style go after
-     * the namespaces they inherit from.
+     *
      */
     public function sort() {
-        $this->sortByIndex();
-        $this->sortByDefaultInheritance();
-        $this->sortByExplicitInheritance();
+        ksort($this->index);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_namespace_data {
+
+    protected $namespace;
+    protected $data;
+
+    /**
+     * Constructor
+     */
+    public function __construct($namespace, $data) {
+        $this->namespace = $namespace;
+        $this->data = $data;
     }
 
     /**
      *
      */
-    private function sortByIndex() {
-        ksort($this->index);
+    public function getNamespace() {
+        return $this->namespace->getName();
+    }
+
+    /**
+     *
+     */
+    public function getData() {
+        return $this->data;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_namespace_style_stash extends refnotes_namespace_data_stash {
+
+    private $page;
+
+    /**
+     * Constructor
+     */
+    public function __construct($page) {
+        parent::__construct();
+
+        $this->page = $page;
+    }
+
+    /**
+     *
+     */
+    public function add($namespace, $data) {
+        $style = new refnotes_namespace_style_info($namespace, $data);
+        $parent = $style->getInheritedNamespace();
+
+        if (($parent == '') && ($namespace->getScopesCount() == 1)) {
+            /* Default inheritance for the first scope */
+            $parent = refnotes_getParentNamespace($namespace->getName());
+        }
+
+        $index = $namespace->getStyleIndex($this->page->findParentNamespace($parent));
+
+        $this->index[$index][] = $style;
+    }
+    /**
+     * Sort the style blocks so that the namespaces with inherited style go after
+     * the namespaces they inherit from.
+     */
+    public function sort() {
+        parent::sort();
+
+        $this->sortByDefaultInheritance();
+        $this->sortByExplicitInheritance();
     }
 
     /**
@@ -212,6 +218,35 @@ class refnotes_namespace_style_stash {
 
             $index = $sorted;
         }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_namespace_style_info extends refnotes_namespace_data {
+
+    /**
+     *
+     */
+    public function isDerived() {
+        return array_key_exists('inherit', $this->data);
+    }
+
+    /**
+     *
+     */
+    public function getInheritedNamespace() {
+        return $this->isDerived() ? $this->data['inherit'] : '';
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_namespace_mapping_stash extends refnotes_namespace_data_stash {
+
+    /**
+     *
+     */
+    public function add($namespace, $data) {
+        $this->index[$namespace->getMappingIndex()][] = new refnotes_namespace_data($namespace, $data);
     }
 }
 
@@ -372,6 +407,13 @@ class refnotes_namespace {
         $parentEnd = ($parent != NULL) ? $parent->findScopeEnd($previousEnd, $currentStart) : -1;
 
         return max($parentEnd, $previousEnd) + 1;
+    }
+
+    /**
+     *
+     */
+    public function getMappingIndex() {
+        return $this->getPreviousScope()->getLimits()->end + 1;
     }
 
     /**

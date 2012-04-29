@@ -110,7 +110,8 @@ class refnotes_instruction_mangler {
         $this->scanInstructions();
 
         if ($this->core->getNamespaceCount() > 0) {
-            $this->insertStyles();
+            $this->insertNotesInstructions($this->core->getStyles(), 'refnotes_notes_style_instruction');
+            $this->insertNotesInstructions($this->core->getMappings(), 'refnotes_notes_map_instruction');
             $this->renderLeftovers();
 
             $this->calls->applyChanges();
@@ -129,6 +130,7 @@ class refnotes_instruction_mangler {
             $this->markHiddenReferences($call);
             $this->markScopeLimits($call);
             $this->extractStyles($call);
+            $this->extractMappings($call);
         }
     }
 
@@ -201,20 +203,32 @@ class refnotes_instruction_mangler {
     }
 
     /**
-     * Insert style instructions
+     * Extract namespace mapping info
      */
-    private function insertStyles() {
-        $styles = $this->core->getStyles();
+    private function extractMappings($call) {
+        if ($call->getName() == 'plugin_refnotes_notes') {
+            $map = $call->getRefnotesAttribute('map');
 
-        if ($styles->getCount() == 0) {
+            if (!empty($map)) {
+                $this->core->addMapping($call->getRefnotesAttribute('ns'), $map);
+                $call->unsetRefnotesAttribute('map');
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private function insertNotesInstructions($stash, $instruction) {
+        if ($stash->getCount() == 0) {
             return;
         }
 
-        $styles->sort();
+        $stash->sort();
 
-        foreach ($styles->getIndex() as $index) {
-            foreach ($styles->getAt($index) as $style) {
-                $this->calls->insert($index, new refnotes_notes_style_instruction($style->getNamespace(), $style->getData()));
+        foreach ($stash->getIndex() as $index) {
+            foreach ($stash->getAt($index) as $data) {
+                $this->calls->insert($index, new $instruction($data->getNamespace(), $data->getData()));
             }
         }
     }

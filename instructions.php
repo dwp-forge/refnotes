@@ -82,6 +82,17 @@ class refnotes_notes_style_instruction extends refnotes_notes_instruction {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_notes_map_instruction extends refnotes_notes_instruction {
+
+    /**
+     * Constructor
+     */
+    public function __construct($namespace, $data) {
+        parent::__construct('map', array('ns' => $namespace), $data);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_notes_render_instruction extends refnotes_notes_instruction {
 
     /**
@@ -164,6 +175,13 @@ class refnotes_instruction_reference {
      */
     public function setRefnotesAttribute($name, $value) {
         $this->data[1][1][1][$name] = $value;
+    }
+
+    /**
+     *
+     */
+    public function unsetRefnotesAttribute($name) {
+        unset($this->data[1][1][1][$name]);
     }
 
     /**

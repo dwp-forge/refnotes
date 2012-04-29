@@ -355,7 +355,9 @@ class refnotes_renderer_core extends refnotes_core {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_action_core extends refnotes_core {
+
     private $pageStyles;
+    private $mappings;
 
     /**
      * Constructor
@@ -364,6 +366,7 @@ class refnotes_action_core extends refnotes_core {
         parent::__construct();
 
         $this->pageStyles = new refnotes_namespace_style_stash($this);
+        $this->mappings = new refnotes_namespace_mapping_stash();
     }
 
     /**
@@ -392,6 +395,20 @@ class refnotes_action_core extends refnotes_core {
      */
     public function getStyles() {
         return $this->pageStyles;
+    }
+
+    /**
+     * Collect mapping information from the page
+     */
+    public function addMapping($namespaceName, $map) {
+        $this->mappings->add($this->getNamespace($namespaceName), $map);
+    }
+
+    /**
+     *
+     */
+    public function getMappings() {
+        return $this->mappings;
     }
 
     /**

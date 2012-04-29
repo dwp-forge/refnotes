@@ -135,19 +135,34 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
             'limit' => '/^\/?\d+$/'
         );
 
-        $attribute = array('ns' => ':');
-        $token = preg_split('/\s+/', $syntax);
+        $attribute = array();
+        $token = preg_split('/\s+/', $syntax, -1, PREG_SPLIT_NO_EMPTY);
         foreach ($token as $t) {
             foreach ($propertyMatch as $name => $pattern) {
                 if (preg_match($pattern, $t) == 1) {
-                    $attribute[$name] = $t;
+                    $attribute[$name][] = $t;
                     break;
                 }
             }
         }
 
-        /* Ensure that namespaces are in canonic form */
-        $attribute['ns'] = refnotes_canonizeNamespace($attribute['ns']);
+        if (array_key_exists('ns', $attribute)) {
+            /* Ensure that namespaces are in canonic form */
+            $attribute['ns'] = array_map('refnotes_canonizeNamespace', $attribute['ns']);
+
+            if (count($attribute['ns']) > 1) {
+                $attribute['map'] = array_slice($attribute['ns'], 1);
+            }
+
+            $attribute['ns'] = $attribute['ns'][0];
+        }
+        else {
+            $attribute['ns'] = ':';
+        }
+
+        if (array_key_exists('limit', $attribute)) {
+            $attribute['limit'] = end($attribute['limit']);
+        }
 
         return $attribute;
     }
