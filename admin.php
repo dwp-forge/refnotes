@@ -392,6 +392,10 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
                 'class' => 'select',
                 'option' => array('right-parent', 'parents', 'right-bracket', 'brackets', 'none', 'inherit')
             ),
+            'reference-render' => array(
+                'class' => 'select',
+                'option' => array('basic', 'harvard', 'inherit')
+            ),
             'multi-ref-id' => array(
                 'class' => 'select',
                 'option' => array('ref-counter', 'note-counter', 'inherit')
@@ -410,6 +414,10 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
             'note-font-size' => array(
                 'class' => 'select',
                 'option' => array('normal', 'small', 'inherit')
+            ),
+            'note-render' => array(
+                'class' => 'select',
+                'option' => array('basic', 'harvard', 'inherit')
             ),
             'note-id-base' => array(
                 'class' => 'select',
@@ -450,14 +458,6 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
             'back-ref-separator' => array(
                 'class' => 'select',
                 'option' => array('comma', 'none', 'inherit')
-            ),
-            'struct-render' => array(
-                'class' => 'select',
-                'option' => array('basic', 'harvard', 'inherit')
-            ),
-            'struct-refs' => array(
-                'class' => 'select',
-                'option' => array('disable', 'enable', 'inherit')
             ),
             'scoping' => array(
                 'class' => 'select',

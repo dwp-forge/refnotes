@@ -64,8 +64,8 @@ class refnotes_renderer extends refnotes_renderer_base {
     public function __construct($namespace) {
         parent::__construct($namespace);
 
-        $this->referenceRenderer = $this->createRenderer(($this->getStyle('struct-refs') == 'on') ? $this->getStyle('struct-render') : 'basic');
-        $this->noteRenderer = $this->createRenderer($this->getStyle('struct-render'));
+        $this->referenceRenderer = $this->createRenderer($this->getStyle('reference-render'));
+        $this->noteRenderer = $this->createRenderer($this->getStyle('note-render'));
     }
 
     /**

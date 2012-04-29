@@ -443,11 +443,13 @@ var admin_refnotes = (function () {
             'reference-font-weight', 'normal',
             'reference-font-style' , 'normal',
             'reference-format'     , 'right-parent',
+            'reference-render'     , 'basic',
             'multi-ref-id'         , 'ref-counter',
             'note-preview'         , 'popup',
             'notes-separator'      , '100%',
             'note-text-align'      , 'justify',
             'note-font-size'       , 'normal',
+            'note-render'          , 'basic',
             'note-id-base'         , 'super',
             'note-id-font-weight'  , 'normal',
             'note-id-font-style'   , 'normal',
@@ -458,8 +460,6 @@ var admin_refnotes = (function () {
             'back-ref-font-style'  , 'normal',
             'back-ref-format'      , 'note-id',
             'back-ref-separator'   , 'comma',
-            'struct-render'        , 'basic',
-            'struct-refs'          , 'disable',
             'scoping'              , 'reset'
         );
 
@@ -661,6 +661,7 @@ var admin_refnotes = (function () {
             fields.push(new SelectField('reference-font-weight'));
             fields.push(new SelectField('reference-font-style'));
             fields.push(new SelectField('reference-format'));
+            fields.push(new SelectField('reference-render'));
             fields.push(new SelectField('multi-ref-id'));
             fields.push(new SelectField('note-preview'));
             fields.push(new TextField('notes-separator', function (value) {
@@ -671,6 +672,7 @@ var admin_refnotes = (function () {
             }));
             fields.push(new SelectField('note-text-align'));
             fields.push(new SelectField('note-font-size'));
+            fields.push(new SelectField('note-render'));
             fields.push(new SelectField('note-id-base'));
             fields.push(new SelectField('note-id-font-weight'));
             fields.push(new SelectField('note-id-font-style'));
@@ -681,8 +683,6 @@ var admin_refnotes = (function () {
             fields.push(new SelectField('back-ref-font-style'));
             fields.push(new SelectField('back-ref-format'));
             fields.push(new SelectField('back-ref-separator'));
-            fields.push(new SelectField('struct-render'));
-            fields.push(new SelectField('struct-refs'));
             fields.push(new SelectField('scoping'));
 
             list = new List('select-namespaces');
