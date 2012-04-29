@@ -442,16 +442,18 @@ var admin_refnotes = (function () {
         var namespaces = new NameHash(new DefaultNamespace());
         var current    = namespaces.getItem('');
         var defaults   = new Hash(
-            'refnote-id'           , 'numeric',
+            'refnote-id'         , 'numeric',
             'reference-base'       , 'super',
             'reference-font-weight', 'normal',
             'reference-font-style' , 'normal',
             'reference-format'     , 'right-parent',
+            'reference-render'     , 'basic',
             'multi-ref-id'         , 'ref-counter',
             'note-preview'         , 'popup',
             'notes-separator'      , '100%',
             'note-text-align'      , 'justify',
             'note-font-size'       , 'normal',
+            'note-render'          , 'basic',
             'note-id-base'         , 'super',
             'note-id-font-weight'  , 'normal',
             'note-id-font-style'   , 'normal',
@@ -460,7 +462,7 @@ var admin_refnotes = (function () {
             'back-ref-base'        , 'super',
             'back-ref-font-weight' , 'bold',
             'back-ref-font-style'  , 'normal',
-            'back-ref-format'      , 'note',
+            'back-ref-format'      , 'note-id',
             'back-ref-separator'   , 'comma',
             'scoping'              , 'reset'
         );
@@ -663,6 +665,7 @@ var admin_refnotes = (function () {
             fields.push(new SelectField('reference-font-weight'));
             fields.push(new SelectField('reference-font-style'));
             fields.push(new SelectField('reference-format'));
+            fields.push(new SelectField('reference-render'));
             fields.push(new SelectField('multi-ref-id'));
             fields.push(new SelectField('note-preview'));
             fields.push(new TextField('notes-separator', function (value) {
@@ -673,6 +676,7 @@ var admin_refnotes = (function () {
             }));
             fields.push(new SelectField('note-text-align'));
             fields.push(new SelectField('note-font-size'));
+            fields.push(new SelectField('note-render'));
             fields.push(new SelectField('note-id-base'));
             fields.push(new SelectField('note-id-font-weight'));
             fields.push(new SelectField('note-id-font-style'));

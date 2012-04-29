@@ -27,6 +27,8 @@ $lang['dbk_url'] = 'URL';
 $lang['dbk_volume'] = 'Volume';
 
 $lang['txt_in_cap'] = 'In';
+$lang['txt_page_abbr'] = 'p.';
+$lang['txt_pages_abbr'] = 'pp.';
 
 // For admin plugins, the menu prompt to be displayed in the admin menu
 // if set here, the plugin doesn't need to override the getMenuText() method
@@ -47,11 +49,13 @@ $lang['lbl_reference-base'] = 'Reference baseline';
 $lang['lbl_reference-font-weight'] = 'Reference font weight';
 $lang['lbl_reference-font-style'] = 'Reference font style';
 $lang['lbl_reference-format'] = 'Reference formatting';
+$lang['lbl_reference-render'] = 'Reference rendering';
 $lang['lbl_multi-ref-id'] = 'Multi-reference identifier';
 $lang['lbl_note-preview'] = 'Note preview';
 $lang['lbl_notes-separator'] = 'Notes block separator';
 $lang['lbl_note-text-align'] = 'Note text alignment';
 $lang['lbl_note-font-size'] = 'Note font size';
+$lang['lbl_note-render'] = 'Note rendering';
 $lang['lbl_note-id-base'] = 'Note identifier baseline';
 $lang['lbl_note-id-font-weight'] = 'Note identifier font weight';
 $lang['lbl_note-id-font-style'] = 'Note identifier font style';
@@ -67,11 +71,13 @@ $lang['lbl_scoping'] = 'Scoping behavior';
 $lang['lbl_inline'] = 'Inline';
 
 $lang['opt_arrow'] = 'Up arrow';
+$lang['opt_basic'] = 'Plain text';
 $lang['opt_bold'] = 'Bold';
 $lang['opt_brackets'] = 'Brackets';
 $lang['opt_caret'] = 'Circumflex';
 $lang['opt_comma'] = 'Comma';
 $lang['opt_dot'] = 'Dot';
+$lang['opt_harvard'] = 'Harvard system of referencing';
 $lang['opt_inherit'] = 'Inherit';
 $lang['opt_italic'] = 'Italic';
 $lang['opt_justify'] = 'Justify';
