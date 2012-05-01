@@ -267,13 +267,6 @@ abstract class refnotes_core {
     /**
      *
      */
-    protected function getNamespaceMapping($namespaceName) {
-        return array_key_exists($namespaceName, $this->mapping) ? $this->mapping[$namespaceName] : $namespaceName;
-    }
-
-    /**
-     *
-     */
     protected function createNamespace($name) {
         if ($name != ':') {
             $parentName = refnotes_getParentNamespace($name);
@@ -295,8 +288,13 @@ abstract class refnotes_core {
      *
      */
     protected function getNote($namespaceName, $noteName) {
-        $scope = $this->getNamespace($this->getNamespaceMapping($namespaceName))->getActiveScope();
-        $note = $scope->findNote($noteName);
+        $scope = $this->getNamespace($namespaceName)->getActiveScope();
+        $note = $scope->findNote($namespaceName, $noteName);
+
+        if (($note == NULL) && array_key_exists($namespaceName, $this->mapping)) {
+            $scope = $this->getNamespace($this->mapping[$namespaceName])->getActiveScope();
+            $note = $scope->findNote($namespaceName, $noteName);
+        }
 
         if ($note == NULL) {
             if (!is_int($noteName)) {
@@ -376,7 +374,7 @@ class refnotes_renderer_core extends refnotes_core {
      *
      */
     protected function createNote($scope, $namespaceName, $noteName) {
-        return new refnotes_renderer_note($scope, $noteName);
+        return new refnotes_renderer_note($scope, $namespaceName, $noteName);
     }
 }
 

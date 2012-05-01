@@ -9,13 +9,14 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_note_block_iterator extends FilterIterator {
+
     private $note;
     private $limit;
     private $count;
 
     /**
-    * Constructor
-    */
+     * Constructor
+     */
     public function __construct($note, $limit) {
         $this->note = new ArrayObject($note);
         $this->limit = $this->getBlockLimit($limit);
@@ -101,6 +102,7 @@ class refnotes_note_mock {
 class refnotes_note extends refnotes_refnote {
 
     protected $scope;
+    protected $namespaceName;
     protected $id;
     protected $name;
     protected $inline;
@@ -111,10 +113,11 @@ class refnotes_note extends refnotes_refnote {
     /**
      * Constructor
      */
-    public function __construct($scope, $name) {
+    public function __construct($scope, $namespaceName, $name) {
         parent::__construct();
 
         $this->scope = $scope;
+        $this->namespaceName = $namespaceName;
         $this->id = -1;
         $this->name = $name;
         $this->inline = false;
@@ -146,6 +149,13 @@ class refnotes_note extends refnotes_refnote {
      */
     public function getName() {
         return $this->name;
+    }
+
+    /**
+     *
+     */
+    public function getFullName() {
+        return $this->namespaceName . $this->name;
     }
 
     /**
@@ -231,9 +241,9 @@ class refnotes_action_note extends refnotes_note {
      * Constructor
      */
     public function __construct($scope, $namespaceName, $name) {
-        parent::__construct($scope, $name);
+        parent::__construct($scope, $namespaceName, $name);
 
-        $this->loadDatabaseDefinition($namespaceName);
+        $this->loadDatabaseDefinition();
 
         $this->inline = $this->getAttribute('inline', false);
     }
@@ -241,8 +251,8 @@ class refnotes_action_note extends refnotes_note {
     /**
      *
      */
-    private function loadDatabaseDefinition($namespaceName) {
-        $name = $namespaceName . $this->name;
+    private function loadDatabaseDefinition() {
+        $name = $this->namespaceName . $this->name;
         $note = refnotes_reference_database::getInstance()->findNote($name);
 
         if ($note != NULL) {
@@ -272,14 +282,12 @@ class refnotes_action_note extends refnotes_note {
 
     /**
      * Inject reference database data into references so that they can be properly rendered.
-     * Inject note text into the last reference.
+     * Inject note text into the first reference.
      */
     public function rewriteReferences() {
         if (($this->text == '') && $this->hasData()) {
             foreach ($this->reference as $reference) {
-                $reference->updateAttributes($this->attributes);
-                $reference->updateData($this->data);
-                $reference->rewrite();
+                $reference->rewrite($this->attributes, $this->data);
             }
 
             $this->reference[0]->setNoteText($this->scope->getRenderer()->renderNoteText($this));

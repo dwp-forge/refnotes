@@ -144,19 +144,18 @@ class refnotes_scope {
     /**
      * Finds a note given it's name or id
      */
-    public function findNote($name) {
+    public function findNote($namespaceName, $noteName) {
         $result = NULL;
 
-        if ($name != '') {
-            if (is_int($name)) {
-                $getter = 'getId';
-            }
-            else {
-                $getter = 'getName';
+        if ($noteName != '') {
+            if (is_int($noteName)) {
+                $noteName = '#' . $noteName;
             }
 
+            $fullName = $namespaceName . $noteName;
+
             foreach ($this->note as $note) {
-                if ($note->$getter() == $name) {
+                if ($note->getFullName() == $fullName) {
                     $result = $note;
                     break;
                 }

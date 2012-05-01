@@ -169,7 +169,7 @@ class refnotes_action_reference extends refnotes_reference {
     /**
      *
      */
-    public function updateAttributes($attributes) {
+    private function updateAttributes($attributes) {
         static $key = array('inline', 'source');
 
         foreach ($key as $k) {
@@ -182,7 +182,7 @@ class refnotes_action_reference extends refnotes_reference {
     /**
      *
      */
-    public function updateData($data) {
+    private function updateData($data) {
         $include = $this->note->getScope()->getRenderer()->getReferenceSharedDataSet();
         $data = array_intersect_key($data, array_flip($include));
         $this->data = array_merge($data, $this->data);
@@ -191,7 +191,10 @@ class refnotes_action_reference extends refnotes_reference {
     /**
      *
      */
-    public function rewrite() {
+    public function rewrite($attributes, $data) {
+        $this->updateAttributes($attributes);
+        $this->updateData($data);
+
         $this->call->setPluginData(1, $this->attributes);
 
         if ($this->hasData()) {
