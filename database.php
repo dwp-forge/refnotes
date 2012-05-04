@@ -11,6 +11,7 @@ require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 require_once(DOKU_PLUGIN . 'refnotes/refnote.php');
+require_once(DOKU_PLUGIN . 'refnotes/bibtex.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_reference_database {
@@ -222,6 +223,9 @@ class refnotes_reference_database_page {
             if ($call[$c][0] == 'table_open') {
                 $c = $this->parseTable($call, $calls, $c, $text);
             }
+            if ($call[$c][0] == 'code') {
+                $this->parseCode($call[$c]);
+            }
         }
     }
 
@@ -329,6 +333,24 @@ class refnotes_reference_database_page {
         }
 
         $this->handleNote($data);
+    }
+
+    /**
+     *
+     */
+    private function parseCode($call) {
+        switch ($call[1][1]) {
+            case 'bibtex':
+                $this->parseBibtex($call[1][0]);
+                break;
+        }
+    }
+
+    /**
+     *
+     */
+    private function parseBibtex($text) {
+        refnotes_bibtex_parser::getInstance()->parse($text);
     }
 
     /**
