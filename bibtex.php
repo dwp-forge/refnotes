@@ -42,7 +42,8 @@ class refnotes_bibtex_parser extends Doku_Parser {
         $this->addBibtexMode(new refnotes_bibtex_integer_value_mode());
         $this->addBibtexMode(new refnotes_bibtex_string_value_mode('quoted'));
         $this->addBibtexMode(new refnotes_bibtex_string_value_mode('braced'));
-        $this->addBibtexMode(new refnotes_bibtex_nested_braces_mode());
+        $this->addBibtexMode(new refnotes_bibtex_nested_braces_mode('quoted'));
+        $this->addBibtexMode(new refnotes_bibtex_nested_braces_mode('braced'));
     }
 
     /**
@@ -214,8 +215,8 @@ class refnotes_bibtex_entry_mode extends refnotes_bibtex_mode {
 
         list($open, $close) = ($type == 'parented') ? array('\(', '\)') : array('{', '}');
 
-        $this->entryPattern[] = '^@\w+' . $open . '(?=.*' . $close . ')';
-        $this->exitPattern[] = '\s*' . $close;
+        $this->entryPattern[] = '^@\w+\s*' . $open . '(?=.*' . $close . ')';
+        $this->exitPattern[] = '\s*(?:' . $close . '|(?=@))';
 
         $this->allowedModes = array('field');
     }
@@ -231,7 +232,7 @@ class refnotes_bibtex_field_mode extends refnotes_bibtex_mode {
         parent::__construct();
 
         $this->entryPattern[] = '^\s*\w+\s*=\s*';
-        $this->exitPattern[] = '\s*(?:,|(?=[\)}]))';
+        $this->exitPattern[] = '\s*(?:,|(?=[\)}@]))';
 
         $this->allowedModes = array('integer_value', 'string_value_quoted', 'string_value_braced');
     }
@@ -262,12 +263,12 @@ class refnotes_bibtex_string_value_mode extends refnotes_bibtex_mode {
         $this->handler = $this->name;
         $this->name .= '_' . $type;
 
-        list($open, $close) = ($type == 'quoted') ? array('"', '"') : array('{', '}');
+        list($open, $close, $exit) = ($type == 'quoted') ? array('"', '"', '"') : array('{', '}', '(?:}|(?=@))');
 
         $this->entryPattern[] = '^' . $open . '(?=.*' . $close . ')';
-        $this->exitPattern[] = $close;
+        $this->exitPattern[] = $exit;
 
-        $this->allowedModes = array('nested_braces');
+        $this->allowedModes = array('nested_braces_' . $type);
     }
 }
 
@@ -277,13 +278,16 @@ class refnotes_bibtex_nested_braces_mode extends refnotes_bibtex_mode {
     /**
      * Constructor
      */
-    public function __construct() {
+    public function __construct($type) {
         parent::__construct();
 
-        $this->entryPattern[] = '{(?=.*})';
-        $this->exitPattern[] = '}';
+        $this->handler = $this->name;
+        $this->name .= '_' . $type;
 
-        $this->allowedModes = array('nested_braces');
+        $this->entryPattern[] = '{(?=.*})';
+        $this->exitPattern[] = ($type == 'quoted') ? '}' : '(?:}|(?=@))';
+
+        $this->allowedModes = array($this->name);
     }
 }
 
@@ -350,7 +354,7 @@ class refnotes_bibtex_handler {
     public function entry($match, $state) {
         switch ($state) {
             case DOKU_LEXER_ENTER:
-                $this->currentEntry = new refnotes_bibtex_entry(preg_replace('/@(\w+)\W/', '$1', $match));
+                $this->currentEntry = new refnotes_bibtex_entry(preg_replace('/@(\w+)\W+/', '$1', $match));
                 break;
 
             case DOKU_LEXER_UNMATCHED:
