@@ -426,14 +426,28 @@ class refnotes_bibtex_entry_stash {
      *
      */
     public function add($entry) {
+        static $entryType = array(
+            'article', 'book', 'booklet', 'conference', 'inbook', 'incollection', 'inproceedings', 'manual',
+            'mastersthesis', 'misc', 'phdthesis', 'proceedings', 'techreport', 'unpublished');
+
+        $type = $entry->getType();
         $name = $entry->getName();
 
-        if ($this->isValidName($name)) {
-            if ($name{0} != ':') {
-                $name = $this->namespace . $name;
-            }
+        if (in_array($type, $entryType)) {
+            if ($this->isValidName($name)) {
+                if ($name{0} != ':') {
+                    $name = $this->namespace . $name;
+                }
 
-            $this->entry[] = array_merge(array('note-name' => $name), $entry->getData());
+                $this->entry[] = array_merge(array('note-name' => $name), $entry->getData());
+            }
+        }
+        elseif (($type == 'comment') && (strtolower($name) == 'refnotes')) {
+            $data = $entry->getData();
+
+            if (isset($data['ns']) && $this->isValidName($data['ns'])) {
+                $this->namespace = refnotes_canonizeNamespace($data['ns']);
+            }
         }
     }
 
