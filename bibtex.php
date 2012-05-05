@@ -294,9 +294,9 @@ class refnotes_bibtex_nested_braces_mode extends refnotes_bibtex_mode {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_bibtex_handler {
 
+    private $entries;
     private $entry;
-    private $currentEntry;
-    private $currentField;
+    private $field;
 
     /**
      * Constructor
@@ -309,35 +309,16 @@ class refnotes_bibtex_handler {
      *
      */
     public function reset() {
-        $this->entry = array();
-        $this->currentEntry = NULL;
-        $this->currentField = NULL;
+        $this->entries = new refnotes_bibtex_entry_stash();
+        $this->entry = NULL;
+        $this->field = NULL;
     }
 
     /**
      *
      */
     public function finalize() {
-        error_log(print_r($this->entry, true));
-
-        return $this->entry;
-    }
-
-    /**
-     *
-     */
-    private function finalizeEntry() {
-        $this->entry[] = $this->currentEntry;
-        $this->currentEntry = NULL;
-    }
-
-    /**
-     *
-     */
-    private function finalizeField() {
-        $this->currentField->finalize();
-        $this->currentEntry->addField($this->currentField);
-        $this->currentField = NULL;
+        return $this->entries->getEntries();
     }
 
     /**
@@ -354,15 +335,16 @@ class refnotes_bibtex_handler {
     public function entry($match, $state) {
         switch ($state) {
             case DOKU_LEXER_ENTER:
-                $this->currentEntry = new refnotes_bibtex_entry(preg_replace('/@(\w+)\W+/', '$1', $match));
+                $this->entry = new refnotes_bibtex_entry(preg_replace('/@(\w+)\W+/', '$1', $match));
                 break;
 
             case DOKU_LEXER_UNMATCHED:
-                $this->currentEntry->handleUnmatched($match);
+                $this->entry->handleUnmatched($match);
                 break;
 
             case DOKU_LEXER_EXIT:
-                $this->finalizeEntry();
+                $this->entries->add($this->entry);
+                $this->entry = NULL;
                 break;
         }
 
@@ -375,15 +357,16 @@ class refnotes_bibtex_handler {
     public function field($match, $state) {
         switch ($state) {
             case DOKU_LEXER_ENTER:
-                $this->currentField = new refnotes_bibtex_field(preg_replace('/\W*(\w+)\W*/', '$1', $match));
+                $this->field = new refnotes_bibtex_field(preg_replace('/\W*(\w+)\W*/', '$1', $match));
                 break;
 
             case DOKU_LEXER_UNMATCHED:
-                $this->currentField->handleUnmatched($match);
+                $this->field->handleUnmatched($match);
                 break;
 
             case DOKU_LEXER_EXIT:
-                $this->finalizeField();
+                $this->entry->addField($this->field);
+                $this->field = NULL;
                 break;
         }
 
@@ -394,7 +377,7 @@ class refnotes_bibtex_handler {
      *
      */
     public function integer_value($match, $state) {
-        $this->currentField->handleIntegerValue($match, $state);
+        $this->field->handleIntegerValue($match, $state);
 
         return true;
     }
@@ -403,7 +386,7 @@ class refnotes_bibtex_handler {
      *
      */
     public function string_value($match, $state) {
-        $this->currentField->handleStringValue($match, $state);
+        $this->field->handleStringValue($match, $state);
 
         return true;
     }
@@ -412,9 +395,53 @@ class refnotes_bibtex_handler {
      *
      */
     public function nested_braces($match, $state) {
-        $this->currentField->handleNestedBraces($match, $state);
+        $this->field->handleNestedBraces($match, $state);
 
         return true;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_bibtex_entry_stash {
+
+    private $entry;
+    private $namespace;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->entry = array();
+        $this->namespace = ':';
+    }
+
+    /**
+     *
+     */
+    public function getEntries() {
+        return $this->entry;
+    }
+
+    /**
+     *
+     */
+    public function add($entry) {
+        $name = $entry->getName();
+
+        if ($this->isValidName($name)) {
+            if ($name{0} != ':') {
+                $name = $this->namespace . $name;
+            }
+
+            $this->entry[] = array_merge(array('note-name' => $name), $entry->getData());
+        }
+    }
+
+    /**
+     *
+     */
+    private function isValidName($name) {
+        return preg_match('/(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*/', $name) == 1;
     }
 }
 
@@ -423,7 +450,7 @@ class refnotes_bibtex_entry {
 
     private $type;
     private $name;
-    private $data;
+    private $field;
 
     /**
      * Constructor
@@ -431,7 +458,7 @@ class refnotes_bibtex_entry {
     public function __construct($type) {
         $this->type = strtolower($type);
         $this->name = '';
-        $this->data = array();
+        $this->field = array();
     }
 
     /**
@@ -452,14 +479,20 @@ class refnotes_bibtex_entry {
      *
      */
     public function getData() {
-        return $this->data;
+        $data = array();
+
+        foreach ($this->field as $field) {
+            $data[$field->getName()] = $field->getValue();
+        }
+
+        return $data;
     }
 
     /**
      *
      */
     public function handleUnmatched($token) {
-        if (($this->name == '') && (preg_match('/\s*(\w+)\s*,/', $token, $match) == 1)) {
+        if (($this->name == '') && (preg_match('/\s*([\w:]+)\s*,/', $token, $match) == 1)) {
             $this->name = $match[1];
         }
     }
@@ -468,7 +501,7 @@ class refnotes_bibtex_entry {
      *
      */
     public function addField($field) {
-        $this->data[$field->getName()] = $field->getValue();
+        $this->field[] = $field;
     }
 }
 
@@ -497,14 +530,7 @@ class refnotes_bibtex_field {
      *
      */
     public function getValue() {
-        return $this->value;
-    }
-
-    /**
-     *
-     */
-    public function finalize() {
-        $this->value = preg_replace('/\s+/', ' ', trim($this->value));
+        return preg_replace('/\s+/', ' ', trim($this->value));
     }
 
     /**
