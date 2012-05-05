@@ -33,6 +33,7 @@ class refnotes_bibtex_parser extends Doku_Parser {
      */
     public function __construct() {
         $this->Handler = new refnotes_bibtex_handler();
+        $this->Lexer = new refnotes_bibtex_lexer($this->Handler, 'base', true);
 
         $this->addBibtexMode(new refnotes_bibtex_outside_mode());
         $this->addBibtexMode(new refnotes_bibtex_entry_mode('parented'));
@@ -74,6 +75,51 @@ class refnotes_bibtex_parser extends Doku_Parser {
         $this->Lexer->parse(str_replace("\r\n", "\n", $text));
 
         return $this->Handler->finalize();
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_bibtex_lexer extends Doku_Lexer {
+
+    /**
+     *
+     */
+    public function parse($text) {
+        $lastMode = '';
+
+        while (is_array($parsed = $this->_reduce($text))) {
+            list($unmatched, $matched, $mode) = $parsed;
+
+            if (!$this->_dispatchTokens($unmatched, $matched, $mode, 0, 0)) {
+                return false;
+            }
+
+            if (empty($unmatched) && empty($matched) && ($lastMode == $this->_mode->getCurrent())) {
+                return false;
+            }
+
+            $lastMode = $this->_mode->getCurrent();
+        }
+
+        if (!$parsed) {
+            return false;
+        }
+
+        return $this->_invokeParser($text, DOKU_LEXER_UNMATCHED, 0);
+    }
+
+    /**
+     *
+     */
+    function _invokeParser($text, $state, $pos) {
+        if (($text == "") && ($state == DOKU_LEXER_UNMATCHED)) {
+            return true;
+        }
+
+        $mode = $this->_mode->getCurrent();
+        $handler = isset($this->_mode_handlers[$mode]) ? $this->_mode_handlers[$mode] : $mode;
+
+        return $this->_parser->$handler($text, $state);
     }
 }
 
@@ -141,7 +187,7 @@ class refnotes_bibtex_outside_mode extends refnotes_bibtex_mode {
     public function __construct() {
         parent::__construct();
 
-        $this->specialPattern[] = '(?:^[ \t]*)?\n';
+        $this->specialPattern[] = '[^@]+(?=@)';
     }
 
     /**
@@ -168,7 +214,7 @@ class refnotes_bibtex_entry_mode extends refnotes_bibtex_mode {
 
         list($open, $close) = ($type == 'parented') ? array('\(', '\)') : array('{', '}');
 
-        $this->entryPattern[] = '@\w+' . $open . '(?=.*' . $close . ')';
+        $this->entryPattern[] = '^@\w+' . $open . '(?=.*' . $close . ')';
         $this->exitPattern[] = '\s*' . $close;
 
         $this->allowedModes = array('field');
@@ -277,10 +323,6 @@ class refnotes_bibtex_handler {
      *
      */
     private function finalizeEntry() {
-        if ($this->currentField != NULL) {
-            $this->finalizeField();
-        }
-
         $this->entry[] = $this->currentEntry;
         $this->currentEntry = NULL;
     }
@@ -297,7 +339,7 @@ class refnotes_bibtex_handler {
     /**
      *
      */
-    public function outside($match, $state, $pos) {
+    public function outside($match, $state) {
         /* Ignore everything outside the entries */
         return true;
     }
@@ -305,7 +347,7 @@ class refnotes_bibtex_handler {
     /**
      *
      */
-    public function entry($match, $state, $pos) {
+    public function entry($match, $state) {
         switch ($state) {
             case DOKU_LEXER_ENTER:
                 $this->currentEntry = new refnotes_bibtex_entry(preg_replace('/@(\w+)\W/', '$1', $match));
@@ -326,7 +368,7 @@ class refnotes_bibtex_handler {
     /**
      *
      */
-    public function field($match, $state, $pos) {
+    public function field($match, $state) {
         switch ($state) {
             case DOKU_LEXER_ENTER:
                 $this->currentField = new refnotes_bibtex_field(preg_replace('/\W*(\w+)\W*/', '$1', $match));
@@ -347,7 +389,7 @@ class refnotes_bibtex_handler {
     /**
      *
      */
-    public function integer_value($match, $state, $pos) {
+    public function integer_value($match, $state) {
         $this->currentField->handleIntegerValue($match, $state);
 
         return true;
@@ -356,7 +398,7 @@ class refnotes_bibtex_handler {
     /**
      *
      */
-    public function string_value($match, $state, $pos) {
+    public function string_value($match, $state) {
         $this->currentField->handleStringValue($match, $state);
 
         return true;
@@ -365,7 +407,7 @@ class refnotes_bibtex_handler {
     /**
      *
      */
-    public function nested_braces($match, $state, $pos) {
+    public function nested_braces($match, $state) {
         $this->currentField->handleNestedBraces($match, $state);
 
         return true;
