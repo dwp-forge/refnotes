@@ -350,7 +350,9 @@ class refnotes_reference_database_page {
      *
      */
     private function parseBibtex($text) {
-        refnotes_bibtex_parser::getInstance()->parse($text);
+        foreach (refnotes_bibtex_parser::getInstance()->parse($text) as $data) {
+            $this->handleNote($data);
+        }
     }
 
     /**
