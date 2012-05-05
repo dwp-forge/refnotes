@@ -44,6 +44,7 @@ class refnotes_bibtex_parser extends Doku_Parser {
         $this->addBibtexMode(new refnotes_bibtex_string_value_mode('braced'));
         $this->addBibtexMode(new refnotes_bibtex_nested_braces_mode('quoted'));
         $this->addBibtexMode(new refnotes_bibtex_nested_braces_mode('braced'));
+        $this->addBibtexMode(new refnotes_bibtex_concatenation_mode());
     }
 
     /**
@@ -234,7 +235,7 @@ class refnotes_bibtex_field_mode extends refnotes_bibtex_mode {
         $this->entryPattern[] = '^\s*\w+\s*=\s*';
         $this->exitPattern[] = '\s*(?:,|(?=[\)}@]))';
 
-        $this->allowedModes = array('integer_value', 'string_value_quoted', 'string_value_braced');
+        $this->allowedModes = array('integer_value', 'string_value_quoted', 'string_value_braced', 'concatenation');
     }
 }
 
@@ -288,6 +289,19 @@ class refnotes_bibtex_nested_braces_mode extends refnotes_bibtex_mode {
         $this->exitPattern[] = ($type == 'quoted') ? '}' : '(?:}|(?=@))';
 
         $this->allowedModes = array($this->name);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_bibtex_concatenation_mode extends refnotes_bibtex_mode {
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        parent::__construct();
+
+        $this->specialPattern[] = '\s*#\s*';
     }
 }
 
@@ -361,7 +375,7 @@ class refnotes_bibtex_handler {
                 break;
 
             case DOKU_LEXER_UNMATCHED:
-                $this->field->handleUnmatched($match);
+                $this->field->addToken('unmatched', $match);
                 break;
 
             case DOKU_LEXER_EXIT:
@@ -377,7 +391,7 @@ class refnotes_bibtex_handler {
      *
      */
     public function integer_value($match, $state) {
-        $this->field->handleIntegerValue($match, $state);
+        $this->field->addToken('integer', $match);
 
         return true;
     }
@@ -386,7 +400,9 @@ class refnotes_bibtex_handler {
      *
      */
     public function string_value($match, $state) {
-        $this->field->handleStringValue($match, $state);
+        if ($state == DOKU_LEXER_UNMATCHED) {
+            $this->field->addToken('string', $match);
+        }
 
         return true;
     }
@@ -395,8 +411,18 @@ class refnotes_bibtex_handler {
      *
      */
     public function nested_braces($match, $state) {
-        $this->field->handleNestedBraces($match, $state);
+        if ($state == DOKU_LEXER_UNMATCHED) {
+            $this->field->addToken('braces', $match);
+        }
 
+        return true;
+    }
+
+    /**
+     *
+     */
+    public function concatenation($match, $state) {
+        /* Nothing special to do, concatenation will happen anyway */
         return true;
     }
 }
@@ -405,6 +431,7 @@ class refnotes_bibtex_handler {
 class refnotes_bibtex_entry_stash {
 
     private $entry;
+    private $strings;
     private $namespace;
 
     /**
@@ -412,6 +439,7 @@ class refnotes_bibtex_entry_stash {
      */
     public function __construct() {
         $this->entry = array();
+        $this->strings = new refnotes_bibtex_strings();
         $this->namespace = ':';
     }
 
@@ -434,18 +462,26 @@ class refnotes_bibtex_entry_stash {
         $name = $entry->getName();
 
         if (in_array($type, $entryType)) {
-            if ($this->isValidName($name)) {
+            if ($this->isValidRefnotesName($name)) {
                 if ($name{0} != ':') {
                     $name = $this->namespace . $name;
                 }
 
-                $this->entry[] = array_merge(array('note-name' => $name), $entry->getData());
+                $this->entry[] = array_merge(array('note-name' => $name), $entry->getData($this->strings));
+            }
+        }
+        elseif ($type == 'string') {
+            $data = $entry->getData($this->strings);
+            $name = reset(array_keys($data));
+
+            if ($this->isValidStringName($name)) {
+                $this->strings->add($name, $data[$name]);
             }
         }
         elseif (($type == 'comment') && (strtolower($name) == 'refnotes')) {
-            $data = $entry->getData();
+            $data = $entry->getData($this->strings);
 
-            if (isset($data['ns']) && $this->isValidName($data['ns'])) {
+            if (isset($data['ns']) && $this->isValidRefnotesName($data['ns'])) {
                 $this->namespace = refnotes_canonizeNamespace($data['ns']);
             }
         }
@@ -454,8 +490,15 @@ class refnotes_bibtex_entry_stash {
     /**
      *
      */
-    private function isValidName($name) {
-        return preg_match('/(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*/', $name) == 1;
+    private function isValidRefnotesName($name) {
+        return preg_match('/^(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*$/', $name) == 1;
+    }
+
+    /**
+     *
+     */
+    private function isValidStringName($name) {
+        return preg_match('/^[[:alpha:]]\w*$/', $name) == 1;
     }
 }
 
@@ -492,11 +535,11 @@ class refnotes_bibtex_entry {
     /**
      *
      */
-    public function getData() {
+    public function getData($strings) {
         $data = array();
 
         foreach ($this->field as $field) {
-            $data[$field->getName()] = $field->getValue();
+            $data[$field->getName()] = $field->getValue($strings);
         }
 
         return $data;
@@ -523,14 +566,14 @@ class refnotes_bibtex_entry {
 class refnotes_bibtex_field {
 
     private $name;
-    private $value;
+    private $token;
 
     /**
      * Constructor
      */
     public function __construct($name) {
         $this->name = strtolower($name);
-        $this->value = '';
+        $this->token = array();
     }
 
     /**
@@ -543,39 +586,68 @@ class refnotes_bibtex_field {
     /**
      *
      */
-    public function getValue() {
-        return preg_replace('/\s+/', ' ', trim($this->value));
-    }
+    public function getValue($strings) {
+        $value = '';
 
-    /**
-     *
-     */
-    public function handleUnmatched($token) {
-        $this->value .= $token;
-    }
+        foreach ($this->token as $token) {
+            $text = $token->text;
 
-    /**
-     *
-     */
-    public function handleIntegerValue($token, $state) {
-        $this->value = $token;
-    }
+            if ($token->type == 'unmatched') {
+                $text = $strings->lookup(strtolower(trim($text)));
+            }
 
-    /**
-     *
-     */
-    public function handleStringValue($token, $state) {
-        if ($state == DOKU_LEXER_UNMATCHED) {
-            $this->handleUnmatched($token);
+            $value .= $text;
         }
+
+        return preg_replace('/\s+/', ' ', trim($value));
     }
 
     /**
      *
      */
-    public function handleNestedBraces($token, $state) {
-        if ($state == DOKU_LEXER_UNMATCHED) {
-            $this->handleUnmatched($token);
-        }
+    public function addToken($type, $text) {
+        $this->token[] = new refnotes_bibtex_field_token($type, $text);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_bibtex_field_token {
+
+    public $type;
+    public $text;
+
+    /**
+     * Constructor
+     */
+    public function __construct($type, $text) {
+        $this->type = $type;
+        $this->text = $text;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_bibtex_strings {
+
+    private $string;
+
+    /**
+     * Constructor
+     */
+    public function __construct() {
+        $this->string = array();
+    }
+
+    /**
+     *
+     */
+    public function add($name, $value) {
+        $this->string[$name] = $value;
+    }
+
+    /**
+     *
+     */
+    public function lookup($name) {
+        return array_key_exists($name, $this->string) ? $this->string[$name] : '';
     }
 }
