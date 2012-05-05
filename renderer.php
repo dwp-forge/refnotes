@@ -138,6 +138,95 @@ class refnotes_renderer extends refnotes_renderer_base {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_renderer_data {
+
+    private $data;
+
+    /**
+     * Constructor
+     */
+    public function __construct($data) {
+        $this->data = $data;
+    }
+
+    /**
+     *
+     */
+    public function has($key) {
+        if (func_num_args() > 1) {
+            $result = false;
+
+            foreach (func_get_args() as $key) {
+                if (array_key_exists($key, $this->data)) {
+                    $result = true;
+                    break;
+                }
+            }
+
+            return $result;
+        }
+        else {
+            return array_key_exists($key, $this->data);
+        }
+    }
+
+    /**
+     *
+     */
+    public function get($key) {
+        if (func_num_args() > 1) {
+            $result = '';
+
+            foreach (func_get_args() as $key) {
+                if (array_key_exists($key, $this->data)) {
+                    $result = $this->data[$key];
+                    break;
+                }
+            }
+
+            return $result;
+        }
+        else {
+            return array_key_exists($key, $this->data) ? $this->data[$key] : '';
+        }
+    }
+
+    /**
+     *
+     */
+    public function getLongest() {
+        $result = '';
+
+        if (func_num_args() > 0) {
+            foreach (func_get_args() as $key) {
+                if (array_key_exists($key, $this->data) && (strlen($result) < strlen($this->data[$key]))) {
+                    $result = $this->data[$key];
+                }
+            }
+        }
+        else {
+            foreach ($this->data as $value) {
+                if (strlen($result) < strlen($value)) {
+                    $result = $value;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    public function isPositive($key)
+    {
+        static $lookup = array('y', 'yes', 'on', 'true', '1');
+
+        return in_array(strtolower($this->get($key)), $lookup);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_basic_renderer extends refnotes_renderer_base {
 
     /**
@@ -181,25 +270,16 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
      *
      */
     public function renderNoteText($note) {
-        $data = $note->getData();
+        $data = new refnotes_renderer_data($note->getData());
 
-        if (array_key_exists('note-text', $data)) {
-            $text = $data['note-text'];
-        }
-        elseif (array_key_exists('title', $data)) {
-            $text = $data['title'];
-        }
-        else {
-            $text = '';
-            foreach($data as $value) {
-                if (strlen($text) < strlen($value)) {
-                    $text = $value;
-                }
-            }
+        $text = $data->get('note-text', 'title');
+
+        if ($text == '') {
+            $text = $data->getLongest();
         }
 
-        if (array_key_exists('url', $data)) {
-            $text = '[[' . $data['url'] . '|' . $text . ']]';
+        if ($url = $data->get('url')) {
+            $text = '[[' . $url . '|' . $text . ']]';
         }
 
         return $text;
@@ -652,16 +732,6 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
 
         return $result;
     }
-
-    /**
-     *
-     */
-    protected function isPositive($data)
-    {
-        static $lookup = array('y', 'yes', 'on', 'true', '1');
-
-        return in_array(strtolower($data), $lookup);
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -678,7 +748,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
      *
      */
     public function getReferenceSharedDataSet() {
-        static $key = array('authors', 'authors-short', 'published');
+        static $key = array('ref-authors', 'ref-author', 'authors', 'author', 'published', 'year');
 
         return $key;
     }
@@ -696,9 +766,9 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
      *
      */
     public function renderNoteText($note) {
-        $data = $note->getData();
+        $data = new refnotes_renderer_data($note->getData());
 
-        if (!array_key_exists('title', $data)) {
+        if (!$data->has('title')) {
             return parent::renderNoteText($note);
         }
 
@@ -712,7 +782,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
         // authors, published. chapter In //$title// edition. publisher, pages, isbn.
         // authors, published. $title //journal//, volume, publisher, pages, issn.
 
-        $authors = $this->renderNoteAuthors($data);
+        $authors = $this->renderAuthors($data);
 
         // $authors? //$title// edition. publisher, pages, isbn.
         // $authors? chapter In //$title// edition. publisher, pages, isbn.
@@ -720,7 +790,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
 
         $publication = $this->renderPublication($data, $authors != '');
 
-        if (array_key_exists('journal', $data)) {
+        if ($data->has('journal')) {
             // $authors? $title //journal//, volume, $publication?
 
             $text = $title . ' ' . $this->renderJournal($data);
@@ -753,10 +823,10 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
      *
      */
     protected function renderTitle($data) {
-        $text = $data['title'] . '.';
+        $text = $data->get('title') . '.';
 
-        if (array_key_exists('url', $data)) {
-            $text = '[[' . $data['url'] . '|' . $text . ']]';
+        if ($url = $data->get('url')) {
+            $text = '[[' . $url . '|' . $text . ']]';
         }
 
         return $text;
@@ -765,14 +835,12 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    protected function renderNoteAuthors($data) {
-        $text = '';
+    protected function renderAuthors($data) {
+        $text = $data->get('authors', 'author');
 
-        if (array_key_exists('authors', $data)) {
-            $text = $data['authors'];
-
-            if (array_key_exists('published', $data)) {
-                $text .= ', ' . $data['published'];
+        if ($text != '') {
+            if ($published = $data->get('published', 'year')) {
+                $text .= ', ' . $published;
             }
 
             $text .= '.';
@@ -787,25 +855,31 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     protected function renderPublication($data, $authors) {
         $part = array();
 
-        if (array_key_exists('publisher', $data)) {
-            $part[] = $data['publisher'];
+        $address = $data->get('address');
+        $publisher = $data->get('publisher');
+
+        if ($address && $publisher) {
+            $part[] = $address . ': ' . $publisher;
+        }
+        else {
+            if ($address || $publisher) {
+                $part[] = $address . $publisher;
+            }
         }
 
-        if (!$authors && array_key_exists('published', $data)) {
-            $part[] = $data['published'];
+        if (!$authors && ($published = $data->get('published', 'year'))) {
+            $part[] = $published;
         }
 
-        $pages = $this->renderPages($data, array('note-pages', 'note-page', 'pages', 'page'));
-
-        if ($pages != '') {
+        if ($pages = $this->renderPages($data, array('note-pages', 'note-page', 'pages', 'page'))) {
             $part[] = $pages;
         }
 
-        if (array_key_exists('isbn', $data)) {
-            $part[] = 'ISBN ' . $data['isbn'];
+        if ($isbn = $data->get('isbn')) {
+            $part[] = 'ISBN ' . $isbn;
         }
-        elseif (array_key_exists('issn', $data)) {
-            $part[] = 'ISSN ' . $data['issn'];
+        elseif ($issn = $data->get('issn')) {
+            $part[] = 'ISSN ' . $issn;
         }
 
         $text = implode(', ', $part);
@@ -824,9 +898,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
         $text = '';
 
         foreach ($key as $k) {
-            if (array_key_exists($k, $data)) {
-                $text = $data[$k];
-
+            if ($text = $data->get($k)) {
                 if (preg_match("/^[0-9]/", $text)) {
                     $abbr_key = (substr($k, -1) == 's') ? 'txt_pages_abbr' : 'txt_page_abbr';
                     $text = refnotes_localization::getInstance()->getLang($abbr_key) . $text;
@@ -842,10 +914,10 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
      *
      */
     protected function renderJournal($data) {
-        $text = '//' . $data['journal'] . '//';
+        $text = '//' . $data->get('journal') . '//';
 
-        if (array_key_exists('volume', $data)) {
-            $text .= ', ' . $data['volume'];
+        if ($volume = $data->get('volume')) {
+            $text .= ', ' . $volume;
         }
 
         return $text;
@@ -857,12 +929,12 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     protected function renderBook($data, $title) {
         $text = '//' . $title . '//';
 
-        if (array_key_exists('chapter', $data)) {
-            $text = $data['chapter'] . '. ' . refnotes_localization::getInstance()->getLang('txt_in_cap') . ' ' . $text;
+        if ($chapter = $data->get('chapter')) {
+            $text = $chapter . '. ' . refnotes_localization::getInstance()->getLang('txt_in_cap') . ' ' . $text;
         }
 
-        if (array_key_exists('edition', $data)) {
-            $text .= ' ' . $data['edition'] . '.';
+        if ($edition = $data->get('edition')) {
+            $text .= ' ' . $edition . '.';
         }
 
         return $text;
@@ -872,18 +944,18 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
      *
      */
     protected function renderReferenceId($reference) {
-        $data = $reference->getData();
+        $data = new refnotes_renderer_data($reference->getData());
 
         if (!$this->checkReferenceData($data)) {
             return $this->renderBasicReferenceId($reference);
         }
 
-        $authors = $this->renderReferenceAuthors($data);
+        $authors = $data->get('ref-authors', 'ref-author', 'authors', 'author');
         $html = $this->renderReferenceExtra($data);
 
         list($formatOpen, $formatClose) = $this->renderReferenceParentheses();
 
-        if (array_key_exists('inline', $data) && $this->isPositive($data['inline'])) {
+        if ($data->isPositive('inline')) {
             $html = $authors . ' ' . $formatOpen . $html . $formatClose;
         }
         else {
@@ -905,30 +977,14 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    protected function renderReferenceAuthors($data) {
-        if (array_key_exists('authors-short', $data)) {
-            $html = $data['authors-short'];
-        }
-        else {
-            $html = $data['authors'];
-        }
-
-        return $html;
-    }
-
-    /**
-     *
-     */
     protected function renderReferenceExtra($data) {
         $html = '';
 
-        if (array_key_exists('published', $data)) {
-            $html .= $data['published'];
+        if ($published = $data->get('published', 'year')) {
+            $html .= $published;
         }
 
-        $pages = $this->renderPages($data, array('page', 'pages'));
-
-        if ($pages != '') {
+        if ($pages = $this->renderPages($data, array('page', 'pages'))) {
             if ($html != '') {
                 $html .= ', ';
             }
@@ -960,9 +1016,9 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
      *
      */
     protected function checkReferenceData($data) {
-        $authors = array_key_exists('authors', $data) || array_key_exists('authors-short', $data);
-        $year = array_key_exists('published', $data);
-        $page = array_key_exists('page', $data) || array_key_exists('pages', $data);
+        $authors = $data->has('ref-authors', 'ref-author', 'authors', 'author');
+        $year = $data->has('published', 'year');
+        $page = $data->has('page', 'pages');
 
         return $authors && ($year || $page);
     }
