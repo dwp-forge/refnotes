@@ -223,8 +223,11 @@ class refnotes_reference_database_page {
             if ($call[$c][0] == 'table_open') {
                 $c = $this->parseTable($call, $calls, $c, $text);
             }
-            if ($call[$c][0] == 'code') {
+            elseif ($call[$c][0] == 'code') {
                 $this->parseCode($call[$c]);
+            }
+            elseif (($call[$c][0] == 'plugin') && ($call[$c][1][0] == 'data_entry')) {
+                $this->parseDataEntry($call[$c][1][1]);
             }
         }
     }
@@ -351,6 +354,26 @@ class refnotes_reference_database_page {
      */
     private function parseBibtex($text) {
         foreach (refnotes_bibtex_parser::getInstance()->parse($text) as $data) {
+            $this->handleNote($data);
+        }
+    }
+
+    /**
+     *
+     */
+    private function parseDataEntry($pluginData) {
+        if (preg_match('/\brefnotes\b/', $pluginData['classes'])) {
+            $data = array();
+
+            foreach ($pluginData['data'] as $key => $value) {
+                if (is_array($value)) {
+                    $data[$key . 's'] = implode(', ', $value);
+                }
+                else {
+                    $data[$key] = $value;
+                }
+            }
+
             $this->handleNote($data);
         }
     }

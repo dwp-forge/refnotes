@@ -757,7 +757,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
      *
      */
     public function getReferencePrivateDataSet() {
-        static $key = array('inline');
+        static $key = array('inline', 'pages', 'page');
 
         return $key;
     }
