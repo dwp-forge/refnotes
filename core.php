@@ -15,7 +15,7 @@ require_once(DOKU_PLUGIN . 'refnotes/scope.php');
 require_once(DOKU_PLUGIN . 'refnotes/refnote.php');
 require_once(DOKU_PLUGIN . 'refnotes/reference.php');
 require_once(DOKU_PLUGIN . 'refnotes/note.php');
-require_once(DOKU_PLUGIN . 'refnotes/renderer.php');
+require_once(DOKU_PLUGIN . 'refnotes/rendering.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_parser_core {
