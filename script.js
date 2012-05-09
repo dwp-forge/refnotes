@@ -1,4 +1,4 @@
-(function() {
+(function () {
     var floater = null;
     var tracking = false;
     var timer = null;
@@ -6,8 +6,8 @@
     function createFloater() {
         return jQuery('<div id="insitu__fn" />')
             .addClass('insitu-footnote JSpopup')
-            .css({ visibility: 'hidden', left: '0px', top: '0px' })
-            .mouseleave(function() { jQuery(this).hide(); })
+            .css({ visibility : 'hidden', left : '0px', top : '0px' })
+            .mouseleave(function () { jQuery(this).hide(); })
             .appendTo('.dokuwiki:first');
     }
 
@@ -23,7 +23,7 @@
     }
 
     var preview = {
-        setNoteId: function(id) {
+        setNoteId : function (id) {
             // locate the note span element
             var note = jQuery('#' + id.replace(/:/g, '\\:') + '\\:text');
             if (note.length == 0) {
@@ -40,25 +40,25 @@
             return true;
         },
 
-        show: function() {
+        show : function () {
             getFloater()
                 .css('visibility', 'visible')
                 .show();
         },
 
-        hide: function() {
+        hide : function () {
             // prevent creation of the floater and re-hiding it on window.scroll()
             if (floater && floater.is(':visible')) {
                 floater.hide();
             }
         },
 
-        move: function(event, dx, dy) {
+        move : function (event, dx, dy) {
             getFloater().position({
-                my: 'left top',
-                of: event,
-                offset: dx + ' ' + dy,
-                collision: 'flip'
+                my : 'left top',
+                of : event,
+                offset : dx + ' ' + dy,
+                collision : 'flip'
             });
         }
     };
@@ -68,8 +68,8 @@
     }
 
     plugin_refnotes = {
-        popup: {
-            show: function(event) {
+        popup : {
+            show : function (event) {
                 plugin_refnotes.tooltip.hide(event);
                 if (preview.setNoteId(getNoteId(event))) {
                     preview.move(event, 2, 2);
@@ -78,16 +78,16 @@
             }
         },
 
-        tooltip: {
-            show: function(event) {
+        tooltip : {
+            show : function (event) {
                 plugin_refnotes.tooltip.hide(event);
                 if (preview.setNoteId(getNoteId(event))) {
-                    timer = setTimeout(function() { preview.show(); }, 500);
+                    timer = setTimeout(function () { preview.show(); }, 500);
                     tracking = true;
                 }
             },
 
-            hide: function(event) {
+            hide : function (event) {
                 if (tracking) {
                     clearTimeout(timer);
                     tracking = false;
@@ -95,7 +95,7 @@
                 preview.hide();
             },
 
-            track: function(event) {
+            track : function (event) {
                 if (tracking) {
                     preview.move(event, 10, 12);
                 }
@@ -104,7 +104,7 @@
     };
 })();
 
-jQuery(function(){
+jQuery(function () {
     jQuery('a.refnotes-ref.note-popup').mouseenter(plugin_refnotes.popup.show);
     jQuery('a.refnotes-ref.note-tooltip')
         .mouseenter(plugin_refnotes.tooltip.show)

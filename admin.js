@@ -1,4 +1,4 @@
-var admin_refnotes = (function () {
+var refnotes_admin = (function () {
     var modified = false;
 
     function Hash() {
@@ -48,8 +48,7 @@ var admin_refnotes = (function () {
             return this.hasItem(key) ? this.items[key] : this.items[''];
         }
 
-        this.clear = function ()
-        {
+        this.clear = function () {
             for (var i in this.items) {
                 if (i != '') {
                     this.length--;
@@ -61,101 +60,64 @@ var admin_refnotes = (function () {
 
 
     function List(id) {
-        var list = $(id);
+        var list = jQuery(id);
 
-        function createOption(value)
-        {
-            var option = document.createElement('option');
-
-            option.innerHTML = value;
-            option.value     = value;
-            option.sorting   = value.replace(/:/g, '-').replace(/(-\w+)$/, '-$1');
-
-            return option;
+        function createOption(value) {
+            jQuery('<option>')
+                .html(value)
+                .val(value)
+                .prop('sorting', value.replace(/:/g, '-').replace(/(-\w+)$/, '-$1'))
+                .appendTo(list);
         }
 
-        function getOptionIndex(value) {
-            var index = -1;
-
-            for (var i = 0; i < list.options.length; i++) {
-                if (list.options[i].value == value) {
-                    index = i;
-                    break;
-                }
-            }
-
-            return index;
+        function sortOptions() {
+            list.append(list.children().get().sort(function (a, b) {
+                return a.sorting > b.sorting ? 1 : -1;
+            }));
         }
 
         this.getSelectedValue = function () {
-            return (list.selectedIndex != -1) ? list.options[list.selectedIndex].value : '';
+            return list.val();
         }
 
-        this.insertSorted = function (value, selected) {
-            var option        = createOption(value);
-            var nextOption    = null;
-            var selectedIndex = list.options.length;
+        this.insertSorted = function (value) {
+            createOption(value);
+            sortOptions();
 
-            for (var i = 0; i < list.options.length; i++) {
-                if (list.options[i].sorting > option.sorting) {
-                    nextOption    = list.options[i];
-                    selectedIndex = i;
-                    break;
-                }
-            }
-
-            if (nextOption != null) {
-                list.insertBefore(option, nextOption);
-            }
-            else {
-                list.appendChild(option);
-            }
-
-            if (selected) {
-                list.selectedIndex = selectedIndex;
-            }
-
-            return this.getSelectedValue();
+            return list.children('[value="' + value + '"]').attr('selected', 'selected').val();
         }
 
         this.update = function (values) {
-            list.options.length = 0;
+            list.empty();
 
             for (var value in values.items) {
                 if (value != '') {
-                    this.insertSorted(value, false);
+                    createOption(value);
                 }
             }
 
-            if (list.options.length > 0) {
-                list.selectedIndex = 0;
-            }
+            sortOptions();
 
-            return this.getSelectedValue();
+            return list.children(':first').attr('selected', 'selected').val();
         }
 
         this.removeValue = function (value) {
-            var index = getOptionIndex(value);
+            var option = list.children('[value="' + value + '"]');
 
-            if (index != -1) {
-                list.selectedIndex = (index == (list.options.length - 1)) ? index - 1 : index + 1;
-
-                list.remove(index);
+            if (option.length == 1) {
+                list.prop('selectedIndex', option.index() + (option.is(':last-child') ? -1 : 1));
+                option.remove();
             }
 
-            return this.getSelectedValue();
+            return list.val();
         }
 
         this.renameValue = function (oldValue, newValue) {
-            var index = getOptionIndex(oldValue);
-
-            if (index != -1) {
-                list.remove(index);
-
-                this.insertSorted(newValue, true);
+            if (list.children('[value="' + oldValue + '"]').remove().length == 1) {
+                this.insertSorted(newValue);
             }
 
-            return this.getSelectedValue();
+            return list.val();
         }
     }
 
@@ -689,7 +651,7 @@ var admin_refnotes = (function () {
             fields.push(new SelectField('back-ref-separator'));
             fields.push(new SelectField('scoping'));
 
-            list = new List('select-namespaces');
+            list = new List('#select-namespaces');
 
             addEvent($('select-namespaces'), 'change', onNamespaceChange);
             addEvent($('add-namespaces'), 'click', onAddNamespace);
@@ -714,7 +676,7 @@ var admin_refnotes = (function () {
 
                 namespaces.setItem(name, new Namespace(name));
 
-                setCurrent(list.insertSorted(name, true));
+                setCurrent(list.insertSorted(name));
 
                 modified = true;
             }
@@ -883,7 +845,7 @@ var admin_refnotes = (function () {
         }
 
         function initialize() {
-            list = new List('select-notes');
+            list = new List('#select-notes');
 
             addEvent($('select-notes'), 'change', onNoteChange);
             addEvent($('add-notes'), 'click', onAddNote);
@@ -911,7 +873,7 @@ var admin_refnotes = (function () {
 
                 notes.setItem(name, new Note(name));
 
-                setCurrent(list.insertSorted(name, true));
+                setCurrent(list.insertSorted(name));
 
                 modified = true;
             }
@@ -1109,8 +1071,8 @@ var admin_refnotes = (function () {
 })();
 
 
-addInitEvent(function () {
-    if ($('refnotes-config') != null) {
-        admin_refnotes.initialize();
+jQuery(function () {
+    if (jQuery('#refnotes-config').length != 0) {
+        refnotes_admin.initialize();
     }
 });
