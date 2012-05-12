@@ -335,6 +335,16 @@ class refnotes_before_ajax_call_unknown {
     /**
      *
      */
+    private function sendResponse($contentType, $data) {
+        static $cookie = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
+
+        header('Content-Type: ' . $contentType);
+        print($cookie . $data . $cookie);
+    }
+
+    /**
+     *
+     */
     private function sendConfig() {
         $namespace = refnotes_configuration::load('namespaces');
         $namespace = $this->translateStyles($namespace, 'dw', 'js');
@@ -346,8 +356,7 @@ class refnotes_before_ajax_call_unknown {
         $cookie = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
         $json = new JSON();
 
-        header('Content-Type: application/x-suggestions+json');
-        print($cookie . $json->encode($config) . $cookie);
+        $this->sendResponse('application/x-suggestions+json', $json->encode($config));
     }
 
     /**
@@ -374,8 +383,7 @@ class refnotes_before_ajax_call_unknown {
         /* Touch local config file to expire the cache */
         $saved = $saved && touch(reset($config_cascade['main']['local']));
 
-        header('Content-Type: text/plain');
-        print($saved ? 'saved' : 'failed');
+        $this->sendResponse('text/plain', $saved ? 'saved' : 'failed');
     }
 
     /**

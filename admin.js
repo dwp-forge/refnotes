@@ -154,103 +154,97 @@ var refnotes_admin = (function () {
 
 
     var server = (function () {
-        var ajax = new sack(DOKU_BASE + 'lib/exe/ajax.php');
         var timer = null;
         var transaction = null;
-        var onCompletion = null;
 
-        ajax.encodeURIString = false;
+        function sendRequest(request, data, success) {
+            if (transaction == null) {
+                transaction = request;
 
-        ajax.onLoading = function () {
-            setStatus(transaction, 'info');
-        }
+                jQuery.ajax({
+                    cache : false,
+                    data : data,
+                    global : false,
+                    success : success,
+                    type : 'POST',
+                    timeout : 10000,
+                    url : DOKU_BASE + 'lib/exe/ajax.php',
+                    beforeSend : function () {
+                        setStatus('info', transaction);
+                    },
+                    error : function (xhr, status, message) {
+                        setErorrStatus((status == 'parseerror') ? 'invalid_data' : transaction + '_failed', message);
+                    },
+                    dataFilter : function (data) {
+                        var cookie = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
+                        var match = data.match(new RegExp(cookie + '(.+?)' + cookie));
 
-        ajax.afterCompletion = function () {
-            if (ajax.responseStatus[0] == '200') {
-                onCompletion();
+                        if ((match == null) || (match.length != 2)) {
+                            throw 'Malformed response';
+                        }
+
+                        return match[1];
+                    },
+                    complete : function () {
+                        transaction = null;
+                    }
+                });
             }
             else {
-                setStatus(transaction + '_failed', 'error');
-            }
-
-            transaction = null;
-            onCompletion = null;
-        }
-
-        function onLoaded() {
-            try {
-                var cookie = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
-                var pattern = new RegExp(cookie + '(.+?)' + cookie);
-                var response = ajax.response.match(pattern);
-
-                if ((response == null) || (response.length != 2)) {
-                    throw 'invalid';
-                }
-
-                var settings = JSON.parse(response[1]);
-
-                setStatus('loaded', 'success', 3000);
-
-                reloadSettings(settings);
-            }
-            catch (error) {
-                setStatus('invalid_data', 'error');
-            }
-        }
-
-        function onSaved() {
-            if (ajax.response == 'saved') {
-                modified = false;
-
-                setStatus('saved', 'success', 10000);
-            }
-            else {
-                setStatus('saving_failed', 'error');
+                setErorrStatus(request + '_failed', 'Server is busy');
             }
         }
 
         function loadSettings() {
-            if (!ajax.failed && (transaction == null)) {
-                transaction = 'loading';
-                onCompletion = onLoaded;
-
-                ajax.setVar('call', 'refnotes-admin');
-                ajax.setVar('action', 'load-settings');
-                ajax.runAJAX();
-            }
-            else {
-                setStatus('loading_failed', 'error');
-            }
+            sendRequest('loading', {
+                call : 'refnotes-admin',
+                action : 'load-settings'
+            }, function (data) {
+                setSuccessStatus('loaded', 3000);
+                reloadSettings(data);
+            });
         }
 
         function saveSettings(settings) {
-            if (!ajax.failed && (transaction == null)) {
-                transaction = 'saving';
-                onCompletion = onSaved;
+            sendRequest('saving', {
+                call : 'refnotes-admin',
+                action : 'save-settings',
+                settings : JSON.stringify(settings)
+            }, function (data) {
+                if (data == 'saved') {
+                    modified = false;
 
-                ajax.setVar('call', 'refnotes-admin');
-                ajax.setVar('action', 'save-settings');
-                ajax.setVar('settings', JSON.stringify(settings));
-
-                ajax.runAJAX();
-            }
-            else {
-                setStatus('saving_failed', 'error');
-            }
+                    setSuccessStatus('saved', 10000);
+                }
+                else {
+                    setErrorStatus('saving_failed', 'Server FS access error');
+                }
+            });
         }
 
-        function setStatus(textId, styleId, timeout) {
-            var status = $('server-status');
-            status.className = styleId;
-            status.innerHTML = locale.getString(textId);
+        function setStatus(status, message) {
+            window.clearTimeout(timer);
 
-            if (typeof(timeout) != 'undefined') {
-                timer = window.setTimeout(clearStatus, timeout);
+            if (message.match(/^\w+$/) != null) {
+                message = locale.getString(message);
             }
+
+            jQuery('#server-status')
+                .removeClass()
+                .addClass(status)
+                .text(message);
         }
 
-        function clearStatus() {
-            setStatus('status', 'cleared');
+        function setErorrStatus(messageId, details) {
+            setStatus('error', locale.getString(messageId, details));
+        }
+
+        function setSuccessStatus(messageId, timeout) {
+            setStatus('success', messageId);
+
+            timer = window.setTimeout(function () {
+                setStatus('cleared', 'status');
+            }, timeout);
         }
 
         return {
