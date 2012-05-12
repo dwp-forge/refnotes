@@ -126,31 +126,20 @@ var refnotes_admin = (function () {
         var lang = new Hash();
 
         function initialize() {
-            var element = $('refnotes-lang');
-            if (element != null) {
-                var strings = element.innerHTML.split(/:eos:/);
-
-                for (var i = 0; i < strings.length; i++) {
-                    var match = strings[i].match(/^\s*(\w+) : (.+)/);
-
-                    if (match != null) {
-                        lang.setItem(match[1], match[2]);
-                    }
+            jQuery.each(jQuery('#refnotes-lang').html().split(/:eos:/), function (key, value) {
+                var match = value.match(/^\s*(\w+) : (.+)/);
+                if (match != null) {
+                    lang.setItem(match[1], match[2]);
                 }
-            }
+            });
         }
 
         function getString(key) {
-            var string = '';
+            var string = lang.hasItem(key) ? lang.getItem(key) : '';
 
-            if (lang.hasItem(key)) {
-                string = lang.getItem(key);
-
-                if (arguments.length > 1) {
-                    for (var i = 1; i < arguments.length; i++) {
-                        var regexp = new RegExp('\\{' + i + '\\}');
-                        string = string.replace(regexp, arguments[i]);
-                    }
+            if ((string.length > 0) && (arguments.length > 1)) {
+                for (var i = 1; i < arguments.length; i++) {
+                    string = string.replace(new RegExp('\\{' + i + '\\}'), arguments[i]);
                 }
             }
 
