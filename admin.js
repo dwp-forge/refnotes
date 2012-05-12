@@ -62,7 +62,7 @@ var refnotes_admin = (function () {
     function List(id) {
         var list = jQuery(id);
 
-        function createOption(value) {
+        function appendOption(value) {
             jQuery('<option>')
                 .html(value)
                 .val(value)
@@ -80,19 +80,19 @@ var refnotes_admin = (function () {
             return list.val();
         }
 
-        this.insertSorted = function (value) {
-            createOption(value);
+        this.insertValue = function (value) {
+            appendOption(value);
             sortOptions();
 
             return list.children('[value="' + value + '"]').attr('selected', 'selected').val();
         }
 
-        this.update = function (values) {
+        this.reload = function (values) {
             list.empty();
 
             for (var value in values.items) {
                 if (value != '') {
-                    createOption(value);
+                    appendOption(value);
                 }
             }
 
@@ -114,7 +114,7 @@ var refnotes_admin = (function () {
 
         this.renameValue = function (oldValue, newValue) {
             if (list.children('[value="' + oldValue + '"]').remove().length == 1) {
-                this.insertSorted(newValue);
+                this.insertValue(newValue);
             }
 
             return list.val();
@@ -404,7 +404,7 @@ var refnotes_admin = (function () {
         var namespaces = new NameHash(new DefaultNamespace());
         var current    = namespaces.getItem('');
         var defaults   = new Hash(
-            'refnote-id'         , 'numeric',
+            'refnote-id'           , 'numeric',
             'reference-base'       , 'super',
             'reference-font-weight', 'normal',
             'reference-font-style' , 'normal',
@@ -676,7 +676,7 @@ var refnotes_admin = (function () {
 
                 namespaces.setItem(name, new Namespace(name));
 
-                setCurrent(list.insertSorted(name));
+                setCurrent(list.insertValue(name));
 
                 modified = true;
             }
@@ -726,7 +726,7 @@ var refnotes_admin = (function () {
             $('name-namespaces').disabled = false;
             $('add-namespaces').disabled  = false;
 
-            setCurrent(list.update(namespaces));
+            setCurrent(list.reload(namespaces));
         }
 
         function setCurrent(name) {
@@ -873,7 +873,7 @@ var refnotes_admin = (function () {
 
                 notes.setItem(name, new Note(name));
 
-                setCurrent(list.insertSorted(name));
+                setCurrent(list.insertValue(name));
 
                 modified = true;
             }
@@ -935,7 +935,7 @@ var refnotes_admin = (function () {
             $('name-notes').disabled = false;
             $('add-notes').disabled  = false;
 
-            setCurrent(list.update(notes));
+            setCurrent(list.reload(notes));
         }
 
         function setCurrent(name) {
