@@ -162,13 +162,13 @@ var refnotes_admin = (function () {
                 transaction = request;
 
                 jQuery.ajax({
-                    cache : false,
-                    data : data,
-                    global : false,
+                    cache   : false,
+                    data    : data,
+                    global  : false,
                     success : success,
-                    type : 'POST',
+                    type    : 'POST',
                     timeout : 10000,
-                    url : DOKU_BASE + 'lib/exe/ajax.php',
+                    url     : DOKU_BASE + 'lib/exe/ajax.php',
                     beforeSend : function () {
                         setStatus('info', transaction);
                     },
@@ -197,7 +197,7 @@ var refnotes_admin = (function () {
 
         function loadSettings() {
             sendRequest('loading', {
-                call : 'refnotes-admin',
+                call   : 'refnotes-admin',
                 action : 'load-settings'
             }, function (data) {
                 setSuccessStatus('loaded', 3000);
@@ -207,8 +207,8 @@ var refnotes_admin = (function () {
 
         function saveSettings(settings) {
             sendRequest('saving', {
-                call : 'refnotes-admin',
-                action : 'save-settings',
+                call     : 'refnotes-admin',
+                action   : 'save-settings',
                 settings : JSON.stringify(settings)
             }, function (data) {
                 if (data == 'saved') {
