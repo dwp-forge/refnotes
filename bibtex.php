@@ -491,7 +491,7 @@ class refnotes_bibtex_entry_stash {
      *
      */
     private function isValidRefnotesName($name) {
-        return preg_match('/^(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*$/', $name) == 1;
+        return preg_match('/^' . refnotes_note::getNamePattern('full-extended') . '$/', $name) == 1;
     }
 
     /**

@@ -230,6 +230,19 @@ class refnotes_namespace {
     private $newScope;
 
     /**
+     *
+     */
+    public static function getNamePattern($type) {
+        $result = '(?:(?:' . refnotes_note::getNamePattern('strict') . ')?:)*';
+
+        if ($type == 'required') {
+            $result .= refnotes_note::getNamePattern('strict') . ':*';
+        }
+
+        return $result;
+    }
+
+    /**
      * Returns canonic name for a namespace
      */
     public static function canonizeName($name) {

@@ -45,22 +45,27 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         if (refnotes_configuration::getSetting('replace-footnotes')) {
             $entry = '(?:\(\(|\[\()';
             $exit = '(?:\)\)|\)\])';
-            $name ='(?:@@FNT\d+|#\d+|[[:alpha:]]\w*)';
+            $id = '@@FNT\d+|#\d+';
         }
         else {
             $entry = '\[\(';
             $exit = '\)\]';
-            $name ='(?:#\d+|[[:alpha:]]\w*)';
+            $id = '#\d+';
         }
 
-        $optionalNamespace ='(?:(?:[[:alpha:]]\w*)?:)*';
+        $strictName = refnotes_note::getNamePattern('strict');
+        $extendedName = refnotes_note::getNamePattern('extended');
+        $namespace = refnotes_namespace::getNamePattern('optional');
+
         $text = '.*?';
 
-        $fullName = '\s*' . $optionalNamespace . $name .'\s*';
+        $strictName = '(?:' . $id . '|' . $strictName . ')';
+        $fullName = '\s*(?:' . $namespace . $strictName . '|:' . $namespace . $extendedName . ')\s*';
         $lookaheadExit = '(?=' . $exit . ')';
         $nameEntry = $fullName . $lookaheadExit;
 
-        $optionalFullName = $optionalNamespace . $name .'?';
+        $extendedName = '(?:' . $id . '|' . $extendedName . ')';
+        $optionalFullName = $namespace . $extendedName . '?';
         $structuredEntry = '\s*' . $optionalFullName . '\s*>>' . $text  . $lookaheadExit;
 
         $define = '\s*' . $optionalFullName . '\s*>\s*';

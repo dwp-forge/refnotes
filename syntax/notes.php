@@ -134,8 +134,8 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      *
      */
     private function parseAttributes($syntax) {
-        static $propertyMatch = array(
-            'ns' => '/^(:|:*([[:alpha:]]\w*:+)*?[[:alpha:]]\w*:*)$/',
+        $propertyMatch = array(
+            'ns' => '/^' . refnotes_namespace::getNamePattern('required') . '$/',
             'limit' => '/^\/?\d+$/'
         );
 

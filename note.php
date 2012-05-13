@@ -117,6 +117,21 @@ class refnotes_note extends refnotes_refnote {
     protected $processed;
 
     /**
+     *
+     */
+    public static function getNamePattern($type) {
+        if (($type == 'full-extended') || ($type == 'extended')) {
+            $result = ($type == 'full-extended') ? refnotes_namespace::getNamePattern('optional') : '';
+            $result .= '[[:alpha:]][\w.&\(\)\[\]{}+-]*';
+        }
+        else {
+            $result = '[[:alpha:]]\w*';
+        }
+
+        return $result;
+    }
+
+    /**
      * Constructor
      */
     public function __construct($scope, $namespaceName, $name) {

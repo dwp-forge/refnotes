@@ -453,7 +453,7 @@ class refnotes_reference_database_note extends refnotes_refnote {
      */
     public function initializePageNote($data) {
         if (isset($data['note-name'])) {
-            if (preg_match('/(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*/', $data['note-name']) == 1) {
+            if (preg_match('/^' . refnotes_note::getNamePattern('full-extended') . '$/', $data['note-name']) == 1) {
                 $this->nameParts = refnotes_namespace::parseName($data['note-name']);
             }
 
