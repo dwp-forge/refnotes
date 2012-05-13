@@ -11,8 +11,6 @@
 if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
 require_once(DOKU_PLUGIN . 'admin.php');
-require_once(DOKU_PLUGIN . 'refnotes/info.php');
-require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
@@ -28,13 +26,6 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
 
         $this->html = new refnotes_html_sink();
         $this->locale = refnotes_localization::getInstance();
-    }
-
-    /**
-     * Return some info
-     */
-    public function getInfo() {
-        return refnotes_getInfo('configuration interface');
     }
 
     /**

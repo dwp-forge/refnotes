@@ -11,7 +11,6 @@
 if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
 require_once(DOKU_PLUGIN . 'syntax.php');
-require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 require_once(DOKU_PLUGIN . 'refnotes/core.php');
 
@@ -24,13 +23,6 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      */
     public function __construct() {
         $this->mode = substr(get_class($this), 7);
-    }
-
-    /**
-     * Return some info
-     */
-    public function getInfo() {
-        return refnotes_getInfo('notes syntax');
     }
 
     /**

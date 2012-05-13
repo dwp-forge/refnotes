@@ -12,7 +12,6 @@ if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
 require_once(DOKU_INC . 'inc/JSON.php');
 require_once(DOKU_PLUGIN . 'action.php');
-require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
@@ -39,13 +38,6 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $this->beforeParserCacheUse = new refnotes_before_parser_cache_use();
         $this->beforeParserWikitextPreprocess = new refnotes_before_parser_wikitext_preprocess();
         $this->beforeTplMetaheaderOutput = new refnotes_before_tpl_metaheader_output();
-    }
-
-    /**
-     * Return some info
-     */
-    public function getInfo() {
-        return refnotes_getInfo('event handler');
     }
 
     /**

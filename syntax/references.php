@@ -11,7 +11,6 @@
 if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
 require_once(DOKU_PLUGIN . 'syntax.php');
-require_once(DOKU_PLUGIN . 'refnotes/info.php');
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
 require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
@@ -76,13 +75,6 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         $this->entryPattern = $entry . '(?:' . $nameEntry . '|' . $structuredEntry . '|' . $defineEntry . ')';
         $this->exitPattern = $exit;
         $this->handlePattern = '/' . $entry . '\s*(' . $optionalFullName . ')\s*(?:>>(.*))?(.*)/s';
-    }
-
-    /**
-     * Return some info
-     */
-    public function getInfo() {
-        return refnotes_getInfo('references syntax');
     }
 
     /**
