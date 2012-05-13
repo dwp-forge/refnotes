@@ -263,21 +263,19 @@ var refnotes_admin = (function () {
         );
 
         function Field(settingName) {
-            this.element = $('field-' + settingName);
+            this.element = jQuery('#field-' + settingName);
 
-            this.updateDefault = function (value) {
-                var cell = this.element.parentNode.parentNode;
+            this.element.change(this, function (event) {
+                event.data.updateDefault();
+                modified = true;
+            });
 
-                if (value == defaults.getItem(settingName)) {
-                    addClass(cell, 'default');
-                }
-                else {
-                    removeClass(cell, 'default');
-                }
+            this.updateDefault = function () {
+                this.element.parents('td').toggleClass('default', this.getValue() == defaults.getItem(settingName));
             }
 
             this.enable = function (enable) {
-                this.element.disabled = !enable;
+                this.element.prop('disabled', !enable);
             }
         }
 
@@ -285,26 +283,13 @@ var refnotes_admin = (function () {
             this.baseClass = Field;
             this.baseClass(settingName);
 
-            var check = this.element;
-            var self  = this;
-
-            addEvent(check, 'change', function () {
-                self.onChange();
-            });
-
-            this.onChange = function () {
-                this.updateDefault(check.checked);
-
-                modified = true;
-            }
-
             this.setValue = function (value) {
-                check.checked = value;
-                this.updateDefault(check.checked);
+                this.element.attr('checked', value);
+                this.updateDefault();
             }
 
             this.getValue = function () {
-                return check.checked;
+                return this.element.is(':checked');
             }
 
             this.setValue(defaults.getItem(settingName));
@@ -315,26 +300,13 @@ var refnotes_admin = (function () {
             this.baseClass = Field;
             this.baseClass(settingName);
 
-            var edit = this.element;
-            var self = this;
-
-            addEvent(edit, 'change', function () {
-                self.onChange();
-            });
-
-            this.onChange = function () {
-                this.updateDefault(edit.value);
-
-                modified = true;
-            }
-
             this.setValue = function (value) {
-                edit.value = value;
-                this.updateDefault(edit.value);
+                this.element.val(value);
+                this.updateDefault();
             }
 
             this.getValue = function () {
-                return edit.value;
+                return this.element.val();
             }
 
             this.setValue(defaults.getItem(settingName));
@@ -515,15 +487,12 @@ var refnotes_admin = (function () {
         }
 
         function Field(styleName) {
-            this.element = $('field-' + styleName);
+            this.element = jQuery('#field-' + styleName);
 
             this.updateInheretance = function () {
-                var cell = this.element.parentNode.parentNode;
-
-                removeClass(cell, 'default');
-                removeClass(cell, 'inherited');
-
-                addClass(cell, current.getStyleInheritance(styleName));
+                this.element.parents('td')
+                    .removeClass('default inherited')
+                    .addClass(current.getStyleInheritance(styleName));
             }
         }
 
@@ -532,22 +501,17 @@ var refnotes_admin = (function () {
             this.baseClass(styleName);
 
             var combo = this.element;
-            var self  = this;
 
-            addEvent(combo, 'change', function () {
-                self.onChange();
+            combo.change(this, function (event) {
+                event.data.onChange();
             });
 
             function setSelection(value) {
-                for (var o = 0; o < combo.options.length; o++) {
-                    if (combo.options[o].value == value) {
-                        combo.options[o].selected = true;
-                    }
-                }
+                combo.children('[value="' + value + '"]').attr('selected', 'selected');
             }
 
             this.onChange = function () {
-                var value = combo.options[combo.selectedIndex].value;
+                var value = combo.val();
 
                 current.setStyle(styleName, value);
 
@@ -563,7 +527,7 @@ var refnotes_admin = (function () {
             this.update = function () {
                 this.updateInheretance();
                 setSelection(current.getStyle(styleName));
-                combo.disabled = current.isReadOnly();
+                combo.prop('disabled', current.isReadOnly());
             }
         }
 
@@ -572,15 +536,14 @@ var refnotes_admin = (function () {
             this.baseClass(styleName);
 
             var edit   = this.element;
-            var button = $(this.element.id + '-inherit');
-            var self   = this;
+            var button = jQuery('#field-' + styleName + '-inherit');
 
-            addEvent(edit, 'change', function () {
-                self.setValue(validate(edit.value));
+            edit.change(this, function (event) {
+                event.data.setValue(validate(edit.val()));
             });
 
-            addEvent(button, 'click', function () {
-                self.setValue('inherit');
+            button.click(this, function (event) {
+                event.data.setValue('inherit');
             });
 
             this.setValue = function (value) {
@@ -588,8 +551,8 @@ var refnotes_admin = (function () {
 
                 this.updateInheretance();
 
-                if ((edit.value != value) || (value == 'inherit') || current.isReadOnly()) {
-                    edit.value = current.getStyle(styleName);
+                if ((edit.val() != value) || (value == 'inherit') || current.isReadOnly()) {
+                    edit.val(current.getStyle(styleName));
                 }
 
                 modified = true;
@@ -598,9 +561,9 @@ var refnotes_admin = (function () {
             this.update = function () {
                 this.updateInheretance();
 
-                edit.value      = current.getStyle(styleName);
-                edit.disabled   = current.isReadOnly();
-                button.disabled = current.isReadOnly();
+                edit.val(current.getStyle(styleName));
+                edit.prop('disabled', current.isReadOnly());
+                button.prop('disabled', current.isReadOnly());
             }
         }
 
@@ -614,10 +577,7 @@ var refnotes_admin = (function () {
             fields.push(new SelectField('multi-ref-id'));
             fields.push(new SelectField('note-preview'));
             fields.push(new TextField('notes-separator', function (value) {
-                if (value.match(/(?:\d+\.?|\d*\.\d+)(?:%|em|px)|none/) == null) {
-                    value = 'none';
-                }
-                return value;
+                return (value.match(/(?:\d+\.?|\d*\.\d+)(?:%|em|px)|none/) != null) ? value : 'none';
             }));
             fields.push(new SelectField('note-text-align'));
             fields.push(new SelectField('note-font-size'));
@@ -636,15 +596,11 @@ var refnotes_admin = (function () {
 
             list = new List('#select-namespaces');
 
-            addEvent($('select-namespaces'), 'change', onNamespaceChange);
-            addEvent($('add-namespaces'), 'click', onAddNamespace);
-            addEvent($('rename-namespaces'), 'click', onRenameNamespace);
-            addEvent($('delete-namespaces'), 'click', onDeleteNamespace);
-
-            $('name-namespaces').disabled   = true;
-            $('add-namespaces').disabled    = true;
-            $('rename-namespaces').disabled = true;
-            $('delete-namespaces').disabled = true;
+            jQuery('#select-namespaces').change(onNamespaceChange);
+            jQuery('#name-namespaces').prop('disabled', true);
+            jQuery('#add-namespaces').click(onAddNamespace).prop('disabled', true);
+            jQuery('#rename-namespaces').click(onRenameNamespace).prop('disabled', true);
+            jQuery('#delete-namespaces').click(onDeleteNamespace).prop('disabled', true);
 
             updateFields();
         }
@@ -655,7 +611,7 @@ var refnotes_admin = (function () {
 
         function onAddNamespace(event) {
             try {
-                var name = validateName($('name-namespaces').value, 'ns', namespaces);
+                var name = validateName(jQuery('#name-namespaces').val(), 'ns', namespaces);
 
                 namespaces.setItem(name, new Namespace(name));
 
@@ -670,7 +626,7 @@ var refnotes_admin = (function () {
 
         function onRenameNamespace(event) {
             try {
-                var newName = validateName($('name-namespaces').value, 'ns', namespaces);
+                var newName = validateName(jQuery('#name-namespaces').val(), 'ns', namespaces);
                 var oldName = current.getName();
 
                 current.setName(newName);
@@ -706,8 +662,8 @@ var refnotes_admin = (function () {
                 }
             }
 
-            $('name-namespaces').disabled = false;
-            $('add-namespaces').disabled  = false;
+            jQuery('#name-namespaces').prop('disabled', false);
+            jQuery('#add-namespaces').prop('disabled', false);
 
             setCurrent(list.reload(namespaces));
         }
@@ -719,9 +675,9 @@ var refnotes_admin = (function () {
         }
 
         function updateFields() {
-            $('name-namespaces').value      = current.getName();
-            $('rename-namespaces').disabled = current.isReadOnly();
-            $('delete-namespaces').disabled = current.isReadOnly();
+            jQuery('#name-namespaces').val(current.getName());
+            jQuery('#rename-namespaces').prop('disabled', current.isReadOnly());
+            jQuery('#delete-namespaces').prop('disabled', current.isReadOnly());
 
             for (var i = 0; i < fields.length; i++) {
                 fields[i].update();
@@ -830,18 +786,13 @@ var refnotes_admin = (function () {
         function initialize() {
             list = new List('#select-notes');
 
-            addEvent($('select-notes'), 'change', onNoteChange);
-            addEvent($('add-notes'), 'click', onAddNote);
-            addEvent($('rename-notes'), 'click', onRenameNote);
-            addEvent($('delete-notes'), 'click', onDeleteNote);
-
-            addEvent($('field-note-text'), 'change', onTextChange);
-            addEvent($('field-inline'), 'change', onInlineChange);
-
-            $('name-notes').disabled   = true;
-            $('add-notes').disabled    = true;
-            $('rename-notes').disabled = true;
-            $('delete-notes').disabled = true;
+            jQuery('#select-notes').change(onNoteChange);
+            jQuery('#name-notes').prop('disabled', true);
+            jQuery('#add-notes').click(onAddNote).prop('disabled', true);
+            jQuery('#rename-notes').click(onRenameNote).prop('disabled', true);
+            jQuery('#delete-notes').click(onDeleteNote).prop('disabled', true);
+            jQuery('#field-note-text').change(onTextChange);
+            jQuery('#field-inline').change(onInlineChange);
 
             updateFields();
         }
@@ -852,7 +803,7 @@ var refnotes_admin = (function () {
 
         function onAddNote(event) {
             try {
-                var name = validateName($('name-notes').value, 'note', notes);
+                var name = validateName(jQuery('#name-notes').val(), 'note', notes);
 
                 notes.setItem(name, new Note(name));
 
@@ -867,7 +818,7 @@ var refnotes_admin = (function () {
 
         function onRenameNote(event) {
             try {
-                var newName = validateName($('name-notes').value, 'note', notes);
+                var newName = validateName(jQuery('#name-notes').val(), 'note', notes);
                 var oldName = current.getName();
 
                 current.setName(newName);
@@ -915,8 +866,8 @@ var refnotes_admin = (function () {
                 }
             }
 
-            $('name-notes').disabled = false;
-            $('add-notes').disabled  = false;
+            jQuery('#name-notes').prop('disabled', false);
+            jQuery('#add-notes').prop('disabled', false);
 
             setCurrent(list.reload(notes));
         }
@@ -928,19 +879,11 @@ var refnotes_admin = (function () {
         }
 
         function updateFields() {
-            $('name-notes').value      = current.getName();
-            $('rename-notes').disabled = current.isReadOnly();
-            $('delete-notes').disabled = current.isReadOnly();
-
-            var field = $('field-note-text');
-
-            field.value    = current.getText();
-            field.disabled = current.isReadOnly();
-
-            field = $('field-inline');
-
-            field.checked  = current.isInline();
-            field.disabled = current.isReadOnly();
+            jQuery('#name-notes').val(current.getName());
+            jQuery('#rename-notes').prop('disabled', current.isReadOnly());
+            jQuery('#delete-notes').prop('disabled', current.isReadOnly());
+            jQuery('#field-note-text').val(current.getText()).prop('disabled', current.isReadOnly());
+            jQuery('#field-inline').attr('checked', current.isInline()).prop('disabled', current.isReadOnly());
         }
 
         function getSettings() {
@@ -967,13 +910,13 @@ var refnotes_admin = (function () {
         namespaces.initialize();
         notes.initialize();
 
-        addEvent($('save-config'), 'click', function (event) {
+        jQuery('#save-config').click(function () {
             saveSettings();
         });
 
         window.onbeforeunload = onBeforeUnload;
 
-        $('server-status').style.display = 'block';
+        jQuery('#server-status').show();
 
         server.loadSettings();
     }
@@ -1032,20 +975,6 @@ var refnotes_admin = (function () {
         }
 
         return name;
-    }
-
-    function addClass(element, className) {
-        if (className != '') {
-            var regexp = new RegExp('\\b' + className + '\\b');
-            if (!element.className.match(regexp)) {
-                element.className = (element.className + ' ' + className).replace(/^\s/, '');
-            }
-        }
-    }
-
-    function removeClass(element, className) {
-        var regexp = new RegExp('\\b' + className + '\\b');
-        element.className = element.className.replace(regexp, '').replace(/^\s|(\s)\s|\s$/g, '$1');
     }
 
     return {
