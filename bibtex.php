@@ -482,7 +482,7 @@ class refnotes_bibtex_entry_stash {
             $data = $entry->getData($this->strings);
 
             if (isset($data['ns']) && $this->isValidRefnotesName($data['ns'])) {
-                $this->namespace = refnotes_canonizeNamespace($data['ns']);
+                $this->namespace = refnotes_namespace::canonizeName($data['ns']);
             }
         }
     }

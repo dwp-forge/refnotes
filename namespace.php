@@ -7,36 +7,6 @@
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
  */
 
-/**
- * Returns canonic name for a namespace
- */
-function refnotes_canonizeNamespace($name) {
-    return preg_replace('/:{2,}/', ':', ':' . $name . ':');
-}
-
-/**
- * Returns name of the parent namespace
- */
-function refnotes_getParentNamespace($name) {
-    return preg_replace('/\w*:$/', '', $name);
-}
-
-/**
- * Splits full note name into namespace and name components
- */
-function refnotes_parseName($name) {
-    $pos = strrpos($name, ':');
-    if ($pos !== false) {
-        $namespace = refnotes_canonizeNamespace(substr($name, 0, $pos));
-        $name = substr($name, $pos + 1);
-    }
-    else {
-        $namespace = ':';
-    }
-
-    return array($namespace, $name);
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 abstract class refnotes_namespace_data_stash {
 
@@ -135,7 +105,7 @@ class refnotes_namespace_style_stash extends refnotes_namespace_data_stash {
 
         if (($parent == '') && ($namespace->getScopesCount() == 1)) {
             /* Default inheritance for the first scope */
-            $parent = refnotes_getParentNamespace($namespace->getName());
+            $parent = refnotes_namespace::getParentName($namespace->getName());
         }
 
         $index = $namespace->getStyleIndex($this->page->findParentNamespace($parent));
@@ -258,6 +228,36 @@ class refnotes_namespace {
     private $renderer;
     private $scope;
     private $newScope;
+
+    /**
+     * Returns canonic name for a namespace
+     */
+    public static function canonizeName($name) {
+        return preg_replace('/:{2,}/', ':', ':' . $name . ':');
+    }
+
+    /**
+     * Returns name of the parent namespace
+     */
+    public static function getParentName($name) {
+        return preg_replace('/\w*:$/', '', $name);
+    }
+
+    /**
+     * Splits full note name into namespace and name components
+     */
+    public static function parseName($name) {
+        $pos = strrpos($name, ':');
+        if ($pos !== false) {
+            $namespace = self::canonizeName(substr($name, 0, $pos));
+            $name = substr($name, $pos + 1);
+        }
+        else {
+            $namespace = ':';
+        }
+
+        return array($namespace, $name);
+    }
 
     /**
      * Constructor

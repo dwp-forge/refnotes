@@ -152,7 +152,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
 
         if (array_key_exists('ns', $attribute)) {
             /* Ensure that namespaces are in canonic form */
-            $attribute['ns'] = array_map('refnotes_canonizeNamespace', $attribute['ns']);
+            $attribute['ns'] = array_map('refnotes_namespace::canonizeName', $attribute['ns']);
 
             if (count($attribute['ns']) > 1) {
                 $attribute['map'] = array_slice($attribute['ns'], 1);
@@ -193,7 +193,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
 
         /* Ensure that namespaces are in canonic form */
         if (array_key_exists('inherit', $style)) {
-            $style['inherit'] = refnotes_canonizeNamespace($style['inherit']);
+            $style['inherit'] = refnotes_namespace::canonizeName($style['inherit']);
         }
 
         return $style;

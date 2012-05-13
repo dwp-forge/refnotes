@@ -228,7 +228,7 @@ abstract class refnotes_core {
      */
     public function findParentNamespace($name) {
         while (($name != '') && !array_key_exists($name, $this->namespace)) {
-            $name = refnotes_getParentNamespace($name);
+            $name = refnotes_namespace::getParentName($name);
         }
 
         return ($name != '') ? $this->namespace[$name] : NULL;
@@ -269,7 +269,7 @@ abstract class refnotes_core {
      */
     protected function createNamespace($name) {
         if ($name != ':') {
-            $parentName = refnotes_getParentNamespace($name);
+            $parentName = refnotes_namespace::getParentName($name);
             $parent = $this->getNamespace($parentName);
             $this->namespace[$name] = new refnotes_namespace($name, $parent);
         }

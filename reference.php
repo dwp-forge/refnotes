@@ -41,7 +41,7 @@ class refnotes_parser_reference extends refnotes_refnote {
      * Constructor
      */
     public function __construct($name, $data) {
-        list($namespace, $name) = refnotes_parseName($name);
+        list($namespace, $name) = refnotes_namespace::parseName($name);
 
         if (preg_match('/(?:@@FNT|#)(\d+)/', $name, $match) == 1) {
             $name = intval($match[1]);

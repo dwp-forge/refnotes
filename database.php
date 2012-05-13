@@ -152,7 +152,7 @@ class refnotes_reference_database {
         $found = array_key_exists($name, $this->note);
 
         if (!$found) {
-            list($namespace, $temp) = refnotes_parseName($name);
+            list($namespace, $temp) = refnotes_namespace::parseName($name);
 
             if (array_key_exists($namespace, $this->namespace)) {
                 $this->loadNamespaceNotes($namespace);
@@ -454,7 +454,7 @@ class refnotes_reference_database_note extends refnotes_refnote {
     public function initializePageNote($data) {
         if (isset($data['note-name'])) {
             if (preg_match('/(?:(?:[[:alpha:]]\w*)?:)*[[:alpha:]]\w*/', $data['note-name']) == 1) {
-                $this->nameParts = refnotes_parseName($data['note-name']);
+                $this->nameParts = refnotes_namespace::parseName($data['note-name']);
             }
 
             unset($data['note-name']);
