@@ -141,7 +141,7 @@ class refnotes_renderer_reference extends refnotes_reference {
 
         if (!$this->hidden) {
             if ($this->inline) {
-                $html = '<sup>' . $this->note->getText() . '</sup>';
+                $html = $this->note->getText();
             }
             else {
                 $html = $this->note->getScope()->getRenderer()->renderReference($this);
