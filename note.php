@@ -87,6 +87,13 @@ class refnotes_note_mock {
     /**
      *
      */
+    public function getScope() {
+        return new refnotes_scope_mock();
+    }
+
+    /**
+     *
+     */
     public function setText($text) {
     }
 
@@ -94,7 +101,6 @@ class refnotes_note_mock {
      *
      */
     public function addReference($reference) {
-        return new refnotes_reference_mock($this);
     }
 }
 
@@ -154,8 +160,8 @@ class refnotes_note extends refnotes_refnote {
     /**
      *
      */
-    public function getFullName() {
-        return $this->namespaceName . $this->name;
+    public function getNamespaceName() {
+        return $this->namespaceName;
     }
 
     /**

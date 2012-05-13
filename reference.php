@@ -8,33 +8,6 @@
  */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_reference_mock {
-
-    private $note;
-
-    /**
-     * Constructor
-     */
-    public function __construct($note) {
-        $this->note = $note;
-    }
-
-    /**
-     *
-     */
-    public function getNote() {
-        return $this->note;
-    }
-
-    /**
-     *
-     */
-    public function render() {
-        return '';
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_parser_reference extends refnotes_refnote {
 
     /**

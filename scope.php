@@ -37,6 +37,20 @@ class refnotes_scope_mock {
     public function isOpen() {
         return false;
     }
+
+    /**
+     *
+     */
+    public function getRenderer() {
+        return new refnotes_renderer_mock();
+    }
+
+    /**
+     *
+     */
+    public function getReferenceId() {
+        return 0;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,13 +163,14 @@ class refnotes_scope {
 
         if ($noteName != '') {
             if (is_int($noteName)) {
-                $noteName = '#' . $noteName;
+                $getter = 'getId';
+            }
+            else {
+                $getter = 'getName';
             }
 
-            $fullName = $namespaceName . $noteName;
-
             foreach ($this->note as $note) {
-                if ($note->getFullName() == $fullName) {
+                if (($note->getNamespaceName() == $namespaceName) && ($note->$getter() == $noteName)) {
                     $result = $note;
                     break;
                 }
