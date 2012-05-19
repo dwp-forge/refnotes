@@ -345,7 +345,9 @@ var refnotes_admin = (function () {
         function initialize() {
             fields.addItem(new CheckField('replace-footnotes'));
             fields.addItem(new CheckField('reference-db-enable'));
-            fields.addItem(new CheckField('reference-db-namespace'));
+            fields.addItem(new TextField('reference-db-namespace'));
+
+            jQuery('#field-reference-db-namespace').css('width', '19em');
         }
 
         function reload(settings) {
