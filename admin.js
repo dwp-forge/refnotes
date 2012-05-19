@@ -6,10 +6,20 @@ var refnotes_admin = (function () {
         this.length = 0;
         this.items = [];
 
-        for (var i = 0; i < arguments.length; i += 2) {
-            if (typeof(arguments[i + 1]) != 'undefined') {
-                this.items[arguments[i]] = arguments[i + 1];
-                this.length++;
+        if (arguments.length == 1) {
+            if (typeof(arguments[0]) != 'undefined') {
+                for (var key in arguments[0]) {
+                    this.items[key] = arguments[0][key];
+                    this.length++;
+                }
+            }
+        }
+        else if (arguments.length > 1) {
+            for (var i = 0; i < arguments.length; i += 2) {
+                if (typeof(arguments[i + 1]) != 'undefined') {
+                    this.items[arguments[i]] = arguments[i + 1];
+                    this.length++;
+                }
             }
         }
 
@@ -42,19 +52,34 @@ var refnotes_admin = (function () {
 
     function NameHash(sentinel) {
         this.baseClass = Hash;
-        this.baseClass('', sentinel);
+        this.baseClass();
+
+        this.base = {
+            getItem : this.getItem,
+            hasItem : this.hasItem
+        };
 
         this.getItem = function (key) {
-            return this.hasItem(key) ? this.items[key] : this.items[''];
+            return (key == '') ? sentinel : this.base.getItem.apply(this, arguments);
+        }
+
+        this.hasItem = function (key) {
+            return (key == '') ? true : this.base.hasItem.apply(this, arguments);
         }
 
         this.clear = function () {
-            for (var i in this.items) {
-                if (i != '') {
-                    this.length--;
-                    delete this.items[i];
-                }
-            }
+            this.length = 0;
+            this.items = [];
+        }
+    }
+
+
+    function NamedObjectHash(sentinel) {
+        this.baseClass = Hash;
+        this.baseClass();
+
+        this.addItem = function (value) {
+            this.setItem(value.getName(), value);
         }
     }
 
@@ -255,7 +280,7 @@ var refnotes_admin = (function () {
 
 
     var general = (function () {
-        var fields   = new Hash();
+        var fields   = new NamedObjectHash();
         var defaults = new Hash(
             'replace-footnotes', false,
             'reference-db-enable', false,
@@ -269,6 +294,10 @@ var refnotes_admin = (function () {
                 event.data.updateDefault();
                 modified = true;
             });
+
+            this.getName = function () {
+                return settingName;
+            }
 
             this.updateDefault = function () {
                 this.element.parents('td').toggleClass('default', this.getValue() == defaults.getItem(settingName));
@@ -314,13 +343,9 @@ var refnotes_admin = (function () {
         }
 
         function initialize() {
-            addField('replace-footnotes', CheckField);
-            addField('reference-db-enable', CheckField);
-            addField('reference-db-namespace', TextField);
-        }
-
-        function addField(settingName, field) {
-            fields.setItem(settingName, new field(settingName));
+            fields.addItem(new CheckField('replace-footnotes'));
+            fields.addItem(new CheckField('reference-db-enable'));
+            fields.addItem(new CheckField('reference-db-namespace'));
         }
 
         function reload(settings) {
@@ -355,7 +380,7 @@ var refnotes_admin = (function () {
 
     var namespaces = (function () {
         var list       = null;
-        var fields     = [];
+        var fields     = new NamedObjectHash();
         var namespaces = new NameHash(new DefaultNamespace());
         var current    = namespaces.getItem('');
         var defaults   = new Hash(
@@ -413,13 +438,7 @@ var refnotes_admin = (function () {
         }
 
         function Namespace(name, data) {
-            var styles = new Hash();
-
-            if (typeof(data) != 'undefined') {
-                for (var s in data) {
-                    styles.setItem(s, data[s]);
-                }
-            }
+            var styles = new Hash(data);
 
             function getParent() {
                 var parent = name.replace(/\w*:$/, '');
@@ -488,6 +507,10 @@ var refnotes_admin = (function () {
 
         function Field(styleName) {
             this.element = jQuery('#field-' + styleName);
+
+            this.getName = function () {
+                return styleName;
+            }
 
             this.updateInheretance = function () {
                 this.element.parents('td')
@@ -568,33 +591,33 @@ var refnotes_admin = (function () {
         }
 
         function initialize() {
-            fields.push(new SelectField('refnote-id'));
-            fields.push(new SelectField('reference-base'));
-            fields.push(new SelectField('reference-font-weight'));
-            fields.push(new SelectField('reference-font-style'));
-            fields.push(new SelectField('reference-format'));
-            fields.push(new SelectField('reference-render'));
-            fields.push(new SelectField('multi-ref-id'));
-            fields.push(new SelectField('note-preview'));
-            fields.push(new TextField('notes-separator', function (value) {
+            list = new List('#select-namespaces');
+
+            fields.addItem(new SelectField('refnote-id'));
+            fields.addItem(new SelectField('reference-base'));
+            fields.addItem(new SelectField('reference-font-weight'));
+            fields.addItem(new SelectField('reference-font-style'));
+            fields.addItem(new SelectField('reference-format'));
+            fields.addItem(new SelectField('reference-render'));
+            fields.addItem(new SelectField('multi-ref-id'));
+            fields.addItem(new SelectField('note-preview'));
+            fields.addItem(new TextField('notes-separator', function (value) {
                 return (value.match(/(?:\d+\.?|\d*\.\d+)(?:%|em|px)|none/) != null) ? value : 'none';
             }));
-            fields.push(new SelectField('note-text-align'));
-            fields.push(new SelectField('note-font-size'));
-            fields.push(new SelectField('note-render'));
-            fields.push(new SelectField('note-id-base'));
-            fields.push(new SelectField('note-id-font-weight'));
-            fields.push(new SelectField('note-id-font-style'));
-            fields.push(new SelectField('note-id-format'));
-            fields.push(new SelectField('back-ref-caret'));
-            fields.push(new SelectField('back-ref-base'));
-            fields.push(new SelectField('back-ref-font-weight'));
-            fields.push(new SelectField('back-ref-font-style'));
-            fields.push(new SelectField('back-ref-format'));
-            fields.push(new SelectField('back-ref-separator'));
-            fields.push(new SelectField('scoping'));
-
-            list = new List('#select-namespaces');
+            fields.addItem(new SelectField('note-text-align'));
+            fields.addItem(new SelectField('note-font-size'));
+            fields.addItem(new SelectField('note-render'));
+            fields.addItem(new SelectField('note-id-base'));
+            fields.addItem(new SelectField('note-id-font-weight'));
+            fields.addItem(new SelectField('note-id-font-style'));
+            fields.addItem(new SelectField('note-id-format'));
+            fields.addItem(new SelectField('back-ref-caret'));
+            fields.addItem(new SelectField('back-ref-base'));
+            fields.addItem(new SelectField('back-ref-font-weight'));
+            fields.addItem(new SelectField('back-ref-font-style'));
+            fields.addItem(new SelectField('back-ref-format'));
+            fields.addItem(new SelectField('back-ref-separator'));
+            fields.addItem(new SelectField('scoping'));
 
             jQuery('#select-namespaces').change(onNamespaceChange);
             jQuery('#name-namespaces').prop('disabled', true);
@@ -679,8 +702,8 @@ var refnotes_admin = (function () {
             jQuery('#rename-namespaces').prop('disabled', current.isReadOnly());
             jQuery('#delete-namespaces').prop('disabled', current.isReadOnly());
 
-            for (var i = 0; i < fields.length; i++) {
-                fields[i].update();
+            for (var name in fields.items) {
+                fields.getItem(name).update();
             }
         }
 
