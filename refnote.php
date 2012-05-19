@@ -32,7 +32,7 @@ class refnotes_refnote {
      *
      */
     public function getAttribute($name, $default = '') {
-        return array_key_exists($name, $this->attributes) ? $this->attributes : $default;
+        return array_key_exists($name, $this->attributes) ? $this->attribute[$name] : $default;
     }
 
     /**
