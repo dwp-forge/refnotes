@@ -69,6 +69,10 @@ $lang['lbl_back-ref-separator'] = 'Back reference separator';
 $lang['lbl_scoping'] = 'Scoping behavior';
 
 $lang['lbl_inline'] = 'Inline';
+$lang['lbl_use-reference-base'] = 'Apply reference baseline';
+$lang['lbl_use-reference-font-weight'] = 'Apply reference font weight';
+$lang['lbl_use-reference-font-style'] = 'Apply reference font style';
+$lang['lbl_use-reference-format'] = 'Apply reference formatting';
 
 $lang['opt_arrow'] = 'Up arrow';
 $lang['opt_basic'] = 'Plain text';

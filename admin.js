@@ -726,9 +726,27 @@ var refnotes_admin = (function () {
 
 
     var notes = (function () {
-        var list    = null;
-        var notes   = new NameHash(new EmptyNote());
-        var current = notes.getItem('');
+        var list     = null;
+        var fields   = new NamedObjectHash();
+        var notes    = new NameHash(new EmptyNote());
+        var current  = notes.getItem('');
+        var defaults = new Hash(
+            'inline'                   , false,
+            'use-reference-base'       , true,
+            'use-reference-font-weight', true,
+            'use-reference-font-style' , true,
+            'use-reference-format'     , true
+        );
+        var inlineAttributes = [
+            'use-reference-base',
+            'use-reference-font-weight',
+            'use-reference-font-style',
+            'use-reference-format'
+        ];
+
+        function isInlineAttribute(name) {
+            return inlineAttributes.indexOf(name) != -1;
+        }
 
         function EmptyNote() {
             this.isReadOnly = function () {
@@ -749,11 +767,11 @@ var refnotes_admin = (function () {
                 return '';
             }
 
-            this.setInline = function (inline) {
+            this.setAttribute = function (name, value) {
             }
 
-            this.isInline = function () {
-                return false;
+            this.getAttribute = function (name) {
+                return defaults.getItem(name);
             }
 
             this.getSettings = function () {
@@ -762,13 +780,7 @@ var refnotes_admin = (function () {
         }
 
         function Note(name, data) {
-            this.text   = '';
-            this.inline = false;
-
-            if (typeof(data) != 'undefined') {
-                this.text   = data.text;
-                this.inline = data.inline;
-            }
+            var attributes = new Hash(data);
 
             this.isReadOnly = function () {
                 return false;
@@ -783,31 +795,99 @@ var refnotes_admin = (function () {
             }
 
             this.setText = function (text) {
-                this.text = text;
+                attributes.setItem('text', text);
             }
 
             this.getText = function () {
-                return this.text;
+                return attributes.getItem('text');
             }
 
-            this.setInline = function (inline) {
-                this.inline = inline;
+            this.setAttribute = function (name, value) {
+                attributes.setItem(name, value);
             }
 
-            this.isInline = function () {
-                return this.inline;
+            this.getAttribute = function (name) {
+                if (!attributes.hasItem(name) || (isInlineAttribute(name) && !this.getAttribute('inline'))) {
+                    return defaults.getItem(name);
+                }
+                else {
+                    return attributes.getItem(name);
+                }
             }
 
             this.getSettings = function () {
-                return {
-                    text   : this.text,
-                    inline : this.inline
+                var settings = {};
+
+                if (!this.getAttribute('inline')) {
+                    for (var i in inlineAttributes) {
+                        if (attributes.hasItem(inlineAttributes[i])) {
+                            attributes.removeItem(inlineAttributes[i]);
+                        }
+                    }
                 }
+
+                for (var name in attributes.items) {
+                    settings[name] = attributes.getItem(name);
+                }
+
+                return settings;
             }
+        }
+
+        function Field(attributeName) {
+            this.element = jQuery('#field-' + attributeName);
+
+            this.element.change(this, function (event) {
+                current.setAttribute(attributeName, event.data.getValue());
+                modified = true;
+            });
+
+            this.getName = function () {
+                return attributeName;
+            }
+
+            this.enable = function (enable) {
+                this.element.prop('disabled', !enable);
+            }
+        }
+
+        function CheckField(attributeName) {
+            this.baseClass = Field;
+            this.baseClass(attributeName);
+
+            this.setValue = function (value) {
+                this.element.attr('checked', value);
+            }
+
+            this.getValue = function () {
+                return this.element.is(':checked');
+            }
+
+            this.update = function () {
+                this.setValue(current.getAttribute(attributeName));
+                this.enable(!current.isReadOnly() && (!isInlineAttribute(attributeName) || current.getAttribute('inline')));
+            }
+        }
+
+        function InlineField() {
+            this.baseClass = CheckField;
+            this.baseClass('inline');
+
+            this.element.change(this, function (event) {
+                for (var i in inlineAttributes) {
+                    fields.getItem(inlineAttributes[i]).update();
+                }
+            });
         }
 
         function initialize() {
             list = new List('#select-notes');
+
+            fields.addItem(new InlineField());
+            fields.addItem(new CheckField('use-reference-base'));
+            fields.addItem(new CheckField('use-reference-font-weight'));
+            fields.addItem(new CheckField('use-reference-font-style'));
+            fields.addItem(new CheckField('use-reference-format'));
 
             jQuery('#select-notes').change(onNoteChange);
             jQuery('#name-notes').prop('disabled', true);
@@ -815,7 +895,6 @@ var refnotes_admin = (function () {
             jQuery('#rename-notes').click(onRenameNote).prop('disabled', true);
             jQuery('#delete-notes').click(onDeleteNote).prop('disabled', true);
             jQuery('#field-note-text').change(onTextChange);
-            jQuery('#field-inline').change(onInlineChange);
 
             updateFields();
         }
@@ -874,12 +953,6 @@ var refnotes_admin = (function () {
             modified = true;
         }
 
-        function onInlineChange(event) {
-            current.setInline(event.target.checked);
-
-            modified = true;
-        }
-
         function reload(settings) {
             notes.clear();
 
@@ -906,7 +979,10 @@ var refnotes_admin = (function () {
             jQuery('#rename-notes').prop('disabled', current.isReadOnly());
             jQuery('#delete-notes').prop('disabled', current.isReadOnly());
             jQuery('#field-note-text').val(current.getText()).prop('disabled', current.isReadOnly());
-            jQuery('#field-inline').attr('checked', current.isInline()).prop('disabled', current.isReadOnly());
+
+            for (var name in fields.items) {
+                fields.getItem(name).update();
+            }
         }
 
         function getSettings() {

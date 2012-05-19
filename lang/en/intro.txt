@@ -8,7 +8,7 @@ On this page you modify the configuration settings used by [[doku>plugin:refnote
     * //Reference database namespace// --- DokuWiki namespace for the reference database.
   * **Namespaces** --- in this section you can specify rendering style for predefined namespaces. For a detailed explanation of each style see the [[doku>plugin:refnotes:style|style reference]].
   * **Notes** --- this section is used to predefine commonly used notes.
-    * //Inline// --- specifies if the note text should be [[doku>plugin:refnotes:syntax#inline_notes|inlined]].
+    * //Inline// --- specifies if the note text should be [[doku>plugin:refnotes:syntax#inline_notes|inlined]]. For inline notes you can configure if various reference styles are applied or not.
 
 Settings that are shown on a blue background are the default values. In the //Namespaces// section settings that are shown on a green background are inherited from the parent namespace.
 

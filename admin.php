@@ -355,7 +355,7 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
      * Constructor
      */
     public function __construct() {
-        parent::__construct('namespaces', 43);
+        parent::__construct('namespaces', 48);
     }
 
     /**
@@ -467,7 +467,7 @@ class refnotes_config_notes extends refnotes_config_list_section {
      * Constructor
      */
     public function __construct() {
-        parent::__construct('notes', 7);
+        parent::__construct('notes', 14);
     }
 
     /**
@@ -481,6 +481,22 @@ class refnotes_config_notes extends refnotes_config_list_section {
                 'lean' => true
             ),
             'inline' => array(
+                'class' => 'checkbox',
+                'lean' => true
+            ),
+            'use-reference-base' => array(
+                'class' => 'checkbox',
+                'lean' => true
+            ),
+            'use-reference-font-weight' => array(
+                'class' => 'checkbox',
+                'lean' => true
+            ),
+            'use-reference-font-style' => array(
+                'class' => 'checkbox',
+                'lean' => true
+            ),
+            'use-reference-format' => array(
                 'class' => 'checkbox',
                 'lean' => true
             )
