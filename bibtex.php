@@ -481,8 +481,8 @@ class refnotes_bibtex_entry_stash {
         elseif (($type == 'comment') && (strtolower($name) == 'refnotes')) {
             $data = $entry->getData($this->strings);
 
-            if (isset($data['ns']) && $this->isValidRefnotesName($data['ns'])) {
-                $this->namespace = refnotes_namespace::canonizeName($data['ns']);
+            if (isset($data['namespace']) && $this->isValidRefnotesName($data['namespace'])) {
+                $this->namespace = refnotes_namespace::canonizeName($data['namespace']);
             }
         }
     }
