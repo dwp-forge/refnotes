@@ -113,12 +113,7 @@ class refnotes_renderer_reference extends refnotes_reference {
         $html = '';
 
         if (!$this->hidden) {
-            if ($this->inline) {
-                $html = $this->note->getText();
-            }
-            else {
-                $html = $this->note->getScope()->getRenderer()->renderReference($this);
-            }
+            $html = $this->note->getScope()->getRenderer()->renderReference($this);
         }
 
         return $html;
@@ -143,7 +138,7 @@ class refnotes_action_reference extends refnotes_reference {
      *
      */
     private function updateAttributes($attributes) {
-        static $key = array('inline', 'source');
+        static $key = array('inline', 'use-reference-base', 'use-reference-font-weight', 'use-reference-font-style', 'use-reference-format', 'source');
 
         foreach ($key as $k) {
             if (array_key_exists($k, $attributes)) {

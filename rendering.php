@@ -258,21 +258,12 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
      *
      */
     public function renderReference($reference) {
-        $html = '';
-
-        $noteName = $reference->getNote()->getAnchorName();
-        $referenceName = $reference->getAnchorName();
-        $class = $this->renderReferenceClass();
-
-        list($baseOpen, $baseClose) = $this->renderReferenceBase();
-        list($fontOpen, $fontClose) = $this->renderReferenceFont();
-        list($formatOpen, $formatClose) = $this->renderReferenceFormat();
-
-        $html = $baseOpen . $fontOpen;
-        $html .= '<a href="#' . $noteName . '" name="' . $referenceName . '" class="' . $class . '">';
-        $html .= $formatOpen . $this->renderReferenceId($reference) . $formatClose;
-        $html .= '</a>';
-        $html .= $fontClose . $baseClose;
+        if ($reference->isInline()) {
+            $html = $this->renderInlineReference($reference);
+        }
+        else {
+            $html = $this->renderRegularReference($reference);
+        }
 
         return $html;
     }
@@ -307,6 +298,54 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
         $html .= '</span></div>' . DOKU_LF;
 
         $this->rendered = true;
+
+        return $html;
+    }
+
+    /**
+     *
+     */
+    protected function getInlineReferenceStyle($reference, $name, $default) {
+        return ($reference->getAttribute('use-' . $name) === false) ? $default : $this->getStyle($name);
+    }
+
+    /**
+     *
+     */
+    protected function renderInlineReference($reference) {
+        $baseStyle = $this->getInlineReferenceStyle($reference, 'reference-base', 'text');
+        $fontWeightStyle = $this->getInlineReferenceStyle($reference, 'reference-font-weight', 'normal');
+        $fontStyle = $this->getInlineReferenceStyle($reference, 'reference-font-style', 'normal');
+        $formatStyle = $this->getInlineReferenceStyle($reference, 'reference-format', 'none');
+
+        list($baseOpen, $baseClose) = $this->renderBase($baseStyle);
+        list($fontOpen, $fontClose) = $this->renderFont($fontWeightStyle, 'normal', $fontStyle);
+        list($formatOpen, $formatClose) = $this->renderFormat($formatStyle);
+
+        $html = $baseOpen . $fontOpen . $formatOpen;
+        $html .= $reference->getNote()->getText();
+        $html .= $formatClose . $fontClose . $baseClose;
+
+        return $html;
+    }
+
+    /**
+     *
+     */
+    protected function renderRegularReference($reference) {
+        $noteName = $reference->getNote()->getAnchorName();
+        $referenceName = $reference->getAnchorName();
+        $class = $this->renderReferenceClass();
+
+        list($baseOpen, $baseClose) = $this->renderReferenceBase();
+        list($fontOpen, $fontClose) = $this->renderReferenceFont();
+        list($formatOpen, $formatClose) = $this->renderReferenceFormat();
+
+        $html = $baseOpen . $fontOpen;
+        $html .= '<a href="#' . $noteName . '" name="' . $referenceName . '" class="' . $class . '">';
+        $html .= $formatOpen . $this->renderReferenceId($reference) . $formatClose;
+        $html .= '</a>';
+        $html .= $fontClose . $baseClose;
 
         return $html;
     }
