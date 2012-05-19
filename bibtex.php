@@ -332,7 +332,15 @@ class refnotes_bibtex_handler {
      *
      */
     public function finalize() {
-        return $this->entries->getEntries();
+        $entries = $this->entries->getEntries();
+
+        foreach ($entries as &$entry) {
+            if (array_key_exists('author', $entry)) {
+                $entry['author'] = str_replace(' and ', ', ', $entry['author']);
+            }
+        }
+
+        return $entries;
     }
 
     /**
