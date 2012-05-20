@@ -798,7 +798,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
      *
      */
     public function getReferenceSharedDataSet() {
-        static $key = array('ref-authors', 'ref-author', 'authors', 'author', 'published', 'year');
+        static $key = array('ref-authors', 'ref-author', 'authors', 'author', 'published', 'month', 'year');
 
         return $key;
     }
@@ -889,11 +889,28 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
         $text = $data->get('authors', 'author');
 
         if ($text != '') {
-            if ($published = $data->get('published', 'year')) {
+            if ($published = $this->renderPublished($data)) {
                 $text .= ', ' . $published;
             }
 
             $text .= '.';
+        }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    protected function renderPublished($data, $useMonth = true) {
+        $text = $data->get('published');
+
+        if ($text == '') {
+            if ($text = $data->get('year')) {
+                if ($useMonth && $month = $data->get('month')) {
+                    $text = $month . ' ' . $text;
+                }
+            }
         }
 
         return $text;
@@ -917,7 +934,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
             }
         }
 
-        if (!$authors && ($published = $data->get('published', 'year'))) {
+        if (!$authors && ($published = $this->renderPublished($data))) {
             $part[] = $published;
         }
 
@@ -1030,7 +1047,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     protected function renderReferenceExtra($data) {
         $html = '';
 
-        if ($published = $data->get('published', 'year')) {
+        if ($published = $this->renderPublished($data, false)) {
             $html .= $published;
         }
 

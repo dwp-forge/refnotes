@@ -18,6 +18,7 @@ $lang['dbk_edition'] = 'Edition';
 $lang['dbk_isbn'] = 'ISBN';
 $lang['dbk_issn'] = 'ISSN';
 $lang['dbk_journal'] = 'Journal';
+$lang['dbk_month'] = 'Month';
 $lang['dbk_note-name'] = 'Note name';
 $lang['dbk_note-page'] = 'Note page';
 $lang['dbk_note-pages'] = 'Note pages';
