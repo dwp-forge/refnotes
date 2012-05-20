@@ -11,6 +11,7 @@ $lang['encoding'] = 'utf-8';
 $lang['direction'] = 'ltr';
 
 // Reference database keys
+$lang['dbk_author'] = 'Author';
 $lang['dbk_authors'] = 'Authors';
 $lang['dbk_chapter'] = 'Chapter';
 $lang['dbk_edition'] = 'Edition';
@@ -18,13 +19,19 @@ $lang['dbk_isbn'] = 'ISBN';
 $lang['dbk_issn'] = 'ISSN';
 $lang['dbk_journal'] = 'Journal';
 $lang['dbk_note-name'] = 'Note name';
+$lang['dbk_note-page'] = 'Note page';
+$lang['dbk_note-pages'] = 'Note pages';
 $lang['dbk_note-text'] = 'Note text';
+$lang['dbk_page'] = 'Page';
 $lang['dbk_pages'] = 'Pages';
 $lang['dbk_published'] = 'Published';
 $lang['dbk_publisher'] = 'Publisher';
+$lang['dbk_ref-author'] = 'Reference author';
+$lang['dbk_ref-authors'] = 'Reference authors';
 $lang['dbk_title'] = 'Title';
 $lang['dbk_url'] = 'URL';
 $lang['dbk_volume'] = 'Volume';
+$lang['dbk_year'] = 'Year';
 
 $lang['txt_in_cap'] = 'In';
 $lang['txt_page_abbr'] = 'p.';
