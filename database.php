@@ -88,7 +88,10 @@ class refnotes_reference_database {
         $result = '';
         $text = $this->normalizeKeyText($text);
 
-        if (array_key_exists($text, $this->key)) {
+        if (in_array($text, $this->key)) {
+            $result = $text;
+        }
+        elseif (array_key_exists($text, $this->key)) {
             $result = $this->key[$text];
         }
 
