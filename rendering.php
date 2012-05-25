@@ -807,7 +807,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
      *
      */
     public function getReferencePrivateDataSet() {
-        static $key = array('inline', 'pages', 'page');
+        static $key = array('direct', 'pages', 'page');
 
         return $key;
     }
@@ -1022,7 +1022,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
 
         list($formatOpen, $formatClose) = $this->renderReferenceParentheses();
 
-        if ($data->isPositive('inline')) {
+        if ($data->isPositive('direct')) {
             $html = $authors . ' ' . $formatOpen . $html . $formatClose;
         }
         else {
