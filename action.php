@@ -12,11 +12,8 @@ if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
 require_once(DOKU_INC . 'inc/JSON.php');
 require_once(DOKU_PLUGIN . 'action.php');
-require_once(DOKU_PLUGIN . 'refnotes/locale.php');
-require_once(DOKU_PLUGIN . 'refnotes/config.php');
-require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
-require_once(DOKU_PLUGIN . 'refnotes/instructions.php');
 require_once(DOKU_PLUGIN . 'refnotes/core.php');
+require_once(DOKU_PLUGIN . 'refnotes/instructions.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {

@@ -11,10 +11,8 @@
 if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
 require_once(DOKU_PLUGIN . 'syntax.php');
-require_once(DOKU_PLUGIN . 'refnotes/locale.php');
-require_once(DOKU_PLUGIN . 'refnotes/config.php');
-require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
 require_once(DOKU_PLUGIN . 'refnotes/core.php');
+require_once(DOKU_PLUGIN . 'refnotes/bibtex.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {

@@ -7,8 +7,6 @@
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
  */
 
-require_once(DOKU_INC . 'inc/parser/parser.php');
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_bibtex_parser extends Doku_Parser {
 

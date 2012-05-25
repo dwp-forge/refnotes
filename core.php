@@ -9,13 +9,13 @@
 
 require_once(DOKU_PLUGIN . 'refnotes/locale.php');
 require_once(DOKU_PLUGIN . 'refnotes/config.php');
-require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
-require_once(DOKU_PLUGIN . 'refnotes/database.php');
-require_once(DOKU_PLUGIN . 'refnotes/scope.php');
 require_once(DOKU_PLUGIN . 'refnotes/refnote.php');
 require_once(DOKU_PLUGIN . 'refnotes/reference.php');
 require_once(DOKU_PLUGIN . 'refnotes/note.php');
+require_once(DOKU_PLUGIN . 'refnotes/namespace.php');
+require_once(DOKU_PLUGIN . 'refnotes/scope.php');
 require_once(DOKU_PLUGIN . 'refnotes/rendering.php');
+require_once(DOKU_PLUGIN . 'refnotes/database.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_parser_core {
