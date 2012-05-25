@@ -30,11 +30,20 @@ class refnotes_parser_reference extends refnotes_refnote {
     /**
      *
      */
-    private function parseStructuredData($syntax) {
-        preg_match_all('/([-\w]+)\s*[:=]\s*(.+?)\s*?(:?[\n|;]|$)/', $syntax, $match, PREG_SET_ORDER);
+    private function parseStructuredData($data) {
+        if (preg_match('/^\s*\|/', $data) == 1) {
+            preg_match_all('/\|\s*([-\w]+)\s*=\s*([^|]+)/', $data, $match, PREG_SET_ORDER);
 
-        foreach ($match as $m) {
-            $this->data[$m[1]] = $m[2];
+            foreach ($match as $m) {
+                $this->data[$m[1]] = preg_replace('/\s+/', ' ', trim($m[2]));
+            }
+        }
+        else {
+            preg_match_all('/([-\w]+)\s*:\s*(.+?)\s*?(?:(?<!\\\\);|\n|$)/', $data, $match, PREG_SET_ORDER);
+
+            foreach ($match as $m) {
+                $this->data[$m[1]] = str_replace('\\;', ';', $m[2]);
+            }
         }
     }
 }
