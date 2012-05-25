@@ -236,7 +236,7 @@ class refnotes_instruction_mangler {
      *
      */
     private function renderStructuredNotes() {
-        $this->core->clearScopes();
+        $this->core->reset();
 
         foreach ($this->calls as $call) {
             $this->styleNamespaces($call);

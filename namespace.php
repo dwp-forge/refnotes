@@ -304,13 +304,6 @@ class refnotes_namespace {
     /**
      *
      */
-    public function clearScopes() {
-        $this->scope = array();
-    }
-
-    /**
-     *
-     */
     public function inheritStyle($source) {
         $this->style = $source->style;
         $this->renderer = NULL;

@@ -439,10 +439,8 @@ class refnotes_action_core extends refnotes_core {
     /**
      *
      */
-    public function clearScopes() {
-        foreach ($this->namespace as $namespace) {
-            $namespace->clearScopes();
-        }
+    public function reset() {
+        $this->namespace = array();
     }
 
     /**
