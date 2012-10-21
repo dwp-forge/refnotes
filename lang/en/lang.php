@@ -125,7 +125,7 @@ $lang['btn_rename'] = 'Rename';
 $lang['btn_delete'] = 'Delete';
 $lang['btn_save'] = 'Save';
 
-$lang['js_status'] = 'Server comunication status.';
+$lang['js_status'] = 'Server communication status.';
 $lang['js_loading'] = 'Loading configuration settings from the server...';
 $lang['js_loaded'] = 'Configuration settings are successfully loaded from the server.';
 $lang['js_loading_failed'] = 'Failed to load configuration settings from the server ({1}).';
