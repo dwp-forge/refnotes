@@ -198,7 +198,7 @@ var refnotes_admin = (function () {
                         setStatus('info', transaction);
                     },
                     error : function (xhr, status, message) {
-                        setErorrStatus((status == 'parseerror') ? 'invalid_data' : transaction + '_failed', message);
+                        setErrorStatus((status == 'parseerror') ? 'invalid_data' : transaction + '_failed', message);
                     },
                     dataFilter : function (data) {
                         var cookie = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
@@ -216,7 +216,7 @@ var refnotes_admin = (function () {
                 });
             }
             else {
-                setErorrStatus(request + '_failed', 'Server is busy');
+                setErrorStatus(request + '_failed', 'Server is busy');
             }
         }
 
@@ -260,7 +260,7 @@ var refnotes_admin = (function () {
                 .text(message);
         }
 
-        function setErorrStatus(messageId, details) {
+        function setErrorStatus(messageId, details) {
             setStatus('error', locale.getString(messageId, details));
         }
 
