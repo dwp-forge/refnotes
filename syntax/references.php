@@ -114,7 +114,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      * Handle the match
      */
-    public function handle($match, $state, $pos, $handler) {
+    public function handle($match, $state, $pos, Doku_Handler $handler) {
         $result = refnotes_parser_core::getInstance()->canHandle($state);
 
         if ($result) {
@@ -139,7 +139,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      * Create output
      */
-    public function render($mode, $renderer, $data) {
+    public function render($mode, Doku_Renderer $renderer, $data) {
         $result = false;
 
         try {

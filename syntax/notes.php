@@ -51,7 +51,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      * Handle the match
      */
-    public function handle($match, $state, $pos, $handler) {
+    public function handle($match, $state, $pos, Doku_Handler $handler) {
         switch ($match{0}) {
             case '~':
                 return $this->handleBasic($match);
@@ -66,7 +66,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      * Create output
      */
-    public function render($mode, $renderer, $data) {
+    public function render($mode, Doku_Renderer $renderer, $data) {
         try {
             if($mode == 'xhtml') {
                 switch ($data[0]) {

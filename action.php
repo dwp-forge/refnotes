@@ -40,7 +40,7 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
     /**
      * Register callbacks
      */
-    public function register($controller) {
+    public function register(Doku_Event_Handler $controller) {
         $this->afterParserHandlerDone->register($controller);
         $this->beforeAjaxCallUnknown->register($controller);
         $this->beforeParserCacheUse->register($controller);
