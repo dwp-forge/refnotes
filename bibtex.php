@@ -555,7 +555,7 @@ class refnotes_bibtex_entry {
      *
      */
     public function handleUnmatched($token) {
-        if (($this->name == '') && (preg_match('/\s*([\w:]+)\s*,/', $token, $match) == 1)) {
+        if (($this->name == '') && (preg_match('/\s*([^\s,]+)\s*,/', $token, $match) == 1)) {
             $this->name = $match[1];
         }
     }
