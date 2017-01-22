@@ -480,7 +480,9 @@ class refnotes_reference_database_cache {
      * Constructor
      */
     public function __construct() {
-        $this->fileName = DOKU_PLUGIN . 'refnotes/database.dat';
+        global $conf;
+
+        $this->fileName = $conf['cachedir'] . '/refnotes.database.dat';
 
         $this->load();
     }
