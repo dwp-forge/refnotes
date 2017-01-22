@@ -342,7 +342,6 @@ class refnotes_before_ajax_call_unknown {
         $config['namespaces'] = $namespace;
         $config['notes'] = refnotes_configuration::load('notes');
 
-        $cookie = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
         $json = new JSON();
 
         $this->sendResponse('application/x-suggestions+json', $json->encode($config));

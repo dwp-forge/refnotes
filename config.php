@@ -42,13 +42,17 @@ class refnotes_configuration {
      *
      */
     public static function load($sectionName) {
-        $pluginRoot = DOKU_PLUGIN . 'refnotes/';
-        $fileName = $pluginRoot . $sectionName . '.local.dat';
+        $fileName = DOKU_CONF . 'refnotes.' . $sectionName . '.local.dat';
 
         if (!file_exists($fileName)) {
-            $fileName = $pluginRoot . $sectionName . '.dat';
+            // TODO: This backward compatibility fix should be eventually removed
+            $pluginRoot = DOKU_PLUGIN . 'refnotes/';
+            $fileName = $pluginRoot . $sectionName . '.local.dat';
             if (!file_exists($fileName)) {
-                $fileName = '';
+                $fileName = $pluginRoot . 'conf/' . $sectionName . '.dat';
+                if (!file_exists($fileName)) {
+                    $fileName = '';
+                }
             }
         }
 
@@ -66,8 +70,7 @@ class refnotes_configuration {
      *
      */
     public static function save($sectionName, $config) {
-        $pluginRoot = DOKU_PLUGIN . 'refnotes/';
-        $fileName = $pluginRoot . $sectionName . '.local.dat';
+        $fileName = DOKU_CONF . 'refnotes.' . $sectionName . '.local.dat';
 
         return io_saveFile($fileName, serialize($config));
     }
