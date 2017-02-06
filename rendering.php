@@ -849,6 +849,15 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
 
             $text .= ($publication != '') ? ',' : '.';
         }
+        elseif ($data->has('booktitle')) {  // rwduzhao
+            // $authors? $title //booktitle//, volume, $publication?
+
+            $text = $title . ' ' . $this->renderBookTitle($data);
+
+            // $authors? $text, $publication?
+
+            $text .= ($publication != '') ? ',' : '.';
+        }
         else {
             // $authors? //$title// edition. $publication?
             // $authors? chapter In //$title// edition. $publication?
@@ -1003,6 +1012,15 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
         if ($edition = $data->get('edition')) {
             $text .= ' ' . $edition . '.';
         }
+
+        return $text;
+    }
+
+    /**
+     *
+     */
+    protected function renderBookTitle($data) {
+        $text = '//' . $data->get('booktitle') . '//';
 
         return $text;
     }
