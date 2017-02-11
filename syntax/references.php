@@ -145,7 +145,8 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         try {
             switch ($mode) {
                 case 'xhtml':
-                    $result = $this->renderXhtml($renderer, $data);
+                case 'odt':
+                    $result = $this->renderReferences($mode, $renderer, $data);
                     break;
 
                 case 'metadata':
@@ -188,16 +189,16 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     }
 
     /**
-     *
+     * 
      */
-    public function renderXhtml($renderer, $data) {
+    public function renderReferences($mode, $renderer, $data) {
         switch ($data[0]) {
             case 'start':
                 $this->noteCapture->start($renderer);
                 break;
-
+        
             case 'render':
-                $this->renderReference($renderer, $data[1], (count($data) > 2) ? $data[2] : array());
+                $this->renderReference($mode, $renderer, $data[1], (count($data) > 2) ? $data[2] : array());
                 break;
         }
 
@@ -207,7 +208,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
     /**
      * Stops renderer output capture and renders the reference link
      */
-    private function renderReference($renderer, $attributes, $data) {
+    private function renderReference($mode, $renderer, $attributes, $data) {
         $reference = refnotes_renderer_core::getInstance()->addReference($attributes, $data);
         $text = $this->noteCapture->stop();
 
@@ -215,7 +216,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
             $reference->getNote()->setText($text);
         }
 
-        $renderer->doc .= $reference->render();
+        $renderer->doc .= $reference->render($mode);
     }
 
     /**
