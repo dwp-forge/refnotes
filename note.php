@@ -245,13 +245,13 @@ class refnotes_renderer_note extends refnotes_note {
     /**
      *
      */
-    public function render() {
-        $html = $this->scope->getRenderer()->renderNote($this, $this->reference);
+    public function render($mode) {
+        $doc = $this->scope->getRenderer()->renderNote($mode, $this, $this->reference);
 
         $this->reference = array();
         $this->processed = true;
 
-        return $html;
+        return $doc;
     }
 }
 

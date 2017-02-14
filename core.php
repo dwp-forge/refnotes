@@ -350,20 +350,19 @@ class refnotes_renderer_core extends refnotes_core {
     /**
      *
      */
-    public function renderNotes($namespaceName, $limit) {
+    public function renderNotes($mode, $namespaceName, $limit) {
         $this->clearNamespaceMapping($namespaceName);
-
         $html = '';
 
         if ($namespaceName == '*') {
             foreach ($this->namespace as $namespace) {
-                $html .= $namespace->renderNotes();
+                $html .= $namespace->renderNotes($mode);
             }
         }
         else {
             $namespace = $this->findNamespace($namespaceName);
             if ($namespace != NULL) {
-                $html = $namespace->renderNotes($limit);
+                $html = $namespace->renderNotes($mode, $limit);
             }
         }
 

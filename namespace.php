@@ -436,15 +436,15 @@ class refnotes_namespace {
     /**
      *
      */
-    public function renderNotes($limit = '') {
+    public function renderNotes($mode, $limit = '') {
         $this->resetScope();
-        $html = '';
+        $doc = '';
 
         if (count($this->scope) > 0) {
-            $html = $this->getCurrentScope()->renderNotes($limit);
+            $doc = $this->getCurrentScope()->renderNotes($mode, $limit);
         }
 
-        return $html;
+        return $doc;
     }
 
     /**
