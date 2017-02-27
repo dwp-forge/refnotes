@@ -907,25 +907,39 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
         // authors, published. //[[url|title.]]// edition. publisher, pages, isbn.
         // authors, published. chapter In //[[url|title.]]// edition. publisher, pages, isbn.
         // authors, published. [[url|title.]] //journal//, volume, publisher, pages, issn.
+        // authors, published. [[url|title.]] //booktitle//, publisher, pages, issn.
 
         $title = $this->renderTitle($data);
 
         // authors, published. //$title// edition. publisher, pages, isbn.
         // authors, published. chapter In //$title// edition. publisher, pages, isbn.
         // authors, published. $title //journal//, volume, publisher, pages, issn.
+        // authors, published. $title //booktitle//, publisher, pages, issn.
 
         $authors = $this->renderAuthors($data);
 
         // $authors? //$title// edition. publisher, pages, isbn.
         // $authors? chapter In //$title// edition. publisher, pages, isbn.
         // $authors? $title //journal//, volume, publisher, pages, issn.
+        // $authors? $title //booktitle//, publisher, pages, issn.
 
         $publication = $this->renderPublication($data, $authors != '');
 
         if ($data->has('journal')) {
             // $authors? $title //journal//, volume, $publication?
 
-            $text = $title . ' ' . $this->renderJournal($data);
+            $subtitle = $this->renderJournal($data);
+        }
+        elseif ($data->has('booktitle')) {
+            // $authors? $title //booktitle//, $publication?
+
+            $subtitle = $this->renderBookTitle($data);
+        }
+
+        if (!empty($subtitle)) {
+            // $authors? $title $subtitle?, $publication?
+
+            $text = $title . ' ' . $subtitle;
 
             // $authors? $text, $publication?
 
@@ -1087,6 +1101,13 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
         }
 
         return $text;
+    }
+
+    /**
+     *
+     */
+    protected function renderBookTitle($data) {
+        return '//' . $data->get('booktitle') . '//';
     }
 
     /**
