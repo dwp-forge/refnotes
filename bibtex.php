@@ -334,7 +334,13 @@ class refnotes_bibtex_handler {
 
         foreach ($entries as &$entry) {
             if (array_key_exists('author', $entry)) {
-                $entry['author'] = str_replace(' and ', ', ', $entry['author']);
+                $authors = explode(' and ', $entry['author']);
+
+                foreach ($authors as &$author) {
+                    $author = implode(' ', array_reverse(explode(', ', $author)));
+                }
+
+                $entry['author'] = implode(', ', $authors);
             }
         }
 
