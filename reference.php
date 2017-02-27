@@ -118,14 +118,14 @@ class refnotes_renderer_reference extends refnotes_reference {
     /**
      *
      */
-    public function render() {
-        $html = '';
+    public function render($mode) {
+        $doc = '';
 
         if (!$this->hidden) {
-            $html = $this->note->getScope()->getRenderer()->renderReference($this);
+            $doc = $this->note->getScope()->getRenderer()->renderReference($mode, $this);
         }
 
-        return $html;
+        return $doc;
     }
 }
 

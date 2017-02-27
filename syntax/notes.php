@@ -79,9 +79,19 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
                         break;
 
                     case 'render':
-                        $this->renderNotes($renderer, $data[1]);
+                        $this->renderNotes($mode, $renderer, $data[1]);
                         break;
                 }
+
+                return true;
+            }
+            elseif ($mode == 'odt') {
+                switch ($data[0]) {
+                    case 'render':
+                        $this->renderNotes($mode, $renderer, $data[1]);
+                        break;
+                }
+
                 return true;
             }
         }
@@ -193,14 +203,23 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
     /**
      *
      */
-    private function renderNotes($renderer, $attribute) {
+    private function renderNotes($mode, $renderer, $attribute) {
         $limit = array_key_exists('limit', $attribute) ? $attribute['limit'] : '';
-        $html = refnotes_renderer_core::getInstance()->renderNotes($attribute['ns'], $limit);
+        $doc = refnotes_renderer_core::getInstance()->renderNotes($mode, $attribute['ns'], $limit);
 
-        if ($html != '') {
-            $renderer->doc .= '<div class="refnotes">' . DOKU_LF;
-            $renderer->doc .= $html;
-            $renderer->doc .= '</div>' . DOKU_LF;
+        if ($doc != '') {
+            if ($mode == 'xhtml') {
+                $open = '<div class="refnotes">' . DOKU_LF;
+                $close = '</div>' . DOKU_LF;
+            }
+            else {
+                $open = '';
+                $close = '';
+            }
+
+            $renderer->doc .= $open;
+            $renderer->doc .= $doc;
+            $renderer->doc .= $close;
         }
     }
 }

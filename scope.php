@@ -138,21 +138,21 @@ class refnotes_scope {
     /**
      *
      */
-    public function renderNotes($limit) {
+    public function renderNotes($mode, $limit) {
         $block = new refnotes_note_block_iterator($this->note, $limit);
-        $html = '';
+        $doc = '';
 
         foreach ($block as $note) {
-            $html .= $note->render();
+            $doc .= $note->render($mode);
         }
 
-        if ($html != '') {
+        if ($mode == 'xhtml' && $doc != '') {
             $open = $this->getRenderer()->renderNotesSeparator() . '<div class="notes">' . DOKU_LF;
             $close = '</div>' . DOKU_LF;
-            $html = $open . $html . $close;
+            $doc = $open . $doc . $close;
         }
 
-        return $html;
+        return $doc;
     }
 
     /**

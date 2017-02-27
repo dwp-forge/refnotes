@@ -50,7 +50,7 @@ abstract class refnotes_renderer_base {
     /**
      *
      */
-    abstract public function renderReference($reference);
+    abstract public function renderReference($mode, $reference);
 
     /**
      *
@@ -60,7 +60,7 @@ abstract class refnotes_renderer_base {
     /**
      *
      */
-    abstract public function renderNote($note, $reference);
+    abstract public function renderNote($mode, $note, $reference);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,8 +113,8 @@ class refnotes_renderer extends refnotes_renderer_base {
     /**
      *
      */
-    public function renderReference($reference) {
-        return $this->referenceRenderer->renderReference($reference);
+    public function renderReference($mode, $reference) {
+        return $this->referenceRenderer->renderReference($mode, $reference);
     }
 
     /**
@@ -143,8 +143,8 @@ class refnotes_renderer extends refnotes_renderer_base {
     /**
      *
      */
-    public function renderNote($note, $reference) {
-        return $this->noteRenderer->renderNote($note, $reference);
+    public function renderNote($mode, $note, $reference) {
+        return $this->noteRenderer->renderNote($mode, $note, $reference);
     }
 }
 
@@ -240,6 +240,8 @@ class refnotes_renderer_data {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_basic_renderer extends refnotes_renderer_base {
 
+    protected $renderedNoteId = array();
+
     /**
      *
      */
@@ -257,15 +259,15 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
     /**
      *
      */
-    public function renderReference($reference) {
+    public function renderReference($mode, $reference) {
         if ($reference->isInline()) {
-            $html = $this->renderInlineReference($reference);
+            $doc = $this->renderInlineReference($reference);
         }
         else {
-            $html = $this->renderRegularReference($reference);
+            $doc = $this->renderRegularReference($mode, $reference);
         }
 
-        return $html;
+        return $doc;
     }
 
     /**
@@ -290,7 +292,26 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
     /**
      *
      */
-    public function renderNote($note, $reference) {
+    public function renderNote($mode, $note, $reference) {
+        $doc = '';
+
+        switch ($mode) {
+            case 'xhtml':
+                $doc = $this->renderNoteXhtml($note, $reference);
+                break;
+
+            case 'odt':
+                $doc = $this->renderNoteOdt($note, $reference);
+                break;
+        }
+
+        return $doc;
+    }
+
+    /**
+     *
+     */
+    protected function renderNoteXhtml($note, $reference) {
         $html = '<div class="' . $this->renderNoteClass() . '">' . DOKU_LF;
         $html .= $this->renderBackReferences($note, $reference);
         $html .= '<span id="' . $note->getAnchorName() . ':text">' . DOKU_LF;
@@ -300,6 +321,15 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
         $this->rendered = true;
 
         return $html;
+    }
+
+    /**
+     *
+     */
+    protected function renderNoteOdt($note, $reference) {
+        $this->rendered = true;
+
+        return '';
     }
 
     /**
@@ -332,7 +362,26 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
     /**
      *
      */
-    protected function renderRegularReference($reference) {
+    protected function renderRegularReference($mode, $reference) {
+        $doc = '';
+
+        switch ($mode) {
+            case 'xhtml':
+                $doc = $this->renderRegularReferenceXhtml($reference);
+                break;
+
+            case 'odt':
+                $doc = $this->renderRegularReferenceOdt($reference);
+                break;
+        }
+
+        return $doc;
+    }
+
+    /**
+     *
+     */
+    protected function renderRegularReferenceXhtml($reference) {
         $noteName = $reference->getNote()->getAnchorName();
         $referenceName = $reference->getAnchorName();
         $class = $this->renderReferenceClass();
@@ -348,6 +397,39 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
         $html .= $fontClose . $baseClose;
 
         return $html;
+    }
+
+    /**
+     *
+     */
+    protected function renderRegularReferenceOdt($reference) {
+        $xmlOdt = '';
+        $note = $reference->getNote();
+        $noteId = $note->getId();
+        $refId = $reference->getId();
+
+        // Check to see if this note has been seen before
+
+        if (array_search($noteId, $this->renderedNoteId) === false) {
+            // new note, add it to the $renderedNoteId array
+            $this->renderedNoteId[] = $noteId;
+
+            $xmlOdt .= '<text:note text:id="refnote' . $refId . '" text:note-class="footnote">';
+            $xmlOdt .= '<text:note-citation text:label="' . $refId . '">' . $refId . '</text:note-citation>';
+            $xmlOdt .= '<text:note-body>';
+            $xmlOdt .= '<text:p>' . $note->getText();
+            $xmlOdt .= '</text:p>';
+            $xmlOdt .= '</text:note-body>';
+            $xmlOdt .= '</text:note>';
+        }
+        else {
+            // Seen this one before - just reference it FIXME: style isn't correct
+            $xmlOdt = '<text:note-ref text:note-class="footnote" text:ref-name="refnote' . $noteId . '">';
+            $xmlOdt .= $refId;
+            $xmlOdt .= '</text:note-ref>';
+        }
+
+        return $xmlOdt;
     }
 
     /**
