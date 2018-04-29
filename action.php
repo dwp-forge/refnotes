@@ -48,9 +48,9 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $this->beforeTplMetaheaderOutput->register($controller);
     }
 
-	/**
-	 * A hack to retrieve localization by prefix.
-	 */
+    /**
+     * A hack to retrieve localization by prefix.
+     */
     public function getActionLocaleByPrefix($prefix, $strip = true) {
         if(!$this->localised) $this->setupLocale();
 
