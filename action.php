@@ -47,6 +47,31 @@ class action_plugin_refnotes extends DokuWiki_Action_Plugin {
         $this->beforeParserWikitextPreprocess->register($controller);
         $this->beforeTplMetaheaderOutput->register($controller);
     }
+
+	/**
+	 * A hack to retrieve localization by prefix.
+	 */
+    public function getActionLocaleByPrefix($prefix, $strip = true) {
+        if(!$this->localised) $this->setupLocale();
+
+        if ($strip) {
+            $pattern = '/^' . $prefix . '_(.+)$/';
+        }
+        else {
+            $pattern = '/^(' . $prefix . '_.+)$/';
+        }
+
+        $result = array();
+
+		print_r($this->plugin);
+        foreach ($this->lang as $key => $value) {
+            if (preg_match($pattern, $key, $match) == 1) {
+                $result[$match[1]] = $value;
+            }
+        }
+        return $result;
+    }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
