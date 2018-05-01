@@ -68,7 +68,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      * them as part of the page and then load them into the LANG array on the client side.
      */
     private function printLanguageStrings() {
-        $lang = $this->locale->getByPrefix('js');
+        $lang = $this->locale->getLangJSPrefix();
 
         $this->html->ptln('<div id="refnotes-lang" style="display: none;">');
 
