@@ -7,6 +7,18 @@
  * @author     Mykola Ostrovskyy <spambox03@mail.ru>
  */
 
+/**
+ * Plugins that rely on refnotes_localization should use this trait.
+ */
+trait refnotes_localization_plugin {
+    /**
+     *
+     */
+    public function getRawLang() {
+        return $this->lang;
+    }
+}
+
 class refnotes_localization {
 
     private static $instance = NULL;
@@ -69,7 +81,7 @@ class refnotes_localization {
 
         $result = array();
 
-        foreach ($this->plugin->lang as $key => $value) {
+        foreach ($this->plugin->getRawLang() as $key => $value) {
             if (preg_match($pattern, $key, $match) == 1) {
                 $result[$match[1]] = $value;
             }

@@ -17,6 +17,7 @@ require_once(DOKU_PLUGIN . 'refnotes/instructions.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class action_plugin_refnotes extends DokuWiki_Action_Plugin {
+    use refnotes_localization_plugin;
 
     private $afterParserHandlerDone;
     private $beforeAjaxCallUnknown;

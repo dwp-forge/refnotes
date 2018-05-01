@@ -16,6 +16,7 @@ require_once(DOKU_PLUGIN . 'refnotes/bibtex.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
+    use refnotes_localization_plugin;
 
     private $mode;
     private $entryPattern;

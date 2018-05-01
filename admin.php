@@ -14,6 +14,7 @@ require_once(DOKU_PLUGIN . 'admin.php');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
+    use refnotes_localization_plugin;
 
     private $html;
     private $locale;
