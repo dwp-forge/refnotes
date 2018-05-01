@@ -58,23 +58,6 @@ class refnotes_localization {
      *
      */
     public function getByPrefix($prefix, $strip = true) {
-        $this->plugin->setupLocale();
-
-        if ($strip) {
-            $pattern = '/^' . $prefix . '_(.+)$/';
-        }
-        else {
-            $pattern = '/^(' . $prefix . '_.+)$/';
-        }
-
-        $result = array();
-
-        foreach ($this->plugin->lang as $key => $value) {
-            if (preg_match($pattern, $key, $match) == 1) {
-                $result[$match[1]] = $value;
-            }
-        }
-
-        return $result;
+        return $this->plugin->getActionLocaleByPrefix($prefix, $strip);
     }
 }
