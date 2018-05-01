@@ -1,6 +1,6 @@
 base   refnotes
 author Mykola Ostrovskyy
-email  spambox03@mail.ru
+email  dwpforge@gmail.com
 date   2017-02-28
 name   RefNotes Plugin
 desc   Extended syntax for footnotes and references.

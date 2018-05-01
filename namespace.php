@@ -4,7 +4,7 @@
  * Plugin RefNotes: Namespace heplers
  *
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
- * @author     Mykola Ostrovskyy <spambox03@mail.ru>
+ * @author     Mykola Ostrovskyy <dwpforge@gmail.com>
  */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
