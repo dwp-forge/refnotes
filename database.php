@@ -70,7 +70,7 @@ class refnotes_reference_database {
      */
     private function loadKeys() {
         $locale = refnotes_localization::getInstance();
-        foreach ($locale->getByPrefix('dbk') as $key => $text) {
+        foreach (getLangDBKPrefix() as $key => $text) {
             $this->key[$this->normalizeKeyText($text)] = $key;
         }
     }
