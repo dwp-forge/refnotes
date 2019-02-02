@@ -122,7 +122,7 @@ class refnotes_note extends refnotes_refnote {
     public static function getNamePattern($type) {
         if (($type == 'full-extended') || ($type == 'extended')) {
             $result = ($type == 'full-extended') ? refnotes_namespace::getNamePattern('optional') : '';
-            $result .= '[[:alpha:]][\w.&\(\)\[\]{}+-]*';
+            $result .= '[[:alpha:]\d][\w.&\(\)\[\]{}+-]*';
         }
         else {
             $result = '[[:alpha:]]\w*';
