@@ -81,6 +81,7 @@ class refnotes_instruction_mangler {
     private $core;
     private $calls;
     private $paragraphReferences;
+    private $referenceGroup;
     private $hidden;
     private $inReference;
 
@@ -91,6 +92,7 @@ class refnotes_instruction_mangler {
         $this->core = new refnotes_action_core();
         $this->calls = new refnotes_instruction_list($event);
         $this->paragraphReferences = array();
+        $this->referenceGroup = array();
         $this->hidden = true;
         $this->inReference = false;
     }
@@ -120,6 +122,7 @@ class refnotes_instruction_mangler {
     private function scanInstructions() {
         foreach ($this->calls as $call) {
             $this->markHiddenReferences($call);
+            $this->markReferenceGroups($call);
             $this->markScopeLimits($call);
             $this->extractStyles($call);
             $this->extractMappings($call);
@@ -145,7 +148,7 @@ class refnotes_instruction_mangler {
                 break;
 
             case 'cdata':
-                if (!$this->inReference && (trim($call->getData(0)) != '')) {
+                if (!$this->inReference && !empty(trim($call->getData(0)))) {
                     $this->hidden = false;
                 }
                 break;
@@ -169,6 +172,50 @@ class refnotes_instruction_mangler {
                 }
                 break;
         }
+    }
+
+    /**
+     *
+     */
+    private function markReferenceGroups($call) {
+        if (($call->getName() == 'plugin_refnotes_references') && ($call->getPluginData(0) == 'render')) {
+            if (!empty($this->referenceGroup)) {
+                $groupNamespace = $this->referenceGroup[0]->getRefnotesAttribute('ns');
+
+                if ($call->getRefnotesAttribute('ns') != $groupNamespace) {
+                    $this->closeReferenceGroup();
+                }
+            }
+
+            $this->referenceGroup[] = $call;
+        }
+        elseif (!$this->inReference && !empty($this->referenceGroup)) {
+            // Allow whitespace "cdata" istructions between references in a group
+            if ($call->getName() == 'cdata' && empty(trim($call->getData(0)))) {
+                return;
+            }
+
+            $this->closeReferenceGroup();
+        }
+    }
+
+    /**
+     *
+     */
+    private function closeReferenceGroup() {
+        $count = count($this->referenceGroup);
+
+        if ($count > 1) {
+            $this->referenceGroup[0]->setRefnotesAttribute('group', 'open');
+
+            for ($i = 1; $i < $count - 1; $i++) {
+                $this->referenceGroup[$i]->setRefnotesAttribute('group', 'hold');
+            }
+
+            $this->referenceGroup[$count - 1]->setRefnotesAttribute('group', 'close');
+        }
+
+        $this->referenceGroup = array();
     }
 
     /**
