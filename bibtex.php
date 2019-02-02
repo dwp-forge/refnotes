@@ -230,7 +230,7 @@ class refnotes_bibtex_field_mode extends refnotes_bibtex_mode {
     public function __construct() {
         parent::__construct();
 
-        $this->entryPattern[] = '^\s*\w+\s*=\s*';
+        $this->entryPattern[] = '^\s*\w[\w-]+\s*=\s*';
         $this->exitPattern[] = '\s*(?:,|(?=[\)}@]))';
 
         $this->allowedModes = array('integer_value', 'string_value_quoted', 'string_value_braced', 'concatenation');
@@ -383,7 +383,7 @@ class refnotes_bibtex_handler {
     public function field($match, $state) {
         switch ($state) {
             case DOKU_LEXER_ENTER:
-                $this->field = new refnotes_bibtex_field(preg_replace('/\W*(\w+)\W*/', '$1', $match));
+                $this->field = new refnotes_bibtex_field(preg_replace('/\W*(\w[\w-]+)\W*/', '$1', $match));
                 break;
 
             case DOKU_LEXER_UNMATCHED:
