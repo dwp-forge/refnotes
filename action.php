@@ -80,6 +80,7 @@ class refnotes_instruction_mangler {
 
     private $core;
     private $calls;
+    private $paragraphReferences;
     private $hidden;
     private $inReference;
 
@@ -89,6 +90,7 @@ class refnotes_instruction_mangler {
     public function __construct($event) {
         $this->core = new refnotes_action_core();
         $this->calls = new refnotes_instruction_list($event);
+        $this->paragraphReferences = array();
         $this->hidden = true;
         $this->inReference = false;
     }
@@ -130,7 +132,16 @@ class refnotes_instruction_mangler {
     private function markHiddenReferences($call) {
         switch ($call->getName()) {
             case 'p_open':
+                $this->paragraphReferences = array();
                 $this->hidden = true;
+                break;
+
+            case 'p_close':
+                if ($this->hidden) {
+                    foreach ($this->paragraphReferences as $call) {
+                        $call->setRefnotesAttribute('hidden', true);
+                    }
+                }
                 break;
 
             case 'cdata':
@@ -147,10 +158,7 @@ class refnotes_instruction_mangler {
 
                     case 'render':
                         $this->inReference = false;
-
-                        if ($this->hidden) {
-                            $call->setRefnotesAttribute('hidden', true);
-                        }
+                        $this->paragraphReferences[] = $call;
                         break;
                 }
                 break;
