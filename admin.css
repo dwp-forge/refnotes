@@ -39,6 +39,7 @@ div#refnotes-config div#config__manager td.lean-label {
 }
 
 div#refnotes-config div#config__manager td.value {
+    padding: 0.5em 0.5em;
     width: 20em;
 }
 
@@ -65,8 +66,10 @@ div#refnotes-config div#config__manager td.value input.button[disabled] {
 }
 
 div#refnotes-config div#config__manager td.value textarea {
-    width: 99%;
+    width: 100%;
     height: auto;
+    resize: vertical;
+    margin: 0;
 }
 
 div#refnotes-config div#config__manager div.list-controls {
@@ -78,7 +81,10 @@ div#refnotes-config div#config__manager div.list-controls input.edit {
     width: 14em;
 }
 
-div#refnotes-config div#config__manager td.default .input,
+div#refnotes-config div#config__manager td .input {
+    background-color: inherit;
+}
+
 div#refnotes-config div#config__manager td.default input,
 div#refnotes-config div#config__manager td.default textarea,
 div#refnotes-config div#config__manager td.default select {
@@ -86,7 +92,6 @@ div#refnotes-config div#config__manager td.default select {
     color: #000;
 }
 
-div#refnotes-config div#config__manager td.inherited .input,
 div#refnotes-config div#config__manager td.inherited input,
 div#refnotes-config div#config__manager td.inherited textarea,
 div#refnotes-config div#config__manager td.inherited select {
