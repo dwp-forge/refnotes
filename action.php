@@ -460,6 +460,10 @@ class refnotes_before_ajax_call_unknown {
                 'dw' => array(')'           , '()'     , ']'            , '[]'      ),
                 'js' => array('right-parent', 'parents', 'right-bracket', 'brackets')
             ),
+            'reference-group' => array(
+                'dw' => array('none'      , ','          , 's'              ),
+                'js' => array('group-none', 'group-comma', 'group-semicolon')
+            ),
             'multi-ref-id' => array(
                 'dw' => array('ref'        , 'note'   ),
                 'js' => array('ref-counter', 'note-counter')

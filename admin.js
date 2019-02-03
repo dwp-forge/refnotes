@@ -391,6 +391,7 @@ var refnotes_admin = (function () {
             'reference-font-weight', 'normal',
             'reference-font-style' , 'normal',
             'reference-format'     , 'right-parent',
+            'reference-group'      , 'group-none',
             'reference-render'     , 'basic',
             'multi-ref-id'         , 'ref-counter',
             'note-preview'         , 'popup',
@@ -600,6 +601,7 @@ var refnotes_admin = (function () {
             fields.addItem(new SelectField('reference-font-weight'));
             fields.addItem(new SelectField('reference-font-style'));
             fields.addItem(new SelectField('reference-format'));
+            fields.addItem(new SelectField('reference-group'));
             fields.addItem(new SelectField('reference-render'));
             fields.addItem(new SelectField('multi-ref-id'));
             fields.addItem(new SelectField('note-preview'));

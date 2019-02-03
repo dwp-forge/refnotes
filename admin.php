@@ -384,6 +384,10 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
                 'class' => 'select',
                 'option' => array('right-parent', 'parents', 'right-bracket', 'brackets', 'none', 'inherit')
             ),
+            'reference-group' => array(
+                'class' => 'select',
+                'option' => array('group-none', 'group-comma', 'group-semicolon', 'inherit')
+            ),
             'reference-render' => array(
                 'class' => 'select',
                 'option' => array('basic', 'harvard', 'inherit')
