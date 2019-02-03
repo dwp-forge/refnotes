@@ -21,12 +21,16 @@ div#refnotes-config div#config__manager div.error {
 }
 
 div#refnotes-config div#config__manager td.list {
+    position: relative;
+    background-clip: padding-box;
     width: 15em;
-    vertical-align: top;
 }
 
 div#refnotes-config div#config__manager select.list {
-    width: 100%;
+    position: absolute;
+    top: 0.5em;
+    bottom: 0.5em;
+    width: 15em;
 }
 
 div#refnotes-config div#config__manager td.lean-label {
