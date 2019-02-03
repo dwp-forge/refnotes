@@ -532,7 +532,7 @@ var refnotes_admin = (function () {
             });
 
             function setSelection(value) {
-                combo.children('[value="' + value + '"]').attr('selected', 'selected');
+                combo.val(value);
             }
 
             this.onChange = function () {
