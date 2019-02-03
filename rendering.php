@@ -43,7 +43,7 @@ abstract class refnotes_renderer_base {
     abstract public function getReferenceSharedDataSet();
 
     /**
-     * Returns an array of keys for data that is private to references.
+     * Returns an array of keys for data that is specific to references.
      */
     abstract public function getReferencePrivateDataSet();
 
@@ -388,7 +388,7 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
 
         list($baseOpen, $baseClose) = $this->renderReferenceBase();
         list($fontOpen, $fontClose) = $this->renderReferenceFont();
-        list($formatOpen, $formatClose) = $this->renderReferenceFormat();
+        list($formatOpen, $formatClose) = $this->renderReferenceFormat($reference);
 
         $html = $baseOpen . $fontOpen;
         $html .= '<a href="#' . $noteName . '" name="' . $referenceName . '" class="' . $class . '">';
@@ -528,8 +528,57 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
     /**
      *
      */
-    protected function renderReferenceFormat() {
-        return $this->renderFormat($this->getStyle('reference-format'));
+    protected function renderReferenceFormat($reference) {
+        $result = $this->renderFormat($this->getStyle('reference-format'));
+
+        if ($this->getReferenceGrouping($reference)) {
+            switch ($reference->getAttribute('group')) {
+                case 'open':
+                    $result = array($result[0], $this->renderReferenceGroupSeparator());
+                    break;
+
+                case 'hold':
+                    $result = array('', $this->renderReferenceGroupSeparator());
+                    break;
+
+                case 'close':
+                    $result = array('', $result[1]);
+                    break;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
+    protected function getReferenceGrouping($reference) {
+        $group = $reference->getAttribute('group');
+        return !empty($group) && in_array($group, array('open', 'hold', 'close')) &&
+                in_array($this->getStyle('reference-group'), array(',', 's'));
+    }
+
+    /**
+     *
+     */
+    protected function renderReferenceGroupSeparator() {
+        $style = $this->getStyle('reference-group');
+        switch ($style) {
+            case ',':
+                $result = ',';
+                break;
+
+            case 's':
+                $result = ';';
+                break;
+
+            default:
+                $result = '';
+                break;
+        }
+
+        return $result;
     }
 
     /**
@@ -1127,8 +1176,34 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
 
         if ($data->isPositive('direct')) {
             $html = $authors . ' ' . $formatOpen . $html . $formatClose;
+
+            if ($this->getReferenceGrouping($reference)) {
+                switch ($reference->getAttribute('group')) {
+                    case 'open':
+                    case 'hold':
+                        $html .= $this->renderReferenceGroupSeparator();
+                        break;
+                }
+            }
         }
         else {
+            if ($this->getReferenceGrouping($reference)) {
+                switch ($reference->getAttribute('group')) {
+                    case 'open':
+                        $formatClose = $this->renderReferenceGroupSeparator();
+                        break;
+
+                    case 'hold':
+                        $formatOpen = '';
+                        $formatClose = $this->renderReferenceGroupSeparator();
+                        break;
+
+                    case 'close':
+                        $formatOpen = '';
+                        break;
+                }
+            }
+
             $html = $formatOpen . $authors . ', ' . $html . $formatClose;
         }
 
@@ -1139,7 +1214,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
      *
      */
     protected function renderBasicReferenceId($reference) {
-        list($formatOpen, $formatClose) = parent::renderReferenceFormat();
+        list($formatOpen, $formatClose) = parent::renderReferenceFormat($reference);
 
         return $formatOpen . parent::renderReferenceId($reference) . $formatClose;
     }
@@ -1178,7 +1253,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     /**
      *
      */
-    protected function renderReferenceFormat() {
+    protected function renderReferenceFormat($reference) {
         return array('', '');
     }
 
