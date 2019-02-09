@@ -457,7 +457,7 @@ class refnotes_namespace {
 
             default:
                 $this->newScope = true;
-            break;
+                break;
         }
     }
 }
