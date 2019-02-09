@@ -234,6 +234,23 @@ class refnotes_renderer_note extends refnotes_note {
     /**
      *
      */
+    public function getMinReferenceId() {
+        $result = -1;
+
+        /* References are added in ascending order, so the first valid id should be minimal. */
+        foreach ($this->reference as $reference) {
+            if ($reference->getId() != -1) {
+                $result = $reference->getId();
+                break;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     *
+     */
     public function getAnchorName() {
         $result = 'refnotes';
         $result .= $this->scope->getName();

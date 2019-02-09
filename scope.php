@@ -139,6 +139,14 @@ class refnotes_scope {
      *
      */
     public function renderNotes($mode, $limit) {
+        $minReferenceId = array();
+
+        foreach ($this->note as $note) {
+            $minReferenceId[] = $note->getMinReferenceId();
+        }
+
+        array_multisort($minReferenceId, $this->note);
+
         $block = new refnotes_note_block_iterator($this->note, $limit);
         $doc = '';
 
