@@ -131,7 +131,7 @@ class syntax_plugin_refnotes_references extends DokuWiki_Syntax_Plugin {
         }
 
         if ($result === false) {
-            $handler->_addCall('cdata', array($match), $pos);
+            $handler->addCall('cdata', array($match), $pos);
         }
 
         return $result;
@@ -305,7 +305,7 @@ class refnotes_note_capture {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_nested_call_writer extends Doku_Handler_Nest {
+class refnotes_nested_call_writer extends \dokuwiki\Parsing\Handler\Nest {
 
     private $handler;
     private $callWriterBackup;

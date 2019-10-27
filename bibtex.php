@@ -8,12 +8,9 @@
  */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_bibtex_parser extends Doku_Parser {
+class refnotes_bibtex_parser extends \dokuwiki\Parsing\Parser {
 
     private static $instance = NULL;
-
-    private $handler;
-    private $lexer;
 
     /**
      *
@@ -30,8 +27,8 @@ class refnotes_bibtex_parser extends Doku_Parser {
      * Constructor
      */
     public function __construct() {
-        $this->Handler = new refnotes_bibtex_handler();
-        $this->Lexer = new refnotes_bibtex_lexer($this->Handler, 'base', true);
+        $this->handler = new refnotes_bibtex_handler();
+        $this->lexer = new refnotes_bibtex_lexer($this->handler, 'base', true);
 
         $this->addBibtexMode(new refnotes_bibtex_outside_mode());
         $this->addBibtexMode(new refnotes_bibtex_entry_mode('parented'));
@@ -71,15 +68,15 @@ class refnotes_bibtex_parser extends Doku_Parser {
     public function parse($text) {
         $this->connectModes();
 
-        $this->Handler->reset();
-        $this->Lexer->parse(str_replace("\r\n", "\n", $text));
+        $this->handler->reset();
+        $this->lexer->parse(str_replace("\r\n", "\n", $text));
 
-        return $this->Handler->finalize();
+        return $this->handler->finalize();
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_bibtex_lexer extends Doku_Lexer {
+class refnotes_bibtex_lexer extends \dokuwiki\Parsing\Lexer\Lexer {
 
     /**
      *
@@ -87,44 +84,44 @@ class refnotes_bibtex_lexer extends Doku_Lexer {
     public function parse($text) {
         $lastMode = '';
 
-        while (is_array($parsed = $this->_reduce($text))) {
+        while (is_array($parsed = $this->reduce($text))) {
             list($unmatched, $matched, $mode) = $parsed;
 
-            if (!$this->_dispatchTokens($unmatched, $matched, $mode, 0, 0)) {
+            if (!$this->dispatchTokens($unmatched, $matched, $mode, 0, 0)) {
                 return false;
             }
 
-            if (empty($unmatched) && empty($matched) && ($lastMode == $this->_mode->getCurrent())) {
+            if (empty($unmatched) && empty($matched) && ($lastMode == $this->modeStack->getCurrent())) {
                 return false;
             }
 
-            $lastMode = $this->_mode->getCurrent();
+            $lastMode = $this->modeStack->getCurrent();
         }
 
         if (!$parsed) {
             return false;
         }
 
-        return $this->_invokeParser($text, DOKU_LEXER_UNMATCHED, 0);
+        return $this->invokeHandler($text, DOKU_LEXER_UNMATCHED, 0);
     }
 
     /**
      *
      */
-    function _invokeParser($text, $state, $pos) {
-        if (($text == "") && ($state == DOKU_LEXER_UNMATCHED)) {
+    protected function invokeHandler($text, $state, $pos) {
+        if ($text == "" && $state == DOKU_LEXER_UNMATCHED) {
             return true;
         }
 
-        $mode = $this->_mode->getCurrent();
-        $handler = isset($this->_mode_handlers[$mode]) ? $this->_mode_handlers[$mode] : $mode;
+        $mode = $this->modeStack->getCurrent();
+        $handler = isset($this->mode_handlers[$mode]) ? $this->mode_handlers[$mode] : $mode;
 
-        return $this->_parser->$handler($text, $state);
+        return $this->handler->$handler($text, $state, $pos);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_bibtex_mode extends Doku_Parser_Mode {
+class refnotes_bibtex_mode extends \dokuwiki\Parsing\ParserMode\AbstractMode {
 
     protected $name;
     protected $handler;
@@ -142,6 +139,13 @@ class refnotes_bibtex_mode extends Doku_Parser_Mode {
         $this->specialPattern = array();
         $this->entryPattern = array();
         $this->exitPattern = array();
+    }
+
+    /**
+     *
+     */
+    public function getSort() {
+        return 0;
     }
 
     /**
