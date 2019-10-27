@@ -10,7 +10,6 @@
 /* Must be run within Dokuwiki */
 if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
 
-require_once(DOKU_INC . 'inc/JSON.php');
 require_once(DOKU_PLUGIN . 'action.php');
 require_once(DOKU_PLUGIN . 'refnotes/core.php');
 require_once(DOKU_PLUGIN . 'refnotes/instructions.php');
@@ -398,9 +397,7 @@ class refnotes_before_ajax_call_unknown {
         $config['namespaces'] = $namespace;
         $config['notes'] = refnotes_configuration::load('notes');
 
-        $json = new JSON();
-
-        $this->sendResponse('application/x-suggestions+json', $json->encode($config));
+        $this->sendResponse('application/x-suggestions+json', json_encode($config));
     }
 
     /**
@@ -409,9 +406,7 @@ class refnotes_before_ajax_call_unknown {
     private function saveConfig($config) {
         global $config_cascade;
 
-        $json = new JSON(JSON_LOOSE_TYPE);
-
-        $config = $json->decode($config);
+        $config = json_decode($config, true);
 
         $namespace = $config['namespaces'];
         $namespace = $this->translateStyles($namespace, 'js', 'dw');
@@ -611,7 +606,6 @@ class refnotes_before_tpl_metaheader_output {
      */
     private function addAdminIncludes($event) {
         $this->addTemplateHeaderInclude($event, 'admin.js');
-        $this->addTemplateHeaderInclude($event, 'json2.js');
         $this->addTemplateHeaderInclude($event, 'admin.css');
     }
 
