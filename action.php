@@ -619,7 +619,7 @@ class refnotes_before_tpl_metaheader_output {
         switch (pathinfo($fileName, PATHINFO_EXTENSION)) {
             case 'js':
                 $type = 'script';
-                $data = array('type' => 'text/javascript', 'charset' => 'utf-8', 'src' => $fileName, '_data' => '');
+                $data = array('type' => 'text/javascript', 'charset' => 'utf-8', 'src' => $fileName, '_data' => '', 'defer' => 'defer');
                 break;
 
             case 'css':
