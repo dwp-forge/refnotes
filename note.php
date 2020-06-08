@@ -190,7 +190,7 @@ class refnotes_note extends refnotes_refnote {
      *
      */
     public function setText($text) {
-        if (($this->text == '') || !$this->inline) {
+        if ($this->text == '' || !$this->inline) {
             $this->text = $text;
         }
     }
@@ -224,7 +224,7 @@ class refnotes_note extends refnotes_refnote {
      * Checks if the note should be processed
      */
     public function isValid() {
-        return !$this->processed && (count($this->reference) > 0) && ($this->text != '');
+        return !$this->processed && !empty($this->reference) && $this->text != '';
     }
 }
 
@@ -315,7 +315,7 @@ class refnotes_action_note extends refnotes_note {
      * scope limits will produce note blocks identical to ones during rendering.
      */
     public function isValid() {
-        return !$this->processed && (count($this->reference) > 0) && (($this->text != '') || $this->hasData());
+        return !$this->processed && !empty($this->reference) && ($this->text != '' || $this->hasData());
     }
 
     /**
@@ -323,7 +323,7 @@ class refnotes_action_note extends refnotes_note {
      * Inject note text into the first reference.
      */
     public function rewriteReferences() {
-        if (($this->text == '') && $this->hasData()) {
+        if ($this->text == '' && $this->hasData()) {
             foreach ($this->reference as $reference) {
                 $reference->rewrite($this->attributes, $this->data);
             }
