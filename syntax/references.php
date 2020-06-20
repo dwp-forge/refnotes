@@ -316,21 +316,22 @@ class refnotes_nested_call_writer extends \dokuwiki\Parsing\Handler\Nest {
     public function __construct($handler) {
         $this->handler = $handler;
 
-        parent::__construct($this->handler->CallWriter);
+        parent::__construct($this->handler->getCallWriter());
     }
 
     /**
      *
      */
     public function connect() {
-        $this->callWriterBackup = $this->handler->CallWriter;
-        $this->handler->CallWriter = $this;
+        $this->callWriterBackup = $this->handler->getCallWriter();
+
+        $this->handler->setCallWriter($this);
     }
 
     /**
      *
      */
     public function disconnect() {
-        $this->handler->CallWriter = $this->callWriterBackup;
+        $this->handler->setCallWriter($this->callWriterBackup);
     }
 }
