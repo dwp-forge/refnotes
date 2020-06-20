@@ -7,9 +7,6 @@
  * @author     Mykola Ostrovskyy <dwpforge@gmail.com>
  */
 
-/* Must be run within Dokuwiki */
-if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_instruction {
 

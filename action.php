@@ -7,10 +7,6 @@
  * @author     Mykola Ostrovskyy <dwpforge@gmail.com>
  */
 
-/* Must be run within Dokuwiki */
-if (!defined('DOKU_INC') || !defined('DOKU_PLUGIN')) die();
-
-require_once(DOKU_PLUGIN . 'action.php');
 require_once(DOKU_PLUGIN . 'refnotes/core.php');
 require_once(DOKU_PLUGIN . 'refnotes/instructions.php');
 
