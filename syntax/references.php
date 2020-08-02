@@ -308,8 +308,14 @@ class refnotes_nested_call_writer extends \dokuwiki\Parsing\Handler\Nest {
 
     /**
      * Constructor
+     *
+     * HACK: Fix compatibility with PHP versions before 7.2 by passing handler as second optional
+     * argument. This makes constructor signature compatible with one defined in ReWriterInterface.
+     * Starting from PHP 7.2 this is not needed because arguments without type hint are compatible
+     * with any type since they have a wider type (any type).
+     * https://wiki.php.net/rfc/parameter-no-type-variance
      */
-    public function __construct($handler) {
+    public function __construct(\dokuwiki\Parsing\Handler\CallWriterInterface $callWriter, $handler = NULL) {
         $this->handler = $handler;
 
         parent::__construct($this->handler->getCallWriter());

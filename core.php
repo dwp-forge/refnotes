@@ -74,7 +74,7 @@ class refnotes_parser_core {
      *
      */
     public function getInstructions($text) {
-        $this->callWriter = new refnotes_nested_call_writer($this->handler);
+        $this->callWriter = new refnotes_nested_call_writer($this->handler->getCallWriter(), $this->handler);
 
         $this->callWriter->connect();
         $this->lexer->parse($text);
