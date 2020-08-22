@@ -226,9 +226,9 @@ class refnotes_reference_database_page {
             elseif (($call[$c][0] == 'plugin') && ($call[$c][1][0] == 'data_entry')) {
                 $this->parseDataEntry($call[$c][1][1]);
             }
-            elseif (($call[$c][0] == 'plugin') && ($call[$c][1][0] == 'struct_output')) {
-                $namespace = refnotes_configuration::getSetting('reference-db-namespace');
-                $this->parseStructOutput($namespace);
+            elseif (($call[$c][0] == 'plugin') && ($call[$c][1][0] == 'struct_table')) {
+                $namespace = $call[$c][1][1]['schemas'][0][0];
+                $this->parseStructTable($namespace);
             }
         }
     }
@@ -382,16 +382,17 @@ class refnotes_reference_database_page {
     /**
      *
      */
-    private function parseStructOutput($namespace) {
-         $schema= trim($namespace, ':');
-	 $struct = action_plugin_refnotes::loadHelper('struct', true);
-	 $pages = $struct->getPages($schema);
-	 foreach($pages as $page => $page_1) {
-	     $pageData = $struct->getData($page);
-             $data = array();
+    private function parseStructTable($schema) {
+        $struct = action_plugin_refnotes::loadHelper('struct', true);
+        $pages = $struct->getPages($schema);
 
-	     $data['note-name'] = $page;
-             foreach ($pageData[$schema] as $key => $value) {
+        foreach (array_keys($pages) as $page) {
+            $pageData = $struct->getData($page);
+            $data = array();
+
+            $data['note-name'] = $page;
+
+            foreach ($pageData[$schema] as $key => $value) {
                 if (is_array($value)) {
                     $data[$key] = implode(', ', $value);
                 }
@@ -400,9 +401,10 @@ class refnotes_reference_database_page {
                 }
             }
 
-	     $this->handleNote($data);
-	 }
+            $this->handleNote($data);
+        }
     }
+
     /**
      *
      */
