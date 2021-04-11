@@ -441,6 +441,7 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
         $nameAttribute = ' name="' . $note->getAnchorName() .'"';
         $backRefFormat = $this->getStyle('back-ref-format');
         $backRefCaret = '';
+        $html = '';
 
         list($formatOpen, $formatClose) = $this->renderNoteIdFormat();
 
@@ -868,15 +869,15 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
     /**
      *
      */
-    protected function convertToLatin($number, $case)
-    {
+    protected function convertToLatin($number, $case) {
         static $alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
         $result = '';
+
         while ($number > 0) {
             --$number;
             $digit = $number % 26;
-            $result = $alpha{$digit} . $result;
+            $result = $alpha[$digit] . $result;
             $number = intval($number / 26);
         }
 
@@ -890,8 +891,7 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
     /**
      *
      */
-    protected function convertToRoman($number, $case)
-    {
+    protected function convertToRoman($number, $case) {
         static $lookup = array(
             'M' => 1000, 'CM' => 900, 'D' => 500, 'CD' => 400,
             'C' => 100, 'XC' => 90, 'L' => 50, 'XL' => 40,
@@ -899,8 +899,10 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
         );
 
         $result = '';
+
         foreach ($lookup as $roman => $value) {
             $matches = intval($number / $value);
+
             if ($matches > 0) {
                 $result .= str_repeat($roman, $matches);
                 $number = $number % $value;

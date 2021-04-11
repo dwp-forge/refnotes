@@ -479,7 +479,7 @@ class refnotes_bibtex_entry_stash {
 
         if (in_array($type, $entryType)) {
             if ($this->isValidRefnotesName($name)) {
-                if ($name{0} != ':') {
+                if ($name[0] != ':') {
                     $name = $this->namespace . $name;
                 }
 

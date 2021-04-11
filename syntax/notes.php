@@ -48,7 +48,7 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
      * Handle the match
      */
     public function handle($match, $state, $pos, Doku_Handler $handler) {
-        switch ($match{0}) {
+        switch ($match[0]) {
             case '~':
                 return $this->handleBasic($match);
 

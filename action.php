@@ -351,6 +351,8 @@ class refnotes_before_ajax_call_unknown {
      *
      */
     public function handle($event, $param) {
+        global $conf;
+
         if ($event->data == 'refnotes-admin') {
             $event->preventDefault();
             $event->stopPropagation();
@@ -592,7 +594,8 @@ class refnotes_before_tpl_metaheader_output {
      *
      */
     public function handle($event, $param) {
-        if (($_REQUEST['do'] == 'admin') && !empty($_REQUEST['page']) && ($_REQUEST['page'] == 'refnotes')) {
+        if (!empty($_REQUEST['do']) && $_REQUEST['do'] == 'admin' &&
+                !empty($_REQUEST['page']) && $_REQUEST['page'] == 'refnotes') {
             $this->addAdminIncludes($event);
         }
     }
