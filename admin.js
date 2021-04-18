@@ -1,85 +1,27 @@
 var refnotes_admin = (function () {
     var modified = false;
 
-    function Hash() {
-        /* Copy-pasted from http://www.mojavelinux.com/articles/javascript_hashes.html */
-        this.length = 0;
-        this.items = [];
 
-        if (arguments.length == 1) {
-            if (typeof(arguments[0]) != 'undefined') {
-                for (var key in arguments[0]) {
-                    this.items[key] = arguments[0][key];
-                    this.length++;
-                }
-            }
-        }
-        else if (arguments.length > 1) {
-            for (var i = 0; i < arguments.length; i += 2) {
-                if (typeof(arguments[i + 1]) != 'undefined') {
-                    this.items[arguments[i]] = arguments[i + 1];
-                    this.length++;
-                }
-            }
+    class NameMap extends Map {
+        constructor(sentinel) {
+            super();
+
+            this.sentinel = sentinel;
         }
 
-        this.removeItem = function (key) {
-            if (typeof(this.items[key]) != 'undefined') {
-                this.length--;
-                delete this.items[key];
-            }
+        get(key) {
+            return key == '' ? this.sentinel : super.get(key);
         }
 
-        this.getItem = function (key) {
-            return this.items[key];
-        }
-
-        this.setItem = function (key, value) {
-            if (typeof(value) != 'undefined') {
-                if (typeof(this.items[key]) == 'undefined') {
-                    this.length++;
-                }
-
-                this.items[key] = value;
-            }
-        }
-
-        this.hasItem = function (key) {
-            return typeof(this.items[key]) != 'undefined';
+        has(key) {
+            return key == '' ? true : super.has(key);
         }
     }
 
 
-    function NameHash(sentinel) {
-        this.baseClass = Hash;
-        this.baseClass();
-
-        this.base = {
-            getItem : this.getItem,
-            hasItem : this.hasItem
-        };
-
-        this.getItem = function (key) {
-            return (key == '') ? sentinel : this.base.getItem.apply(this, arguments);
-        }
-
-        this.hasItem = function (key) {
-            return (key == '') ? true : this.base.hasItem.apply(this, arguments);
-        }
-
-        this.clear = function () {
-            this.length = 0;
-            this.items = [];
-        }
-    }
-
-
-    function NamedObjectHash(sentinel) {
-        this.baseClass = Hash;
-        this.baseClass();
-
-        this.addItem = function (value) {
-            this.setItem(value.getName(), value);
+    class NamedObjectMap extends Map {
+        set(value) {
+            super.set(value.getName(), value);
         }
     }
 
@@ -115,7 +57,7 @@ var refnotes_admin = (function () {
         this.reload = function (values) {
             list.empty();
 
-            for (var value in values.items) {
+            for (var value of values.keys()) {
                 if (value != '') {
                     appendOption(value);
                 }
@@ -148,19 +90,19 @@ var refnotes_admin = (function () {
 
 
     var locale = (function () {
-        var lang = new Hash();
+        var lang = new Map();
 
         function initialize() {
             jQuery.each(jQuery('#refnotes-lang').html().split(/:eos:/), function (key, value) {
                 var match = value.match(/^\s*(\w+) : (.+)/);
                 if (match != null) {
-                    lang.setItem(match[1], match[2]);
+                    lang.set(match[1], match[2]);
                 }
             });
         }
 
         function getString(key) {
-            var string = lang.hasItem(key) ? lang.getItem(key) : '';
+            var string = lang.has(key) ? lang.get(key) : '';
 
             if ((string.length > 0) && (arguments.length > 1)) {
                 for (var i = 1; i < arguments.length; i++) {
@@ -280,12 +222,12 @@ var refnotes_admin = (function () {
 
 
     var general = (function () {
-        var fields   = new NamedObjectHash();
-        var defaults = new Hash(
-            'replace-footnotes', false,
-            'reference-db-enable', false,
-            'reference-db-namespace', ':refnotes:'
-        );
+        var fields   = new NamedObjectMap();
+        var defaults = new Map([
+            ['replace-footnotes'     , false],
+            ['reference-db-enable'   , false],
+            ['reference-db-namespace', ':refnotes:']
+        ]);
 
         function Field(settingName) {
             this.element = jQuery('#field-' + settingName);
@@ -300,7 +242,7 @@ var refnotes_admin = (function () {
             }
 
             this.updateDefault = function () {
-                this.element.parents('td').toggleClass('default', this.getValue() == defaults.getItem(settingName));
+                this.element.parents('td').toggleClass('default', this.getValue() == defaults.get(settingName));
             }
 
             this.enable = function (enable) {
@@ -321,7 +263,7 @@ var refnotes_admin = (function () {
                 return this.element.is(':checked');
             }
 
-            this.setValue(defaults.getItem(settingName));
+            this.setValue(defaults.get(settingName));
             this.enable(false);
         }
 
@@ -338,35 +280,35 @@ var refnotes_admin = (function () {
                 return this.element.val();
             }
 
-            this.setValue(defaults.getItem(settingName));
+            this.setValue(defaults.get(settingName));
             this.enable(false);
         }
 
         function initialize() {
-            fields.addItem(new CheckField('replace-footnotes'));
-            fields.addItem(new CheckField('reference-db-enable'));
-            fields.addItem(new TextField('reference-db-namespace'));
+            fields.set(new CheckField('replace-footnotes'));
+            fields.set(new CheckField('reference-db-enable'));
+            fields.set(new TextField('reference-db-namespace'));
 
             jQuery('#field-reference-db-namespace').css('width', '19em');
         }
 
         function reload(settings) {
             for (var name in settings) {
-                if (fields.hasItem(name)) {
-                    fields.getItem(name).setValue(settings[name]);
+                if (fields.has(name)) {
+                    fields.get(name).setValue(settings[name]);
                 }
             }
 
-            for (name in fields.items) {
-                fields.getItem(name).enable(true);
+            for (var field of fields.values()) {
+                field.enable(true);
             }
         }
 
         function getSettings() {
             var settings = {};
 
-            for (var name in fields.items) {
-                settings[name] = fields.getItem(name).getValue();
+            for (var [name, field] of fields) {
+                settings[name] = field.getValue();
             }
 
             return settings;
@@ -382,35 +324,35 @@ var refnotes_admin = (function () {
 
     var namespaces = (function () {
         var list       = null;
-        var fields     = new NamedObjectHash();
-        var namespaces = new NameHash(new DefaultNamespace());
-        var current    = namespaces.getItem('');
-        var defaults   = new Hash(
-            'refnote-id'           , 'numeric',
-            'reference-base'       , 'super',
-            'reference-font-weight', 'normal',
-            'reference-font-style' , 'normal',
-            'reference-format'     , 'right-parent',
-            'reference-group'      , 'group-none',
-            'reference-render'     , 'basic',
-            'multi-ref-id'         , 'ref-counter',
-            'note-preview'         , 'popup',
-            'notes-separator'      , '100%',
-            'note-text-align'      , 'justify',
-            'note-font-size'       , 'normal',
-            'note-render'          , 'basic',
-            'note-id-base'         , 'super',
-            'note-id-font-weight'  , 'normal',
-            'note-id-font-style'   , 'normal',
-            'note-id-format'       , 'right-parent',
-            'back-ref-caret'       , 'none',
-            'back-ref-base'        , 'super',
-            'back-ref-font-weight' , 'bold',
-            'back-ref-font-style'  , 'normal',
-            'back-ref-format'      , 'note-id',
-            'back-ref-separator'   , 'comma',
-            'scoping'              , 'reset'
-        );
+        var fields     = new NamedObjectMap();
+        var namespaces = new NameMap(new DefaultNamespace());
+        var current    = namespaces.get('');
+        var defaults   = new Map([
+            ['refnote-id'           , 'numeric'],
+            ['reference-base'       , 'super'],
+            ['reference-font-weight', 'normal'],
+            ['reference-font-style' , 'normal'],
+            ['reference-format'     , 'right-parent'],
+            ['reference-group'      , 'group-none'],
+            ['reference-render'     , 'basic'],
+            ['multi-ref-id'         , 'ref-counter'],
+            ['note-preview'         , 'popup'],
+            ['notes-separator'      , '100%'],
+            ['note-text-align'      , 'justify'],
+            ['note-font-size'       , 'normal'],
+            ['note-render'          , 'basic'],
+            ['note-id-base'         , 'super'],
+            ['note-id-font-weight'  , 'normal'],
+            ['note-id-font-style'   , 'normal'],
+            ['note-id-format'       , 'right-parent'],
+            ['back-ref-caret'       , 'none'],
+            ['back-ref-base'        , 'super'],
+            ['back-ref-font-weight' , 'bold'],
+            ['back-ref-font-style'  , 'normal'],
+            ['back-ref-format'      , 'note-id'],
+            ['back-ref-separator'   , 'comma'],
+            ['scoping'              , 'reset']
+        ]);
 
         function DefaultNamespace() {
             this.isReadOnly = function () {
@@ -428,7 +370,7 @@ var refnotes_admin = (function () {
             }
 
             this.getStyle = function (name) {
-                return defaults.getItem(name);
+                return defaults.get(name);
             }
 
             this.getStyleInheritance = function (name) {
@@ -441,16 +383,16 @@ var refnotes_admin = (function () {
         }
 
         function Namespace(name, data) {
-            var styles = new Hash(data);
+            var styles = new Map(Object.entries(data));
 
             function getParent() {
                 var parent = name.replace(/\w*:$/, '');
 
-                while (!namespaces.hasItem(parent)) {
+                while (!namespaces.has(parent)) {
                     parent = parent.replace(/\w*:$/, '');
                 }
 
-                return namespaces.getItem(parent);
+                return namespaces.get(parent);
             }
 
             this.isReadOnly = function () {
@@ -467,18 +409,18 @@ var refnotes_admin = (function () {
 
             this.setStyle = function (name, value) {
                 if (value == 'inherit') {
-                    styles.removeItem(name);
+                    styles.delete(name);
                 }
                 else {
-                    styles.setItem(name, value);
+                    styles.set(name, value);
                 }
             }
 
             this.getStyle = function (name) {
                 var result;
 
-                if (styles.hasItem(name)) {
-                    result = styles.getItem(name);
+                if (styles.has(name)) {
+                    result = styles.get(name);
                 }
                 else {
                     result = getParent().getStyle(name);
@@ -490,7 +432,7 @@ var refnotes_admin = (function () {
             this.getStyleInheritance = function (name) {
                 var result = '';
 
-                if (!styles.hasItem(name)) {
+                if (!styles.has(name)) {
                     result = getParent().getStyleInheritance(name) || 'inherited';
                 }
 
@@ -500,8 +442,8 @@ var refnotes_admin = (function () {
             this.getSettings = function () {
                 var settings = {};
 
-                for (var name in styles.items) {
-                    settings[name] = styles.getItem(name);
+                for (var [name, style] of styles) {
+                    settings[name] = style;
                 }
 
                 return settings;
@@ -596,32 +538,32 @@ var refnotes_admin = (function () {
         function initialize() {
             list = new List('#select-namespaces');
 
-            fields.addItem(new SelectField('refnote-id'));
-            fields.addItem(new SelectField('reference-base'));
-            fields.addItem(new SelectField('reference-font-weight'));
-            fields.addItem(new SelectField('reference-font-style'));
-            fields.addItem(new SelectField('reference-format'));
-            fields.addItem(new SelectField('reference-group'));
-            fields.addItem(new SelectField('reference-render'));
-            fields.addItem(new SelectField('multi-ref-id'));
-            fields.addItem(new SelectField('note-preview'));
-            fields.addItem(new TextField('notes-separator', function (value) {
+            fields.set(new SelectField('refnote-id'));
+            fields.set(new SelectField('reference-base'));
+            fields.set(new SelectField('reference-font-weight'));
+            fields.set(new SelectField('reference-font-style'));
+            fields.set(new SelectField('reference-format'));
+            fields.set(new SelectField('reference-group'));
+            fields.set(new SelectField('reference-render'));
+            fields.set(new SelectField('multi-ref-id'));
+            fields.set(new SelectField('note-preview'));
+            fields.set(new TextField('notes-separator', function (value) {
                 return (value.match(/(?:\d+\.?|\d*\.\d+)(?:%|em|px)|none/) != null) ? value : 'none';
             }));
-            fields.addItem(new SelectField('note-text-align'));
-            fields.addItem(new SelectField('note-font-size'));
-            fields.addItem(new SelectField('note-render'));
-            fields.addItem(new SelectField('note-id-base'));
-            fields.addItem(new SelectField('note-id-font-weight'));
-            fields.addItem(new SelectField('note-id-font-style'));
-            fields.addItem(new SelectField('note-id-format'));
-            fields.addItem(new SelectField('back-ref-caret'));
-            fields.addItem(new SelectField('back-ref-base'));
-            fields.addItem(new SelectField('back-ref-font-weight'));
-            fields.addItem(new SelectField('back-ref-font-style'));
-            fields.addItem(new SelectField('back-ref-format'));
-            fields.addItem(new SelectField('back-ref-separator'));
-            fields.addItem(new SelectField('scoping'));
+            fields.set(new SelectField('note-text-align'));
+            fields.set(new SelectField('note-font-size'));
+            fields.set(new SelectField('note-render'));
+            fields.set(new SelectField('note-id-base'));
+            fields.set(new SelectField('note-id-font-weight'));
+            fields.set(new SelectField('note-id-font-style'));
+            fields.set(new SelectField('note-id-format'));
+            fields.set(new SelectField('back-ref-caret'));
+            fields.set(new SelectField('back-ref-base'));
+            fields.set(new SelectField('back-ref-font-weight'));
+            fields.set(new SelectField('back-ref-font-style'));
+            fields.set(new SelectField('back-ref-format'));
+            fields.set(new SelectField('back-ref-separator'));
+            fields.set(new SelectField('scoping'));
 
             jQuery('#select-namespaces').change(onNamespaceChange);
             jQuery('#name-namespaces').prop('disabled', true);
@@ -640,7 +582,7 @@ var refnotes_admin = (function () {
             try {
                 var name = validateName(jQuery('#name-namespaces').val(), 'ns', namespaces);
 
-                namespaces.setItem(name, new Namespace(name));
+                namespaces.set(name, new Namespace(name));
 
                 setCurrent(list.insertValue(name));
 
@@ -658,8 +600,8 @@ var refnotes_admin = (function () {
 
                 current.setName(newName);
 
-                namespaces.removeItem(oldName);
-                namespaces.setItem(newName, current);
+                namespaces.delete(oldName);
+                namespaces.set(newName, current);
 
                 setCurrent(list.renameValue(oldName, newName));
 
@@ -685,7 +627,7 @@ var refnotes_admin = (function () {
 
             for (var name in settings) {
                 if (name.match(/^:$|^:.+?:$/) != null) {
-                    namespaces.setItem(name, new Namespace(name, settings[name]));
+                    namespaces.set(name, new Namespace(name, settings[name]));
                 }
             }
 
@@ -696,7 +638,7 @@ var refnotes_admin = (function () {
         }
 
         function setCurrent(name) {
-            current = namespaces.getItem(name);
+            current = namespaces.get(name);
 
             updateFields();
         }
@@ -706,16 +648,16 @@ var refnotes_admin = (function () {
             jQuery('#rename-namespaces').prop('disabled', current.isReadOnly());
             jQuery('#delete-namespaces').prop('disabled', current.isReadOnly());
 
-            for (var name in fields.items) {
-                fields.getItem(name).update();
+            for (var field of fields.values()) {
+                field.update();
             }
         }
 
         function getSettings() {
             var settings = {};
 
-            for (var name in namespaces.items) {
-                settings[name] = namespaces.getItem(name).getSettings();
+            for (var [name, namespace] of namespaces) {
+                settings[name] = namespace.getSettings();
             }
 
             return settings;
@@ -731,16 +673,16 @@ var refnotes_admin = (function () {
 
     var notes = (function () {
         var list     = null;
-        var fields   = new NamedObjectHash();
-        var notes    = new NameHash(new EmptyNote());
-        var current  = notes.getItem('');
-        var defaults = new Hash(
-            'inline'                   , false,
-            'use-reference-base'       , true,
-            'use-reference-font-weight', true,
-            'use-reference-font-style' , true,
-            'use-reference-format'     , true
-        );
+        var fields   = new NamedObjectMap();
+        var notes    = new NameMap(new EmptyNote());
+        var current  = notes.get('');
+        var defaults = new Map([
+            ['inline'                   , false],
+            ['use-reference-base'       , true],
+            ['use-reference-font-weight', true],
+            ['use-reference-font-style' , true],
+            ['use-reference-format'     , true]
+        ]);
         var inlineAttributes = [
             'use-reference-base',
             'use-reference-font-weight',
@@ -775,7 +717,7 @@ var refnotes_admin = (function () {
             }
 
             this.getAttribute = function (name) {
-                return defaults.getItem(name);
+                return defaults.get(name);
             }
 
             this.getSettings = function () {
@@ -784,7 +726,7 @@ var refnotes_admin = (function () {
         }
 
         function Note(name, data) {
-            var attributes = new Hash(data);
+            var attributes = new Map(Object.entries(data));
 
             this.isReadOnly = function () {
                 return false;
@@ -799,23 +741,23 @@ var refnotes_admin = (function () {
             }
 
             this.setText = function (text) {
-                attributes.setItem('text', text);
+                attributes.set('text', text);
             }
 
             this.getText = function () {
-                return attributes.getItem('text');
+                return attributes.get('text');
             }
 
             this.setAttribute = function (name, value) {
-                attributes.setItem(name, value);
+                attributes.set(name, value);
             }
 
             this.getAttribute = function (name) {
-                if (!attributes.hasItem(name) || (isInlineAttribute(name) && !this.getAttribute('inline'))) {
-                    return defaults.getItem(name);
+                if (!attributes.has(name) || (isInlineAttribute(name) && !this.getAttribute('inline'))) {
+                    return defaults.get(name);
                 }
                 else {
-                    return attributes.getItem(name);
+                    return attributes.get(name);
                 }
             }
 
@@ -824,14 +766,14 @@ var refnotes_admin = (function () {
 
                 if (!this.getAttribute('inline')) {
                     for (var i in inlineAttributes) {
-                        if (attributes.hasItem(inlineAttributes[i])) {
-                            attributes.removeItem(inlineAttributes[i]);
+                        if (attributes.has(inlineAttributes[i])) {
+                            attributes.delete(inlineAttributes[i]);
                         }
                     }
                 }
 
-                for (var name in attributes.items) {
-                    settings[name] = attributes.getItem(name);
+                for (var [name, attribute] of attributes) {
+                    settings[name] = attribute;
                 }
 
                 return settings;
@@ -879,7 +821,7 @@ var refnotes_admin = (function () {
 
             this.element.change(this, function (event) {
                 for (var i in inlineAttributes) {
-                    fields.getItem(inlineAttributes[i]).update();
+                    fields.get(inlineAttributes[i]).update();
                 }
             });
         }
@@ -887,11 +829,11 @@ var refnotes_admin = (function () {
         function initialize() {
             list = new List('#select-notes');
 
-            fields.addItem(new InlineField());
-            fields.addItem(new CheckField('use-reference-base'));
-            fields.addItem(new CheckField('use-reference-font-weight'));
-            fields.addItem(new CheckField('use-reference-font-style'));
-            fields.addItem(new CheckField('use-reference-format'));
+            fields.set(new InlineField());
+            fields.set(new CheckField('use-reference-base'));
+            fields.set(new CheckField('use-reference-font-weight'));
+            fields.set(new CheckField('use-reference-font-style'));
+            fields.set(new CheckField('use-reference-format'));
 
             jQuery('#select-notes').change(onNoteChange);
             jQuery('#name-notes').prop('disabled', true);
@@ -911,7 +853,7 @@ var refnotes_admin = (function () {
             try {
                 var name = validateName(jQuery('#name-notes').val(), 'note', notes);
 
-                notes.setItem(name, new Note(name));
+                notes.set(name, new Note(name));
 
                 setCurrent(list.insertValue(name));
 
@@ -929,8 +871,8 @@ var refnotes_admin = (function () {
 
                 current.setName(newName);
 
-                notes.removeItem(oldName);
-                notes.setItem(newName, current);
+                notes.delete(oldName);
+                notes.set(newName, current);
 
                 setCurrent(list.renameValue(oldName, newName));
 
@@ -943,7 +885,7 @@ var refnotes_admin = (function () {
 
         function onDeleteNote(event) {
             if (confirm(locale.getString('delete_note', current.getName()))) {
-                notes.removeItem(current.getName());
+                notes.delete(current.getName());
 
                 setCurrent(list.removeValue(current.getName()));
 
@@ -962,7 +904,7 @@ var refnotes_admin = (function () {
 
             for (var name in settings) {
                 if (name.match(/^:.+?\w$/) != null) {
-                    notes.setItem(name, new Note(name, settings[name]));
+                    notes.set(name, new Note(name, settings[name]));
                 }
             }
 
@@ -973,7 +915,7 @@ var refnotes_admin = (function () {
         }
 
         function setCurrent(name) {
-            current = notes.getItem(name);
+            current = notes.get(name);
 
             updateFields();
         }
@@ -984,16 +926,16 @@ var refnotes_admin = (function () {
             jQuery('#delete-notes').prop('disabled', current.isReadOnly());
             jQuery('#field-note-text').val(current.getText()).prop('disabled', current.isReadOnly());
 
-            for (var name in fields.items) {
-                fields.getItem(name).update();
+            for (var field of fields.values()) {
+                field.update();
             }
         }
 
         function getSettings() {
             var settings = {};
 
-            for (var name in notes.items) {
-                settings[name] = notes.getItem(name).getSettings();
+            for (var [name, note] of notes) {
+                settings[name] = note.getSettings();
             }
 
             return settings;
@@ -1073,7 +1015,7 @@ var refnotes_admin = (function () {
             throw locale.getString('invalid_' + type + '_name');
         }
 
-        if (existing.hasItem(name)) {
+        if (existing.has(name)) {
             throw locale.getString(type + '_name_exists', name);
         }
 
