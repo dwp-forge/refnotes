@@ -1,7 +1,7 @@
 (function () {
-    var floater = null;
-    var tracking = false;
-    var timer = null;
+    let floater = null;
+    let tracking = false;
+    let timer = null;
 
     function createFloater() {
         return jQuery('<div id="insitu__fn" />')
@@ -22,10 +22,10 @@
         return floater;
     }
 
-    var preview = {
+    let preview = {
         setNoteId : function (id) {
             // locate the note span element
-            var note = jQuery('#' + id.replace(/:/g, '\\:') + '\\:text');
+            let note = jQuery('#' + id.replace(/:/g, '\\:') + '\\:text');
             if (note.length == 0) {
                 return false;
             }

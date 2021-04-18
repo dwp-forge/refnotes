@@ -1,5 +1,5 @@
-var refnotes_admin = (function () {
-    var modified = false;
+let refnotes_admin = (function () {
+    let modified = false;
 
 
     class NameMap extends Map {
@@ -27,7 +27,7 @@ var refnotes_admin = (function () {
 
 
     function List(id) {
-        var list = jQuery(id);
+        let list = jQuery(id);
 
         function appendOption(value) {
             jQuery('<option>')
@@ -57,7 +57,7 @@ var refnotes_admin = (function () {
         this.reload = function (values) {
             list.empty();
 
-            for (var value of values.keys()) {
+            for (let value of values.keys()) {
                 if (value != '') {
                     appendOption(value);
                 }
@@ -69,7 +69,7 @@ var refnotes_admin = (function () {
         }
 
         this.removeValue = function (value) {
-            var option = list.children('[value="' + value + '"]');
+            let option = list.children('[value="' + value + '"]');
 
             if (option.length == 1) {
                 list.prop('selectedIndex', option.index() + (option.is(':last-child') ? -1 : 1));
@@ -89,12 +89,12 @@ var refnotes_admin = (function () {
     }
 
 
-    var locale = (function () {
-        var lang = new Map();
+    let locale = (function () {
+        let lang = new Map();
 
         function initialize() {
             jQuery.each(jQuery('#refnotes-lang').html().split(/:eos:/), function (key, value) {
-                var match = value.match(/^\s*(\w+) : (.+)/);
+                let match = value.match(/^\s*(\w+) : (.+)/);
                 if (match != null) {
                     lang.set(match[1], match[2]);
                 }
@@ -102,10 +102,10 @@ var refnotes_admin = (function () {
         }
 
         function getString(key) {
-            var string = lang.has(key) ? lang.get(key) : '';
+            let string = lang.has(key) ? lang.get(key) : '';
 
             if ((string.length > 0) && (arguments.length > 1)) {
-                for (var i = 1; i < arguments.length; i++) {
+                for (let i = 1; i < arguments.length; i++) {
                     string = string.replace(new RegExp('\\{' + i + '\\}'), arguments[i]);
                 }
             }
@@ -120,9 +120,9 @@ var refnotes_admin = (function () {
     })();
 
 
-    var server = (function () {
-        var timer = null;
-        var transaction = null;
+    let server = (function () {
+        let timer = null;
+        let transaction = null;
 
         function sendRequest(request, data, success) {
             if (transaction == null) {
@@ -143,8 +143,8 @@ var refnotes_admin = (function () {
                         setErrorStatus((status == 'parseerror') ? 'invalid_data' : transaction + '_failed', message);
                     },
                     dataFilter : function (data) {
-                        var cookie = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
-                        var match = data.match(new RegExp(cookie + '(.+?)' + cookie));
+                        let cookie = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
+                        let match = data.match(new RegExp(cookie + '(.+?)' + cookie));
 
                         if ((match == null) || (match.length != 2)) {
                             throw 'Malformed response';
@@ -221,9 +221,9 @@ var refnotes_admin = (function () {
     })();
 
 
-    var general = (function () {
-        var fields   = new NamedObjectMap();
-        var defaults = new Map([
+    let general = (function () {
+        let fields   = new NamedObjectMap();
+        let defaults = new Map([
             ['replace-footnotes'     , false],
             ['reference-db-enable'   , false],
             ['reference-db-namespace', ':refnotes:']
@@ -293,21 +293,21 @@ var refnotes_admin = (function () {
         }
 
         function reload(settings) {
-            for (var name in settings) {
+            for (let name in settings) {
                 if (fields.has(name)) {
                     fields.get(name).setValue(settings[name]);
                 }
             }
 
-            for (var field of fields.values()) {
+            for (let field of fields.values()) {
                 field.enable(true);
             }
         }
 
         function getSettings() {
-            var settings = {};
+            let settings = {};
 
-            for (var [name, field] of fields) {
+            for (let [name, field] of fields) {
                 settings[name] = field.getValue();
             }
 
@@ -322,12 +322,12 @@ var refnotes_admin = (function () {
     })();
 
 
-    var namespaces = (function () {
-        var list       = null;
-        var fields     = new NamedObjectMap();
-        var namespaces = new NameMap(new DefaultNamespace());
-        var current    = namespaces.get('');
-        var defaults   = new Map([
+    let namespaces = (function () {
+        let list       = null;
+        let fields     = new NamedObjectMap();
+        let namespaces = new NameMap(new DefaultNamespace());
+        let current    = namespaces.get('');
+        let defaults   = new Map([
             ['refnote-id'           , 'numeric'],
             ['reference-base'       , 'super'],
             ['reference-font-weight', 'normal'],
@@ -383,10 +383,10 @@ var refnotes_admin = (function () {
         }
 
         function Namespace(name, data) {
-            var styles = new Map(Object.entries(data));
+            let styles = new Map(Object.entries(data));
 
             function getParent() {
-                var parent = name.replace(/\w*:$/, '');
+                let parent = name.replace(/\w*:$/, '');
 
                 while (!namespaces.has(parent)) {
                     parent = parent.replace(/\w*:$/, '');
@@ -417,7 +417,7 @@ var refnotes_admin = (function () {
             }
 
             this.getStyle = function (name) {
-                var result;
+                let result;
 
                 if (styles.has(name)) {
                     result = styles.get(name);
@@ -430,7 +430,7 @@ var refnotes_admin = (function () {
             }
 
             this.getStyleInheritance = function (name) {
-                var result = '';
+                let result = '';
 
                 if (!styles.has(name)) {
                     result = getParent().getStyleInheritance(name) || 'inherited';
@@ -440,9 +440,9 @@ var refnotes_admin = (function () {
             }
 
             this.getSettings = function () {
-                var settings = {};
+                let settings = {};
 
-                for (var [name, style] of styles) {
+                for (let [name, style] of styles) {
                     settings[name] = style;
                 }
 
@@ -468,7 +468,7 @@ var refnotes_admin = (function () {
             this.baseClass = Field;
             this.baseClass(styleName);
 
-            var combo = this.element;
+            let combo = this.element;
 
             combo.change(this, function (event) {
                 event.data.onChange();
@@ -479,7 +479,7 @@ var refnotes_admin = (function () {
             }
 
             this.onChange = function () {
-                var value = combo.val();
+                let value = combo.val();
 
                 current.setStyle(styleName, value);
 
@@ -503,8 +503,8 @@ var refnotes_admin = (function () {
             this.baseClass = Field;
             this.baseClass(styleName);
 
-            var edit   = this.element;
-            var button = jQuery('#field-' + styleName + '-inherit');
+            let edit   = this.element;
+            let button = jQuery('#field-' + styleName + '-inherit');
 
             edit.change(this, function (event) {
                 event.data.setValue(validate(edit.val()));
@@ -580,7 +580,7 @@ var refnotes_admin = (function () {
 
         function onAddNamespace(event) {
             try {
-                var name = validateName(jQuery('#name-namespaces').val(), 'ns', namespaces);
+                let name = validateName(jQuery('#name-namespaces').val(), 'ns', namespaces);
 
                 namespaces.set(name, new Namespace(name));
 
@@ -595,8 +595,8 @@ var refnotes_admin = (function () {
 
         function onRenameNamespace(event) {
             try {
-                var newName = validateName(jQuery('#name-namespaces').val(), 'ns', namespaces);
-                var oldName = current.getName();
+                let newName = validateName(jQuery('#name-namespaces').val(), 'ns', namespaces);
+                let oldName = current.getName();
 
                 current.setName(newName);
 
@@ -625,7 +625,7 @@ var refnotes_admin = (function () {
         function reload(settings) {
             namespaces.clear();
 
-            for (var name in settings) {
+            for (let name in settings) {
                 if (name.match(/^:$|^:.+?:$/) != null) {
                     namespaces.set(name, new Namespace(name, settings[name]));
                 }
@@ -648,15 +648,15 @@ var refnotes_admin = (function () {
             jQuery('#rename-namespaces').prop('disabled', current.isReadOnly());
             jQuery('#delete-namespaces').prop('disabled', current.isReadOnly());
 
-            for (var field of fields.values()) {
+            for (let field of fields.values()) {
                 field.update();
             }
         }
 
         function getSettings() {
-            var settings = {};
+            let settings = {};
 
-            for (var [name, namespace] of namespaces) {
+            for (let [name, namespace] of namespaces) {
                 settings[name] = namespace.getSettings();
             }
 
@@ -671,19 +671,19 @@ var refnotes_admin = (function () {
     })();
 
 
-    var notes = (function () {
-        var list     = null;
-        var fields   = new NamedObjectMap();
-        var notes    = new NameMap(new EmptyNote());
-        var current  = notes.get('');
-        var defaults = new Map([
+    let notes = (function () {
+        let list     = null;
+        let fields   = new NamedObjectMap();
+        let notes    = new NameMap(new EmptyNote());
+        let current  = notes.get('');
+        let defaults = new Map([
             ['inline'                   , false],
             ['use-reference-base'       , true],
             ['use-reference-font-weight', true],
             ['use-reference-font-style' , true],
             ['use-reference-format'     , true]
         ]);
-        var inlineAttributes = [
+        let inlineAttributes = [
             'use-reference-base',
             'use-reference-font-weight',
             'use-reference-font-style',
@@ -726,7 +726,7 @@ var refnotes_admin = (function () {
         }
 
         function Note(name, data) {
-            var attributes = new Map(Object.entries(data));
+            let attributes = new Map(Object.entries(data));
 
             this.isReadOnly = function () {
                 return false;
@@ -762,17 +762,17 @@ var refnotes_admin = (function () {
             }
 
             this.getSettings = function () {
-                var settings = {};
+                let settings = {};
 
                 if (!this.getAttribute('inline')) {
-                    for (var i in inlineAttributes) {
+                    for (let i in inlineAttributes) {
                         if (attributes.has(inlineAttributes[i])) {
                             attributes.delete(inlineAttributes[i]);
                         }
                     }
                 }
 
-                for (var [name, attribute] of attributes) {
+                for (let [name, attribute] of attributes) {
                     settings[name] = attribute;
                 }
 
@@ -820,7 +820,7 @@ var refnotes_admin = (function () {
             this.baseClass('inline');
 
             this.element.change(this, function (event) {
-                for (var i in inlineAttributes) {
+                for (let i in inlineAttributes) {
                     fields.get(inlineAttributes[i]).update();
                 }
             });
@@ -851,7 +851,7 @@ var refnotes_admin = (function () {
 
         function onAddNote(event) {
             try {
-                var name = validateName(jQuery('#name-notes').val(), 'note', notes);
+                let name = validateName(jQuery('#name-notes').val(), 'note', notes);
 
                 notes.set(name, new Note(name));
 
@@ -866,8 +866,8 @@ var refnotes_admin = (function () {
 
         function onRenameNote(event) {
             try {
-                var newName = validateName(jQuery('#name-notes').val(), 'note', notes);
-                var oldName = current.getName();
+                let newName = validateName(jQuery('#name-notes').val(), 'note', notes);
+                let oldName = current.getName();
 
                 current.setName(newName);
 
@@ -902,7 +902,7 @@ var refnotes_admin = (function () {
         function reload(settings) {
             notes.clear();
 
-            for (var name in settings) {
+            for (let name in settings) {
                 if (name.match(/^:.+?\w$/) != null) {
                     notes.set(name, new Note(name, settings[name]));
                 }
@@ -926,15 +926,15 @@ var refnotes_admin = (function () {
             jQuery('#delete-notes').prop('disabled', current.isReadOnly());
             jQuery('#field-note-text').val(current.getText()).prop('disabled', current.isReadOnly());
 
-            for (var field of fields.values()) {
+            for (let field of fields.values()) {
                 field.update();
             }
         }
 
         function getSettings() {
-            var settings = {};
+            let settings = {};
 
-            for (var [name, note] of notes) {
+            for (let [name, note] of notes) {
                 settings[name] = note.getSettings();
             }
 
@@ -973,7 +973,7 @@ var refnotes_admin = (function () {
     }
 
     function saveSettings() {
-        var settings = {};
+        let settings = {};
 
         settings.general    = general.getSettings();
         settings.namespaces = namespaces.getSettings();
@@ -986,7 +986,7 @@ var refnotes_admin = (function () {
 
     function onBeforeUnload(event) {
         if (modified) {
-            var message = locale.getString('unsaved');
+            let message = locale.getString('unsaved');
 
             (event || window.event).returnValue = message;
 
@@ -995,11 +995,11 @@ var refnotes_admin = (function () {
     }
 
     function validateName(name, type, existing) {
-        var names = name.split(':');
+        let names = name.split(':');
 
         name = (type == 'ns') ? ':' : '';
 
-        for (var i = 0; i < names.length; i++) {
+        for (let i = 0; i < names.length; i++) {
             if (names[i] != '') {
                 /* ECMA regexp doesn't support POSIX character classes, so [a-zA-Z] is used instead of [[:alpha:]] */
                 if (names[i].match(/^[a-zA-Z]\w*$/) == null) {
