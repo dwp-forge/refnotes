@@ -23,7 +23,7 @@
     }
 
     let preview = {
-        setNoteId : function (id) {
+        setNoteId(id) {
             // locate the note span element
             let note = jQuery('#' + id.replace(/:/g, '\\:') + '\\:text');
             if (note.length == 0) {
@@ -40,20 +40,20 @@
             return true;
         },
 
-        show : function () {
+        show() {
             getFloater()
                 .css('visibility', 'visible')
                 .show();
         },
 
-        hide : function () {
+        hide() {
             // prevent creation of the floater and re-hiding it on window.scroll()
             if (floater && floater.is(':visible')) {
                 floater.hide();
             }
         },
 
-        move : function (event, dx, dy) {
+        move(event, dx, dy) {
             getFloater().position({
                 my : 'left top',
                 of : event,
@@ -69,7 +69,7 @@
 
     plugin_refnotes = {
         popup : {
-            show : function (event) {
+            show(event) {
                 plugin_refnotes.tooltip.hide(event);
                 if (preview.setNoteId(getNoteId(event))) {
                     preview.move(event, 2, 2);
@@ -79,7 +79,7 @@
         },
 
         tooltip : {
-            show : function (event) {
+            show(event) {
                 plugin_refnotes.tooltip.hide(event);
                 if (preview.setNoteId(getNoteId(event))) {
                     timer = setTimeout(function () { preview.show(); }, 500);
@@ -87,7 +87,7 @@
                 }
             },
 
-            hide : function (event) {
+            hide(event) {
                 if (tracking) {
                     clearTimeout(timer);
                     tracking = false;
@@ -95,7 +95,7 @@
                 preview.hide();
             },
 
-            track : function (event) {
+            track(event) {
                 if (tracking) {
                     preview.move(event, 10, 12);
                 }

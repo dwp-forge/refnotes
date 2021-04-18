@@ -114,8 +114,8 @@ let refnotes_admin = (function () {
         }
 
         return {
-            initialize : initialize,
-            getString  : getString
+            initialize,
+            getString
         }
     })();
 
@@ -136,13 +136,13 @@ let refnotes_admin = (function () {
                     type    : 'POST',
                     timeout : 10000,
                     url     : DOKU_BASE + 'lib/exe/ajax.php',
-                    beforeSend : function () {
+                    beforeSend() {
                         setStatus('info', transaction);
                     },
-                    error : function (xhr, status, message) {
+                    error(xhr, status, message) {
                         setErrorStatus((status == 'parseerror') ? 'invalid_data' : transaction + '_failed', message);
                     },
-                    dataFilter : function (data) {
+                    dataFilter(data) {
                         let cookie = '{B27067E9-3DDA-4E31-9768-E66F23D18F4A}';
                         let match = data.match(new RegExp(cookie + '(.+?)' + cookie));
 
@@ -152,7 +152,7 @@ let refnotes_admin = (function () {
 
                         return match[1];
                     },
-                    complete : function () {
+                    complete() {
                         transaction = null;
                     }
                 });
@@ -215,8 +215,8 @@ let refnotes_admin = (function () {
         }
 
         return {
-            loadSettings : loadSettings,
-            saveSettings : saveSettings
+            loadSettings,
+            saveSettings
         }
     })();
 
@@ -315,9 +315,9 @@ let refnotes_admin = (function () {
         }
 
         return {
-            initialize  : initialize,
-            reload      : reload,
-            getSettings : getSettings
+            initialize,
+            reload,
+            getSettings
         }
     })();
 
@@ -664,9 +664,9 @@ let refnotes_admin = (function () {
         }
 
         return {
-            initialize  : initialize,
-            reload      : reload,
-            getSettings : getSettings
+            initialize,
+            reload,
+            getSettings
         }
     })();
 
@@ -942,9 +942,9 @@ let refnotes_admin = (function () {
         }
 
         return {
-            initialize  : initialize,
-            reload      : reload,
-            getSettings : getSettings
+            initialize,
+            reload,
+            getSettings
         }
     })();
 
@@ -1023,7 +1023,7 @@ let refnotes_admin = (function () {
     }
 
     return {
-        initialize : initialize
+        initialize
     }
 })();
 
