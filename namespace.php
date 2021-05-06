@@ -236,7 +236,7 @@ class refnotes_namespace {
         $result = '(?:(?:' . refnotes_note::getNamePattern('strict') . ')?:)*';
 
         if ($type == 'required') {
-            $result .= refnotes_note::getNamePattern('strict') . ':*';
+            $result .= '(?::|' . refnotes_note::getNamePattern('strict') . '):*';
         }
 
         return $result;
