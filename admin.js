@@ -383,7 +383,7 @@ let refnotes_admin = (function () {
         }
 
         function Namespace(name, data) {
-            let styles = new Map(Object.entries(data));
+            let styles = data ? new Map(Object.entries(data)) : new Map();
 
             function getParent() {
                 let parent = name.replace(/\w*:$/, '');
@@ -726,7 +726,7 @@ let refnotes_admin = (function () {
         }
 
         function Note(name, data) {
-            let attributes = new Map(Object.entries(data));
+            let attributes = data ? new Map(Object.entries(data)) : new Map();
 
             this.isReadOnly = function () {
                 return false;
