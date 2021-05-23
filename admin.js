@@ -614,7 +614,7 @@ let refnotes_admin = (function () {
 
         function onDeleteNamespace(event) {
             if (confirm(locale.getString('delete_ns', current.getName()))) {
-                namespaces.removeItem(current.getName());
+                namespaces.delete(current.getName());
 
                 setCurrent(list.removeValue(current.getName()));
 
