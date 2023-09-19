@@ -96,7 +96,7 @@ class refnotes_reference_database {
      *
      */
     private function normalizeKeyText($text) {
-        return preg_replace('/\s+/', ' ', utf8_strtolower(trim($text)));
+        return preg_replace('/\s+/', ' ', \dokuwiki\Utf8\PhpString::strtolower(trim($text)));
     }
 
     /**
