@@ -614,8 +614,15 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
         $result = 'note';
 
         switch ($this->getStyle('note-font-size')) {
+            case 'normal':
+                break;
+
             case 'small':
                 $result .= ' small';
+                break;
+
+            default:
+                $result .= ' reduced';
                 break;
         }
 

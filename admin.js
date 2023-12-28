@@ -339,7 +339,7 @@ let refnotes_admin = (function () {
             ['note-preview'         , 'popup'],
             ['notes-separator'      , '100%'],
             ['note-text-align'      , 'justify'],
-            ['note-font-size'       , 'normal'],
+            ['note-font-size'       , 'reduced'],
             ['note-render'          , 'basic'],
             ['note-id-base'         , 'super'],
             ['note-id-font-weight'  , 'normal'],

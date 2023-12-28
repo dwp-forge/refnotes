@@ -404,7 +404,7 @@ class refnotes_config_namespaces extends refnotes_config_list_section {
             ),
             'note-font-size' => array(
                 'class' => 'select',
-                'option' => array('normal', 'small', 'inherit')
+                'option' => array('normal', 'reduced', 'small', 'inherit')
             ),
             'note-render' => array(
                 'class' => 'select',

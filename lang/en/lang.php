@@ -112,6 +112,7 @@ $lang['opt_numeric'] = 'Numeric';
 $lang['opt_parents'] = 'Parentheses';
 $lang['opt_popup'] = 'Static pop-up';
 $lang['opt_prefix'] = 'Prefix back references';
+$lang['opt_reduced'] = 'Reduced';
 $lang['opt_ref-counter'] = 'Reference counter';
 $lang['opt_reset'] = 'New scope after each notes block';
 $lang['opt_right-bracket'] = 'Right bracket';

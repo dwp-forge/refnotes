@@ -13,12 +13,12 @@ div.dokuwiki div.refnotes div.notes {
     margin-bottom: 1em;
 }
 
-div.dokuwiki div.refnotes div.note {
+div.dokuwiki div.refnotes div.note.reduced {
     font-size: 90%;
 }
 
 div.dokuwiki div.refnotes div.note.small {
-    font-size: 70%;
+    font-size: 75%;
 }
 
 div.dokuwiki div.refnotes div.note.justify {
