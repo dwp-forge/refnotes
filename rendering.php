@@ -124,7 +124,7 @@ class refnotes_renderer extends refnotes_renderer_base {
         $html = '';
         $style = $this->getStyle('notes-separator');
         if ($style != 'none') {
-            if ($style != '') {
+            if (!empty($style)) {
                 $style = ' style="width: '. $style . '"';
             }
             $html = '<hr' . $style . '>' . DOKU_LF;
@@ -278,7 +278,7 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
 
         $text = $data->get('note-text', 'title');
 
-        if ($text == '') {
+        if (empty($text)) {
             $text = $data->getLongest();
         }
 
@@ -445,7 +445,7 @@ class refnotes_basic_renderer extends refnotes_renderer_base {
 
         list($formatOpen, $formatClose) = $this->renderNoteIdFormat();
 
-        if (($backRefFormat != 'note') && ($backRefFormat != '')) {
+        if (($backRefFormat != 'note') && !empty($backRefFormat)) {
             list($baseOpen, $baseClose) = $this->renderNoteIdBase();
             list($fontOpen, $fontClose) = $this->renderNoteIdFont();
 
@@ -981,7 +981,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
         // $authors? $title //journal//, volume, [format], publisher, pages, issn. (accessed)
         // $authors? $title //booktitle//, [format], publisher, pages, issn. (accessed)
 
-        $publication = $this->renderPublication($data, $authors != '');
+        $publication = $this->renderPublication($data, !empty($authors));
 
         if ($data->has('journal')) {
             // $authors? $title //journal//, volume, $publication?
@@ -1001,7 +1001,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
 
             // $authors? $text, $publication?
 
-            $text .= ($publication != '') ? ',' : '.';
+            $text .= !empty($publication) ? ',' : '.';
         }
         else {
             // $authors? //$title// edition. $publication?
@@ -1012,11 +1012,11 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
 
         // $authors? $text $publication?
 
-        if ($authors != '') {
+        if (!empty($authors)) {
             $text = $authors . ' ' . $text;
         }
 
-        if ($publication != '') {
+        if (!empty($publication)) {
             $text .= ' ' . $publication;
         }
 
@@ -1042,7 +1042,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     protected function renderAuthors($data) {
         $text = $data->get('authors', 'author');
 
-        if ($text != '') {
+        if (!empty($text)) {
             if ($published = $this->renderPublished($data)) {
                 $text .= ', ' . $published;
             }
@@ -1059,7 +1059,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
     protected function renderPublished($data, $useMonth = true) {
         $text = $data->get('published');
 
-        if ($text == '') {
+        if (empty($text)) {
             if ($text = $data->get('year')) {
                 if ($useMonth && $month = $data->get('month')) {
                     $text = $month . ' ' . $text;
@@ -1109,14 +1109,14 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
 
         $text = implode(', ', $part);
 
-        if ($text != '') {
+        if (!empty($text)) {
             $text = rtrim($text, '.') . '.';
         }
 
         if ($accessed = $data->get('accessed')) {
             $accessed = '(' . refnotes_localization::getInstance()->getLang('txt_accessed_cap') . ': ' . $accessed . ')';
 
-            if ($text != '') {
+            if (!empty($text)) {
                 $text .= ' ' . $accessed;
             }
             else {
@@ -1193,7 +1193,17 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
             return $this->renderBasicReferenceId($reference);
         }
 
-        $authors = $data->get('ref-authors', 'ref-author', 'authors', 'author');
+        $authors = $data->get('ref-authors', 'ref-author');
+
+        if (empty($authors)) {
+            $authors = $data->get('authors', 'author');
+            $authorList = explode(',', $authors, 4);
+
+            if (count($authorList) > 3) {
+                $authors = $authorList[0] . refnotes_localization::getInstance()->getLang('txt_et_al');
+            }
+        }
+
         $html = $this->renderReferenceExtra($data);
 
         list($formatOpen, $formatClose) = $this->renderReferenceParentheses();
@@ -1254,7 +1264,7 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
         }
 
         if ($pages = $this->renderPages($data, array('page', 'pages'))) {
-            if ($html != '') {
+            if (!empty($html)) {
                 $html .= ', ';
             }
 

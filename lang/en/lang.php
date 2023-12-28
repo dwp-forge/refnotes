@@ -37,6 +37,7 @@ $lang['dbk_volume'] = 'Volume';
 $lang['dbk_year'] = 'Year';
 
 $lang['txt_accessed_cap'] = 'Accessed';
+$lang['txt_et_al'] = ', et al.';
 $lang['txt_in_cap'] = 'In';
 $lang['txt_page_abbr'] = 'p.';
 $lang['txt_pages_abbr'] = 'pp.';
