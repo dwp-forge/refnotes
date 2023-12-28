@@ -15,6 +15,7 @@ $lang['dbk_author'] = 'Author';
 $lang['dbk_authors'] = 'Authors';
 $lang['dbk_chapter'] = 'Chapter';
 $lang['dbk_edition'] = 'Edition';
+$lang['dbk_format'] = 'Format';
 $lang['dbk_isbn'] = 'ISBN';
 $lang['dbk_issn'] = 'ISSN';
 $lang['dbk_journal'] = 'Journal';
