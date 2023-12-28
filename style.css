@@ -1,6 +1,3 @@
-div.dokuwiki a.refnotes-ref {
-}
-
 div.dokuwiki div.refnotes {
     clear: both;
     margin: 0 0 1em 0;
@@ -30,12 +27,6 @@ div.dokuwiki div.refnotes div.note.justify {
 
 div.dokuwiki div.refnotes div.note.left {
     text-align: left;
-}
-
-div.dokuwiki div.refnotes a.nolink {
-}
-
-div.dokuwiki div.refnotes a.backref {
 }
 
 /* HACK: Fix compatibility problem with Sidebar plugin (issue 6) */
