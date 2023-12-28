@@ -77,6 +77,10 @@ class syntax_plugin_refnotes_notes extends DokuWiki_Syntax_Plugin {
                     case 'render':
                         $this->renderNotes($mode, $renderer, $data[1]);
                         break;
+
+                    case 'block':
+                        refnotes_renderer_core::getInstance()->updateRenderingBlocks($data[1]);
+                        break;
                 }
 
                 return true;

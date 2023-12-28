@@ -320,6 +320,7 @@ abstract class refnotes_core {
 class refnotes_renderer_core extends refnotes_core {
 
     private static $instance = NULL;
+    private $leftoversRenderingBlocks = 0;
 
     /**
      * Renderer core is used by both references and notes syntax plugins during the rendering
@@ -351,16 +352,18 @@ class refnotes_renderer_core extends refnotes_core {
      *
      */
     public function renderNotes($mode, $namespaceName, $limit) {
-        $this->clearNamespaceMapping($namespaceName);
-
         $html = '';
 
         if ($namespaceName == '*') {
-            foreach ($this->namespace as $namespace) {
-                $html .= $namespace->renderNotes($mode);
+            if ($this->leftoversRenderingBlocks == 0) {
+                foreach ($this->namespace as $namespace) {
+                    $html .= $namespace->renderNotes($mode);
+                }
             }
         }
         else {
+            $this->clearNamespaceMapping($namespaceName);
+
             $namespace = $this->findNamespace($namespaceName);
             if ($namespace != NULL) {
                 $html = $namespace->renderNotes($mode, $limit);
@@ -368,6 +371,23 @@ class refnotes_renderer_core extends refnotes_core {
         }
 
         return $html;
+    }
+
+    /**
+     * Keep track of leftover note rendering blocking on included pages
+     */
+    public function updateRenderingBlocks($block) {
+        switch ($block) {
+            case 'enter':
+                ++$this->leftoversRenderingBlocks;
+                break;
+
+            case 'exit':
+                if ($this->leftoversRenderingBlocks > 0) {
+                    --$this->leftoversRenderingBlocks;
+                }
+                break;
+        }
     }
 
     /**

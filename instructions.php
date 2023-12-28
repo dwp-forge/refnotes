@@ -101,6 +101,17 @@ class refnotes_notes_render_instruction extends refnotes_notes_instruction {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+class refnotes_notes_render_block_instruction extends refnotes_notes_instruction {
+
+    /**
+     * Constructor
+     */
+    public function __construct($block) {
+        parent::__construct('block', $block);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_instruction_reference {
 
     private $list;
@@ -193,6 +204,13 @@ class refnotes_instruction_reference {
      */
     public function insertBefore($call) {
         return $this->list->insert($this->index, $call);
+    }
+
+    /**
+     *
+     */
+    public function insertAfter($call) {
+        return $this->list->insert($this->index + 1, $call);
     }
 }
 

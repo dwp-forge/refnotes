@@ -79,6 +79,7 @@ class refnotes_instruction_mangler {
     private $referenceGroup;
     private $hidden;
     private $inReference;
+    private $includedPages;
 
     /**
      * Constructor
@@ -90,6 +91,7 @@ class refnotes_instruction_mangler {
         $this->referenceGroup = array();
         $this->hidden = true;
         $this->inReference = false;
+        $this->includedPages = array();
     }
 
     /**
@@ -98,10 +100,21 @@ class refnotes_instruction_mangler {
     public function process() {
         $this->scanInstructions();
 
+        /* If there are some includes on the current page, the implicit rendering of leftover notes
+         * has to be disabled inside the included pages. Instead the notes referred by the included
+         * pages have to be rendered on the current page. So even in case when the current page has
+         * no references, there has to be leftovers rendering at the end, just to ensure that any
+         * possible references on the included pages are taken care of.
+         */
+        if ($this->core->getNamespaceCount() > 0 || count($this->includedPages) > 0) {
+            $this->renderLeftovers();
+
+            $this->calls->applyChanges();
+        }
+
         if ($this->core->getNamespaceCount() > 0) {
             $this->insertNotesInstructions($this->core->getStyles(), 'refnotes_notes_style_instruction');
             $this->insertNotesInstructions($this->core->getMappings(), 'refnotes_notes_map_instruction');
-            $this->renderLeftovers();
 
             $this->calls->applyChanges();
 
@@ -121,6 +134,7 @@ class refnotes_instruction_mangler {
             $this->markScopeLimits($call);
             $this->extractStyles($call);
             $this->extractMappings($call);
+            $this->collectIncludedPages($call);
         }
     }
 
@@ -259,6 +273,15 @@ class refnotes_instruction_mangler {
     /**
      *
      */
+    private function collectIncludedPages($call) {
+        if ($call->getName() == 'plugin_include_include') {
+            $this->includedPages[] = $call;
+        }
+    }
+
+    /**
+     *
+     */
     private function insertNotesInstructions($stash, $instruction) {
         if ($stash->getCount() == 0) {
             return;
@@ -277,6 +300,12 @@ class refnotes_instruction_mangler {
      * Insert render call at the very bottom of the page
      */
     private function renderLeftovers() {
+        /* Block leftovers rendering on the included pages */
+        foreach ($this->includedPages as $call) {
+            $call->insertBefore(new refnotes_notes_render_block_instruction('enter'));
+            $call->insertAfter(new refnotes_notes_render_block_instruction('exit'));
+        }
+
         $this->calls->append(new refnotes_notes_render_instruction('*'));
     }
 
