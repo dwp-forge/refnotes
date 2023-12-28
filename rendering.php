@@ -962,24 +962,24 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
             return parent::renderNoteText($note);
         }
 
-        // authors, published. //[[url|title.]]// edition. [format], publisher, pages, isbn.
-        // authors, published. chapter In //[[url|title.]]// edition. [format], publisher, pages, isbn.
-        // authors, published. [[url|title.]] //journal//, volume, [format], publisher, pages, issn.
-        // authors, published. [[url|title.]] //booktitle//, [format], publisher, pages, issn.
+        // authors, published. //[[url|title.]]// edition. [format], publisher, pages, isbn. (accessed)
+        // authors, published. chapter In //[[url|title.]]// edition. [format], publisher, pages, isbn. (accessed)
+        // authors, published. [[url|title.]] //journal//, volume, [format], publisher, pages, issn. (accessed)
+        // authors, published. [[url|title.]] //booktitle//, [format], publisher, pages, issn. (accessed)
 
         $title = $this->renderTitle($data);
 
-        // authors, published. //$title// edition. [format], publisher, pages, isbn.
-        // authors, published. chapter In //$title// edition. [format], publisher, pages, isbn.
-        // authors, published. $title //journal//, volume, [format], publisher, pages, issn.
-        // authors, published. $title //booktitle//, [format], publisher, pages, issn.
+        // authors, published. //$title// edition. [format], publisher, pages, isbn. (accessed)
+        // authors, published. chapter In //$title// edition. [format], publisher, pages, isbn. (accessed)
+        // authors, published. $title //journal//, volume, [format], publisher, pages, issn. (accessed)
+        // authors, published. $title //booktitle//, [format], publisher, pages, issn. (accessed)
 
         $authors = $this->renderAuthors($data);
 
-        // $authors? //$title// edition. [format], publisher, pages, isbn.
-        // $authors? chapter In //$title// edition. [format], publisher, pages, isbn.
-        // $authors? $title //journal//, volume, [format], publisher, pages, issn.
-        // $authors? $title //booktitle//, [format], publisher, pages, issn.
+        // $authors? //$title// edition. [format], publisher, pages, isbn. (accessed)
+        // $authors? chapter In //$title// edition. [format], publisher, pages, isbn. (accessed)
+        // $authors? $title //journal//, volume, [format], publisher, pages, issn. (accessed)
+        // $authors? $title //booktitle//, [format], publisher, pages, issn. (accessed)
 
         $publication = $this->renderPublication($data, $authors != '');
 
@@ -1111,6 +1111,17 @@ class refnotes_harvard_renderer extends refnotes_basic_renderer {
 
         if ($text != '') {
             $text = rtrim($text, '.') . '.';
+        }
+
+        if ($accessed = $data->get('accessed')) {
+            $accessed = '(' . refnotes_localization::getInstance()->getLang('txt_accessed_cap') . ': ' . $accessed . ')';
+
+            if ($text != '') {
+                $text .= ' ' . $accessed;
+            }
+            else {
+                $text = $accessed;
+            }
         }
 
         return $text;
