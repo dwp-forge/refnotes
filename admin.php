@@ -11,7 +11,6 @@
 class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
     use refnotes_localization_plugin;
 
-    private $html;
     private $locale;
 
     /**
@@ -20,7 +19,6 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
     public function __construct() {
         refnotes_localization::initialize($this);
 
-        $this->html = new refnotes_html_sink();
         $this->locale = refnotes_localization::getInstance();
     }
 
@@ -37,25 +35,23 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
     public function html() {
         print($this->locale_xhtml('intro'));
 
-        $this->html->ptln('<!-- refnotes -->');
+        print('<!-- refnotes -->');
 
         $this->printLanguageStrings();
 
-        $this->html->ptln('<div id="refnotes-config"><div id="config__manager">');
-        $this->html->ptln('<noscript><div class="error">' . $this->locale->getLang('noscript') . '</div></noscript>');
-        $this->html->ptln('<div id="server-status" class="info" style="display: none;">&nbsp;</div>');
-        $this->html->ptln('<form action="" method="post">');
-        $this->html->indent();
+        print('<div id="refnotes-config"><div id="config__manager">');
+        print('<noscript><div class="error">' . $this->locale->getLang('noscript') . '</div></noscript>');
+        print('<div id="server-status" class="info" style="display: none;">&nbsp;</div>');
+        print('<form action="" method="post">');
 
         $this->printGeneral();
         $this->printNamespaces();
         $this->printNotes();
 
-        $this->html->ptln($this->getButton('save'));
+        print($this->getButton('save'));
 
-        $this->html->unindent();
-        $this->html->ptln('</form></div></div>');
-        $this->html->ptln('<!-- /refnotes -->');
+        print('</form></div></div>');
+        print('<!-- /refnotes -->');
     }
 
     /**
@@ -66,13 +62,13 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
     private function printLanguageStrings() {
         $lang = $this->locale->getByPrefix('js');
 
-        $this->html->ptln('<div id="refnotes-lang" style="display: none;">');
+        print('<div id="refnotes-lang" style="display: none;">');
 
         foreach ($lang as $key => $value) {
-            ptln($key . ' : ' . $value . ':eos:');
+            print($key . ' : ' . $value . ':eos:');
         }
 
-        $this->html->ptln('</div>');
+        print('</div>');
     }
 
     /**
@@ -80,7 +76,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      */
     private function printGeneral() {
         $section = new refnotes_config_general();
-        $section->printHtml($this->html);
+        $section->printHtml();
     }
 
     /**
@@ -88,7 +84,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      */
     private function printNamespaces() {
         $section = new refnotes_config_namespaces();
-        $section->printHtml($this->html);
+        $section->printHtml();
     }
 
     /**
@@ -96,7 +92,7 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
      */
     private function printNotes() {
         $section = new refnotes_config_notes();
-        $section->printHtml($this->html);
+        $section->printHtml();
     }
 
     /**
@@ -117,7 +113,6 @@ class admin_plugin_refnotes extends DokuWiki_Admin_Plugin {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class refnotes_config_section {
 
-    protected $html;
     protected $id;
     protected $title;
 
@@ -125,7 +120,6 @@ class refnotes_config_section {
      * Constructor
      */
     public function __construct($id) {
-        $this->html = NULL;
         $this->id = $id;
         $this->title = 'sec_' . $id;
     }
@@ -133,8 +127,7 @@ class refnotes_config_section {
     /**
      *
      */
-    public function printHtml($html) {
-        $this->html = $html;
+    public function printHtml() {
         $this->open();
         $this->printFields();
         $this->close();
@@ -146,19 +139,17 @@ class refnotes_config_section {
     protected function open() {
         $title = refnotes_localization::getInstance()->getLang($this->title);
 
-        $this->html->ptln('<fieldset id="' . $this->id . '">');
-        $this->html->ptln('<legend>' . $title . '</legend>');
-        $this->html->ptln('<table class="inline" cols="3">');
-        $this->html->indent();
+        print('<fieldset id="' . $this->id . '">');
+        print('<legend>' . $title . '</legend>');
+        print('<table class="inline" cols="3">');
     }
 
     /**
      *
      */
     protected function close() {
-        $this->html->unindent();
-        $this->html->ptln('</table>');
-        $this->html->ptln('</fieldset>');
+        print('</table>');
+        print('</fieldset>');
     }
 
     /**
@@ -191,32 +182,31 @@ class refnotes_config_section {
      */
     protected function printFieldRow($field, $startRow = true) {
         if ($startRow) {
-            $this->html->ptln('<tr>');
-            $this->html->indent();
+            print('<tr>');
         }
 
         if (get_class($field) != 'refnotes_config_textarea') {
             $settingName = $field->getSettingName();
+
             if ($settingName != '') {
-                $this->html->ptln('<td class="label">');
-                $this->html->ptln($settingName);
+                print('<td class="label">');
+                print($settingName);
             }
             else {
-                $this->html->ptln('<td class="lean-label">');
+                print('<td class="lean-label">');
             }
 
-            $this->html->ptln($field->getLabel());
-            $this->html->ptln('</td><td class="value">');
+            print($field->getLabel());
+            print('</td><td class="value">');
         }
         else {
-            $this->html->ptln('<td class="value" colspan="2">');
+            print('<td class="value" colspan="2">');
         }
 
-        $this->html->ptln($field->getControl());
-        $this->html->ptln('</td>');
+        print($field->getControl());
+        print('</td>');
 
-        $this->html->unindent();
-        $this->html->ptln('</tr>');
+        print('</tr>');
     }
 }
 
@@ -238,26 +228,25 @@ class refnotes_config_list_section extends refnotes_config_section {
      *
      */
     protected function close() {
-        $this->html->unindent();
-        $this->html->ptln('</table>');
+        print('</table>');
+
         $this->printListControls();
-        $this->html->ptln('</fieldset>');
+
+        print('</fieldset>');
     }
 
     /**
      *
      */
     private function printListControls() {
-        $this->html->ptln('<div class="list-controls">');
-        $this->html->indent();
+        print('<div class="list-controls">');
 
-        $this->html->ptln($this->getEdit());
-        $this->html->ptln($this->getButton('add'));
-        $this->html->ptln($this->getButton('rename'));
-        $this->html->ptln($this->getButton('delete'));
+        print($this->getEdit());
+        print($this->getButton('add'));
+        print($this->getButton('rename'));
+        print($this->getButton('delete'));
 
-        $this->html->unindent();
-        $this->html->ptln('</div>');
+        print('</div>');
     }
 
     /**
@@ -297,11 +286,10 @@ class refnotes_config_list_section extends refnotes_config_section {
         $field = $this->getFields();
         $fields = count($field);
 
-        $this->html->ptln('<tr>');
-        $this->html->indent();
-        $this->html->ptln('<td class="list" rowspan="' . $fields . '">');
-        $this->html->ptln('<select class="list" id="select-' . $this->id . '" size="' . $this->listRows . '"></select>');
-        $this->html->ptln('</td>');
+        print('<tr>');
+        print('<td class="list" rowspan="' . $fields . '">');
+        print('<select class="list" id="select-' . $this->id . '" size="' . $this->listRows . '"></select>');
+        print('</td>');
 
         $this->printFieldRow($field[0], false);
 
@@ -698,54 +686,5 @@ class refnotes_config_textarea extends refnotes_config_field {
         $html .= '</textarea></div>';
 
         return $html;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-class refnotes_html_sink {
-
-    private $indentIncrement;
-    private $indent;
-
-    /**
-     * Constructor
-     */
-    public function __construct() {
-        $this->indentIncrement = 2;
-        $this->indent = 0;
-    }
-
-    /**
-     *
-     */
-    public function indent() {
-        $this->indent += $this->indentIncrement;
-    }
-
-    /**
-     *
-     */
-    public function unindent() {
-        if ($this->indent >= $this->indentIncrement) {
-            $this->indent -= $this->indentIncrement;
-        }
-    }
-
-    /**
-     *
-     */
-    public function ptln($string, $indentDelta = 0) {
-        if ($indentDelta < 0) {
-            $this->indent += $this->indentIncrement * $indentDelta;
-        }
-
-        $text = explode(DOKU_LF, $string);
-        foreach ($text as $string) {
-            ptln($string, $this->indent);
-        }
-
-        if ($indentDelta > 0) {
-            $this->indent += $this->indentIncrement * $indentDelta;
-        }
     }
 }
